@@ -1,0 +1,85 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'nu.studer.jooq' version '3.0.3'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'http://repo.maven.apache.org/maven2'
+    }
+}
+
+group = 'org.jooq'
+version = '1.0'
+description = 'jOOQ Academy'
+sourceCompatibility = '1.8'
+
+dependencies {
+    compile 'org.jooq:jooq'
+    compile     'com.h2database:h2:1.4.195'
+    jooqRuntime 'com.h2database:h2:1.4.195'
+    compile 'commons-dbcp:commons-dbcp:1.4'
+    compile 'log4j:log4j:1.2.16'
+    testCompile 'junit:junit:4.12'
+}
+
+file("src/main/resources/config.properties").withReader { 
+   Properties props = new Properties()
+   props.load(it)
+   project.ext.jooqProp = props
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jooq {
+  version = '3.11.9' // the default (can be omitted)
+  edition = 'OSS'    // the default (can be omitted), other allowed values are PRO, PRO_JAVA_6, and TRIAL
+  academy(sourceSets.main) {
+    jdbc {
+      driver = jooqProp."db.driver"
+      url = "${jooqProp."db.url"};INIT=RUNSCRIPT FROM '$projectDir/src/main/resources/db-h2.sql'"
+      user = jooqProp."db.username"
+      password = jooqProp."db.password"
+      properties {
+        property {
+          key = 'ssl'
+          value = 'true'
+        }
+      }
+    }
+    generator {
+      name = 'org.jooq.codegen.DefaultGenerator'
+      strategy {
+        name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+      }
+      database {
+        name = 'org.jooq.meta.h2.H2Database'
+        inputSchema = 'PUBLIC'
+        recordTimestampFields = 'REC_TIMESTAMP'
+        includes='.*'
+        excludes=''
+      }
+      generate {
+        deprecated = false
+        instanceFields = true
+        pojos = true
+      }
+      target {
+        packageName = 'org.jooq.example.db.h2'
+        directory = "$buildDir/generated-sources/jooq-h2"
+      }
+    }
+  }
+}
