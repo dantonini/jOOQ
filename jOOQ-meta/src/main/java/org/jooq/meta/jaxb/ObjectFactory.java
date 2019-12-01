@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.meta.jaxb;
 
 import javax.xml.bind.annotation.XmlRegistry;
@@ -178,6 +171,22 @@ public class ObjectFactory {
      */
     public EnumType createEnumType() {
         return new EnumType();
+    }
+
+    /**
+     * Create an instance of {@link Embeddable }
+     *
+     */
+    public Embeddable createEmbeddable() {
+        return new Embeddable();
+    }
+
+    /**
+     * Create an instance of {@link EmbeddableField }
+     *
+     */
+    public EmbeddableField createEmbeddableField() {
+        return new EmbeddableField();
     }
 
     /**

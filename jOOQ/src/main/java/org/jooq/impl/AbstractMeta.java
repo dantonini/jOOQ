@@ -41,6 +41,7 @@ import static org.jooq.impl.DSL.name;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -48,38 +49,39 @@ import java.util.List;
 import java.util.Map;
 
 import org.jooq.Catalog;
+import org.jooq.Configuration;
+import org.jooq.DDLExportConfiguration;
 import org.jooq.Meta;
 import org.jooq.Name;
 import org.jooq.Named;
+// ...
+import org.jooq.Queries;
+import org.jooq.Query;
 import org.jooq.Schema;
 import org.jooq.Sequence;
 import org.jooq.Table;
+import org.jooq.UniqueKey;
+import org.jooq.util.xml.jaxb.InformationSchema;
 
 /**
  * @author Lukas Eder
  */
-abstract class AbstractMeta implements Meta, Serializable {
+abstract class AbstractMeta extends AbstractScope implements Meta, Serializable {
 
-    private static final long                  serialVersionUID = 910484713008245977L;
+    private static final long            serialVersionUID = 910484713008245977L;
 
-    private final Map<Name, Catalog>           cachedCatalogs;
-    private final Map<Name, Schema>            cachedQualifiedSchemas;
-    private final Map<Name, Table<?>>          cachedQualifiedTables;
-    private final Map<Name, Sequence<?>>       cachedQualifiedSequences;
-    private final Map<Name, List<Schema>>      cachedUnqualifiedSchemas;
-    private final Map<Name, List<Table<?>>>    cachedUnqualifiedTables;
-    private final Map<Name, List<Sequence<?>>> cachedUnqualifiedSequences;
+    // [#9010] TODO: Allow for opting out of this cache
+    private Map<Name, Catalog>           cachedCatalogs;
+    private Map<Name, Schema>            cachedQualifiedSchemas;
+    private Map<Name, Table<?>>          cachedQualifiedTables;
+    private Map<Name, Sequence<?>>       cachedQualifiedSequences;
+    private Map<Name, List<Schema>>      cachedUnqualifiedSchemas;
+    private Map<Name, List<Table<?>>>    cachedUnqualifiedTables;
+    private Map<Name, List<Sequence<?>>> cachedUnqualifiedSequences;
+    private List<UniqueKey<?>>           cachedPrimaryKeys;
 
-    AbstractMeta() {
-
-        // [#7165] TODO: Allow for opting out of this cache
-        this.cachedCatalogs = new LinkedHashMap<Name, Catalog>();
-        this.cachedQualifiedSchemas = new LinkedHashMap<Name, Schema>();
-        this.cachedQualifiedTables = new LinkedHashMap<Name, Table<?>>();
-        this.cachedQualifiedSequences = new LinkedHashMap<Name, Sequence<?>>();
-        this.cachedUnqualifiedSchemas = new LinkedHashMap<Name, List<Schema>>();
-        this.cachedUnqualifiedTables = new LinkedHashMap<Name, List<Table<?>>>();
-        this.cachedUnqualifiedSequences = new LinkedHashMap<Name, List<Sequence<?>>>();
+    protected AbstractMeta(Configuration configuration) {
+        super(configuration);
     }
 
     @Override
@@ -89,12 +91,25 @@ abstract class AbstractMeta implements Meta, Serializable {
 
     @Override
     public final Catalog getCatalog(Name name) {
-        if (cachedCatalogs.isEmpty())
-            for (Catalog catalog : getCatalogs())
-                cachedCatalogs.put(catalog.getQualifiedName(), catalog);
-
+        initCatalogs();
         return cachedCatalogs.get(name);
     }
+
+    @Override
+    public final List<Catalog> getCatalogs() {
+        initCatalogs();
+        return Collections.unmodifiableList(new ArrayList<>(cachedCatalogs.values()));
+    }
+
+    private final void initCatalogs() {
+        if (cachedCatalogs == null) {
+            cachedCatalogs = new LinkedHashMap<>();
+            for (Catalog catalog : getCatalogs0())
+                cachedCatalogs.put(catalog.getQualifiedName(), catalog);
+        }
+    }
+
+    protected abstract List<Catalog> getCatalogs0();
 
     @Override
     public final List<Schema> getSchemas(String name) {
@@ -103,12 +118,39 @@ abstract class AbstractMeta implements Meta, Serializable {
 
     @Override
     public final List<Schema> getSchemas(Name name) {
+        initSchemas();
         return get(name, new Iterable<Schema>() {
             @Override
             public Iterator<Schema> iterator() {
-                return getSchemas().iterator();
+                return getSchemas0().iterator();
             }
         }, cachedQualifiedSchemas, cachedUnqualifiedSchemas);
+    }
+
+    @Override
+    public final List<Schema> getSchemas() {
+        initSchemas();
+        return Collections.unmodifiableList(new ArrayList<>(cachedQualifiedSchemas.values()));
+    }
+
+    private final void initSchemas() {
+        if (cachedQualifiedSchemas == null) {
+            cachedQualifiedSchemas = new LinkedHashMap<>();
+            cachedUnqualifiedSchemas = new LinkedHashMap<>();
+            get(name(""), new Iterable<Schema>() {
+                @Override
+                public Iterator<Schema> iterator() {
+                    return getSchemas0().iterator();
+                }
+            }, cachedQualifiedSchemas, cachedUnqualifiedSchemas);
+        }
+    }
+
+    protected List<Schema> getSchemas0() {
+        List<Schema> result = new ArrayList<>();
+        for (Catalog catalog : getCatalogs())
+            result.addAll(catalog.getSchemas());
+        return result;
     }
 
     @Override
@@ -118,6 +160,7 @@ abstract class AbstractMeta implements Meta, Serializable {
 
     @Override
     public final List<Table<?>> getTables(Name name) {
+        initTables();
         return get(name, new Iterable<Table<?>>() {
             @Override
             public Iterator<Table<?>> iterator() {
@@ -127,18 +170,90 @@ abstract class AbstractMeta implements Meta, Serializable {
     }
 
     @Override
+    public final List<Table<?>> getTables() {
+        initTables();
+        return Collections.unmodifiableList(new ArrayList<>(cachedQualifiedTables.values()));
+    }
+
+    private final void initTables() {
+        if (cachedQualifiedTables == null) {
+            cachedQualifiedTables = new LinkedHashMap<>();
+            cachedUnqualifiedTables = new LinkedHashMap<>();
+            get(name(""), new Iterable<Table<?>>() {
+                @Override
+                public Iterator<Table<?>> iterator() {
+                    return getTables0().iterator();
+                }
+            }, cachedQualifiedTables, cachedUnqualifiedTables);
+        }
+    }
+
+    protected List<Table<?>> getTables0() {
+        List<Table<?>> result = new ArrayList<>();
+        for (Schema schema : getSchemas())
+            result.addAll(schema.getTables());
+        return result;
+    }
+
+    @Override
     public final List<Sequence<?>> getSequences(String name) {
         return getSequences(name(name));
     }
 
     @Override
     public final List<Sequence<?>> getSequences(Name name) {
+        initSequences();
         return get(name, new Iterable<Sequence<?>>() {
             @Override
             public Iterator<Sequence<?>> iterator() {
                 return getSequences().iterator();
             }
         }, cachedQualifiedSequences, cachedUnqualifiedSequences);
+    }
+
+    @Override
+    public final List<Sequence<?>> getSequences() {
+        initSequences();
+        return Collections.unmodifiableList(new ArrayList<>(cachedQualifiedSequences.values()));
+    }
+
+    private final void initSequences() {
+        if (cachedQualifiedSequences == null) {
+            cachedQualifiedSequences = new LinkedHashMap<>();
+            cachedUnqualifiedSequences = new LinkedHashMap<>();
+            get(name(""), new Iterable<Sequence<?>>() {
+                @Override
+                public Iterator<Sequence<?>> iterator() {
+                    return getSequences0().iterator();
+                }
+            }, cachedQualifiedSequences, cachedUnqualifiedSequences);
+        }
+    }
+
+    protected List<Sequence<?>> getSequences0() {
+        List<Sequence<?>> result = new ArrayList<>();
+        for (Schema schema : getSchemas())
+            result.addAll(schema.getSequences());
+        return result;
+    }
+
+    @Override
+    public final List<UniqueKey<?>> getPrimaryKeys() {
+        initPrimaryKeys();
+        return Collections.unmodifiableList(cachedPrimaryKeys);
+    }
+
+    private final void initPrimaryKeys() {
+        if (cachedPrimaryKeys == null)
+            cachedPrimaryKeys = new ArrayList<>(getPrimaryKeys0());
+    }
+
+    protected List<UniqueKey<?>> getPrimaryKeys0() {
+        List<UniqueKey<?>> result = new ArrayList<>();
+        for (Table<?> table : getTables())
+            if (table.getPrimaryKey() != null)
+                result.add(table.getPrimaryKey());
+        return result;
     }
 
     private final <T extends Named> List<T> get(Name name, Iterable<T> i, Map<Name, T> qualified, Map<Name, List<T>> unqualified) {
@@ -151,7 +266,7 @@ abstract class AbstractMeta implements Meta, Serializable {
 
                 List<T> list = unqualified.get(u);
                 if (list == null) {
-                    list = new ArrayList<T>();
+                    list = new ArrayList<>();
                     unqualified.put(u, list);
                 }
 
@@ -168,5 +283,78 @@ abstract class AbstractMeta implements Meta, Serializable {
             return Collections.emptyList();
         else
             return Collections.unmodifiableList(list);
+    }
+
+    @Override
+    public final Queries ddl() {
+        return ddl(new DDLExportConfiguration());
+    }
+
+    // [#9396] TODO Fix this. Subclasses should not need to override this to get
+    //         correct results
+    @Override
+    public /* non-final */ Queries ddl(DDLExportConfiguration exportConfiguration) {
+        return new DDL(dsl(), exportConfiguration).queries(this);
+    }
+
+    @Override
+    public final Meta apply(String diff) {
+        return apply(dsl().parser().parse(diff));
+    }
+
+    @Override
+    public final Meta apply(Query... diff) {
+        return apply(dsl().queries(diff));
+    }
+
+    @Override
+    public final Meta apply(Collection<? extends Query> diff) {
+        return apply(dsl().queries(diff));
+    }
+
+    @Override
+    public final Meta apply(Queries diff) {
+        return dsl().meta(ddl().concat(diff).queries());
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // [#9396] TODO Fix this. Subclasses should not need to override this to get
+    //         correct results
+    @Override
+    public /* non-final */ InformationSchema informationSchema() {
+        return InformationSchemaExport.exportCatalogs(configuration(), getCatalogs());
+    }
+
+    @Override
+    public int hashCode() {
+        return ddl().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Meta)
+            return ddl().equals(((Meta) obj).ddl());
+
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return ddl().toString();
     }
 }

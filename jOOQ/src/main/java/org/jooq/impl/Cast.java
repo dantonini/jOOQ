@@ -38,11 +38,14 @@
 package org.jooq.impl;
 
 import static org.jooq.impl.DSL.inline;
-import static org.jooq.impl.DSL.keyword;
+import static org.jooq.impl.Keywords.F_TO_CLOB;
+import static org.jooq.impl.Keywords.F_TO_DATE;
+import static org.jooq.impl.Keywords.F_TO_TIMESTAMP;
 import static org.jooq.impl.Keywords.K_AS;
 import static org.jooq.impl.Keywords.K_CAST;
 import static org.jooq.impl.Keywords.K_DECIMAL;
 import static org.jooq.impl.Keywords.K_TRIM;
+import static org.jooq.impl.Names.N_CAST;
 import static org.jooq.impl.SQLDataType.BOOLEAN;
 import static org.jooq.impl.SQLDataType.DOUBLE;
 import static org.jooq.impl.SQLDataType.FLOAT;
@@ -53,18 +56,16 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-import org.jooq.Configuration;
 import org.jooq.Context;
 import org.jooq.DataType;
 import org.jooq.Field;
 // ...
-import org.jooq.QueryPart;
 import org.jooq.RenderContext.CastMode;
 
 /**
  * @author Lukas Eder
  */
-final class Cast<T> extends AbstractFunction<T> {
+final class Cast<T> extends AbstractField<T> {
 
     /**
      * Generated UID
@@ -74,7 +75,7 @@ final class Cast<T> extends AbstractFunction<T> {
     private final Field<?>    field;
 
     public Cast(Field<?> field, DataType<T> type) {
-        super("cast", type);
+        super(N_CAST, type);
 
         this.field = field;
     }
@@ -84,8 +85,10 @@ final class Cast<T> extends AbstractFunction<T> {
     }
 
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
+
 
 
 
@@ -95,10 +98,12 @@ final class Cast<T> extends AbstractFunction<T> {
 
 
             case DERBY:
-                return new CastDerby();
+                ctx.visit(new CastDerby());
+                break;
 
             default:
-                return new Native();
+                ctx.visit(new Native());
+                break;
         }
     }
 

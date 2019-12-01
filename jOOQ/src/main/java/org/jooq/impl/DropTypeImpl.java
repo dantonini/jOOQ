@@ -54,7 +54,7 @@ import org.jooq.Name;
 /**
  * @author Lukas Eder
  */
-final class DropTypeImpl extends AbstractQuery implements
+final class DropTypeImpl extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for CREATE TYPE behaviour
     DropTypeStep {
@@ -68,7 +68,7 @@ final class DropTypeImpl extends AbstractQuery implements
     DropTypeImpl(Configuration configuration, Collection<?> type, boolean ifExists) {
         super(configuration);
 
-        this.type = new QueryPartList<Name>(Tools.names(type));
+        this.type = new QueryPartList<>(Tools.names(type));
         this.ifExists = ifExists;
     }
 

@@ -38,7 +38,7 @@
 package org.jooq.impl;
 
 import static org.jooq.impl.DSL.function;
-import static org.jooq.impl.DSL.inline;
+import static org.jooq.impl.SQLDataType.NUMERIC;
 
 import java.math.BigDecimal;
 
@@ -56,13 +56,13 @@ final class Ln extends AbstractFunction<BigDecimal> {
     private static final long             serialVersionUID = -7273879239726265322L;
 
     private final Field<? extends Number> argument;
-    private final Integer                 base;
+    private final Field<? extends Number> base;
 
     Ln(Field<? extends Number> argument) {
         this(argument, null);
     }
 
-    Ln(Field<? extends Number> argument, Integer base) {
+    Ln(Field<? extends Number> argument, Field<? extends Number> base) {
         super("ln", SQLDataType.NUMERIC, argument);
 
         this.argument = argument;
@@ -82,8 +82,14 @@ final class Ln extends AbstractFunction<BigDecimal> {
 
 
 
-                case H2:
-                    return function("log", SQLDataType.NUMERIC, argument);
+
+
+
+
+
+
+
+
 
                 default:
                     return function("ln", SQLDataType.NUMERIC, argument);
@@ -102,13 +108,27 @@ final class Ln extends AbstractFunction<BigDecimal> {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 case DERBY:
-                case H2:
                 case HSQLDB:
-                    return DSL.ln(argument).div(DSL.ln(inline(base)));
+                    return DSL.ln(argument).div(DSL.ln(base));
 
                 default:
-                    return function("log", SQLDataType.NUMERIC, inline(base), argument);
+                    return function("log", SQLDataType.NUMERIC, base, argument);
             }
         }
     }

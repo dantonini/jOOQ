@@ -37,16 +37,17 @@
  */
 package org.jooq.impl;
 
-import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.ExpressionOperator.MODULO;
+import static org.jooq.impl.Keywords.K_MOD;
+import static org.jooq.impl.Names.N_MOD;
 
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class Mod<T> extends AbstractFunction<T> {
+final class Mod<T> extends AbstractField<T> {
 
     /**
      * Generated UID
@@ -57,15 +58,16 @@ final class Mod<T> extends AbstractFunction<T> {
     private final Field<? extends Number> arg2;
 
     Mod(Field<T> arg1, Field<? extends Number> arg2) {
-        super("mod", arg1.getDataType(), arg1, arg2);
+        super(N_MOD, arg1.getDataType());
 
         this.arg1 = arg1;
         this.arg2 = arg2;
     }
 
     @Override
-    final Field<T> getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
@@ -77,9 +79,11 @@ final class Mod<T> extends AbstractFunction<T> {
 
 
             case SQLITE:
-                return new Expression<T>(MODULO, arg1, arg2);
+                ctx.visit(new Expression<>(MODULO, arg1, arg2));
+                break;
+            default:
+                ctx.visit(K_MOD).sql('(').visit(arg1).sql(", ").visit(arg2).sql(')');
+                break;
         }
-
-        return function("mod", getDataType(), arg1, arg2);
     }
 }

@@ -59,31 +59,25 @@ public final class ParserCLI {
 
     private static final Pattern FLAG = Pattern.compile("^/([\\w\\-]+)\\s+(\\w+)\\s*$");
 
-    public static final void main(String[] args) {
+    public static final void main(String... args) throws Exception {
         Args a;
         Settings settings = new Settings();
         DSLContext ctx;
 
-        try {
-            a = parse(args);
-            settings(a, settings);
-            ctx = ctx(a, settings);
+        a = parse(args);
+        settings(a, settings);
+        ctx = ctx(a, settings);
 
-            if (a.interactive) {
-                interactiveMode(ctx, a);
-            }
-            else if (a.toDialect == null || a.sql == null) {
-                System.out.println("Mandatory arguments: -t and -s. Use -h for help");
-                throw new RuntimeException();
-            }
-            else {
-                render(ctx, a);
-            }
+        if (a.interactive || args == null || args.length == 0) {
+            interactiveMode(ctx, a);
         }
-        catch (Exception e) {
-            e.printStackTrace(System.err);
-            System.exit(-1);
-            return;
+        else if (a.done) {}
+        else if (a.toDialect == null || a.sql == null) {
+            System.out.println("Mandatory arguments: -T and -s. Use -h for help");
+            throw new RuntimeException();
+        }
+        else {
+            render(ctx, a);
         }
     }
 
@@ -117,8 +111,10 @@ public final class ParserCLI {
 
             if (a.sql == null && line.startsWith("/")) {
                 if ("/q".equals(line) || "/quit".equals(line) ||
-                    "/e".equals(line) || "/exit".equals(line))
+                    "/e".equals(line) || "/exit".equals(line)) {
+                    System.out.println("Bye");
                     break cliLoop;
+                }
                 else if ("/?".equals(line) || "/h".equals(line) || "/help".equals(line))
                     helpInteractive();
                 else if ("/d".equals(line) || "/display".equals(line))
@@ -133,10 +129,12 @@ public final class ParserCLI {
                         if (flag != null && arg != null) {
                             if ("f".equals(flag) || "formatted".equals(flag)) {
                                 a.formatted = Boolean.parseBoolean(arg.toLowerCase());
+                                displayFormatted(a);
                             }
                             else if ("k".equals(flag) || "keyword".equals(flag)) {
                                 try {
                                     a.keywords = RenderKeywordCase.valueOf(arg.toUpperCase());
+                                    displayKeywords(a);
                                 }
                                 catch (IllegalArgumentException e) {
                                     invalid(arg, RenderKeywordCase.class);
@@ -145,22 +143,27 @@ public final class ParserCLI {
                             else if ("i".equals(flag) || "identifier".equals(flag)) {
                                 try {
                                     a.name = RenderNameCase.valueOf(arg.toUpperCase());
+                                    displayIdentifiers(a);
                                 }
                                 catch (IllegalArgumentException e) {
                                     invalid(arg, RenderNameCase.class);
                                 }
                             }
-                            else if ("f".equals(flag) || "from-dialect".equals(flag)) {
+                            else if ("F".equals(flag) || "from-dialect".equals(flag)) {
                                 try {
                                     a.fromDialect = SQLDialect.valueOf(arg.toUpperCase());
+                                    displayFromDialect(a);
                                 }
                                 catch (IllegalArgumentException e) {
                                     invalid(arg, SQLDialect.class);
                                 }
                             }
-                            else if ("t".equals(flag) || "to-dialect".equals(flag)) {
+
+                            // [#9144] /t maintained for backwards compatibility
+                            else if ("t".equals(flag) || "T".equals(flag) || "to-dialect".equals(flag)) {
                                 try {
                                     a.toDialect = SQLDialect.valueOf(arg.toUpperCase());
+                                    displayToDialect(a);
                                 }
                                 catch (IllegalArgumentException e) {
                                     invalid(arg, SQLDialect.class);
@@ -187,6 +190,7 @@ public final class ParserCLI {
                 if (a.sql.trim().endsWith(";")) {
                     render(ctx, a);
                     a.sql = null;
+                    System.out.println();
                 }
             }
 
@@ -196,11 +200,31 @@ public final class ParserCLI {
     }
 
     private static final void displayArguments(Args a) {
-        System.out.println("Formatted    : " + a.formatted);
-        System.out.println("From dialect : " + a.fromDialect);
-        System.out.println("To dialect   : " + a.toDialect);
-        System.out.println("Keywords     : " + a.keywords);
+        displayFormatted(a);
+        displayFromDialect(a);
+        displayToDialect(a);
+        displayKeywords(a);
+        displayIdentifiers(a);
+    }
+
+    private static void displayIdentifiers(Args a) {
         System.out.println("Identifiers  : " + a.name);
+    }
+
+    private static void displayKeywords(Args a) {
+        System.out.println("Keywords     : " + a.keywords);
+    }
+
+    private static void displayToDialect(Args a) {
+        System.out.println("To dialect   : " + a.toDialect);
+    }
+
+    private static void displayFromDialect(Args a) {
+        System.out.println("From dialect : " + a.fromDialect);
+    }
+
+    private static void displayFormatted(Args a) {
+        System.out.println("Formatted    : " + a.formatted);
     }
 
     private static final void render(DSLContext ctx, Args a) {
@@ -268,9 +292,9 @@ public final class ParserCLI {
                     throw e;
                 }
             }
-            else if ("-f".equals(args[i]) || "--from-dialect".equals(args[i].toUpperCase())) {
+            else if ("-F".equals(args[i]) || "--from-dialect".equals(args[i])) {
                 try {
-                    result.fromDialect = SQLDialect.valueOf(args[++i]);
+                    result.fromDialect = SQLDialect.valueOf(args[++i].toUpperCase());
                     continue argsLoop;
                 }
                 catch (IllegalArgumentException e) {
@@ -278,11 +302,13 @@ public final class ParserCLI {
                     throw e;
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
-                    System.out.println("Flag -f / --from-dialect requires <SQLDialect> argument");
+                    System.out.println("Flag -F / --from-dialect requires <SQLDialect> argument");
                     throw e;
                 }
             }
-            else if ("-t".equals(args[i]) || "--to-dialect".equals(args[i])) {
+
+            // [#9144] -t maintained for backwards compatibility
+            else if ("-t".equals(args[i]) || "-T".equals(args[i]) || "--to-dialect".equals(args[i])) {
                 try {
                     result.toDialect = SQLDialect.valueOf(args[++i].toUpperCase());
                     continue argsLoop;
@@ -292,7 +318,7 @@ public final class ParserCLI {
                     throw e;
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
-                    System.out.println("Flag -t / --to-dialect requires <SQLDialect> argument");
+                    System.out.println("Flag -T / --to-dialect requires <SQLDialect> argument");
                     throw e;
                 }
             }
@@ -311,7 +337,7 @@ public final class ParserCLI {
             }
             else if ("-h".equals(args[i]) || "--help".equals(args[i])) {
                 help();
-                throw new RuntimeException();
+                result.done = true;
             }
             else {
                 System.out.println("Unknown flag: " + args[i] + ". Use -h or --help");
@@ -336,8 +362,8 @@ public final class ParserCLI {
         System.out.println("  -h / --help                             Display this help");
         System.out.println("  -k / --keyword      <RenderKeywordCase> Specify the output keyword case (org.jooq.conf.RenderKeywordCase)");
         System.out.println("  -i / --identifier   <RenderNameCase>    Specify the output identifier case (org.jooq.conf.RenderNameCase)");
-        System.out.println("  -f / --from-dialect <SQLDialect>        Specify the input dialect (org.jooq.SQLDialect)");
-        System.out.println("  -t / --to-dialect   <SQLDialect>        Specify the output dialect (org.jooq.SQLDialect)");
+        System.out.println("  -F / --from-dialect <SQLDialect>        Specify the input dialect (org.jooq.SQLDialect)");
+        System.out.println("  -T / --to-dialect   <SQLDialect>        Specify the output dialect (org.jooq.SQLDialect)");
         System.out.println("  -s / --sql          <String>            Specify the input SQL string");
         System.out.println("");
         System.out.println("  -I / --interactive                      Start interactive mode");
@@ -350,8 +376,8 @@ public final class ParserCLI {
         System.out.println("  /h  or  /help                             Display this help");
         System.out.println("  /k  or  /keyword      <RenderKeywordCase> Specify the output keyword case (org.jooq.conf.RenderKeywordCase)");
         System.out.println("  /i  or  /identifier   <RenderNameCase>    Specify the output identifier case (org.jooq.conf.RenderNameCase)");
-        System.out.println("  /f  or  /from-dialect <SQLDialect>        Specify the input dialect (org.jooq.SQLDialect)");
-        System.out.println("  /t  or  /to-dialect   <SQLDialect>        Specify the output dialect (org.jooq.SQLDialect)");
+        System.out.println("  /F  or  /from-dialect <SQLDialect>        Specify the input dialect (org.jooq.SQLDialect)");
+        System.out.println("  /T  or  /to-dialect   <SQLDialect>        Specify the output dialect (org.jooq.SQLDialect)");
         System.out.println("                        <String>            Specify the input SQL string");
         System.out.println("");
         System.out.println("  /q  or  /quit                             Quit");
@@ -359,7 +385,7 @@ public final class ParserCLI {
     }
 
     public static final class Args {
-        List<String>      history     = new ArrayList<String>();
+        List<String>      history     = new ArrayList<>();
         String            sql;
         RenderKeywordCase keywords    = RenderKeywordCase.LOWER;
         RenderNameCase    name        = RenderNameCase.LOWER;
@@ -367,5 +393,6 @@ public final class ParserCLI {
         SQLDialect        fromDialect = SQLDialect.DEFAULT;
         boolean           formatted;
         boolean           interactive;
+        boolean           done;
     }
 }

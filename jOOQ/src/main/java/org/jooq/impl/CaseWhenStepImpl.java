@@ -44,6 +44,7 @@ import static org.jooq.impl.Keywords.K_SWITCH;
 import static org.jooq.impl.Keywords.K_THEN;
 import static org.jooq.impl.Keywords.K_TRUE;
 import static org.jooq.impl.Keywords.K_WHEN;
+import static org.jooq.impl.Names.N_CASE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,14 +52,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.jooq.CaseWhenStep;
-import org.jooq.Configuration;
 import org.jooq.Context;
 import org.jooq.DataType;
 import org.jooq.Field;
 // ...
-import org.jooq.QueryPart;
 
-final class CaseWhenStepImpl<V, T> extends AbstractFunction<T> implements CaseWhenStep<V, T> {
+final class CaseWhenStepImpl<V, T> extends AbstractField<T> implements CaseWhenStep<V, T> {
 
     /**
      * Generated UID
@@ -84,11 +83,11 @@ final class CaseWhenStepImpl<V, T> extends AbstractFunction<T> implements CaseWh
     }
 
     private CaseWhenStepImpl(Field<V> value, DataType<T> type) {
-        super("case", type);
+        super(N_CASE, type);
 
         this.value = value;
-        this.compareValues = new ArrayList<Field<V>>();
-        this.results = new ArrayList<Field<T>>();
+        this.compareValues = new ArrayList<>();
+        this.results = new ArrayList<>();
     }
 
 
@@ -162,15 +161,17 @@ final class CaseWhenStepImpl<V, T> extends AbstractFunction<T> implements CaseWh
     }
 
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.dialect().family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
 
 
             default:
-                return new Native();
+                ctx.visit(new Native());
+                break;
         }
     }
 
@@ -226,7 +227,7 @@ final class CaseWhenStepImpl<V, T> extends AbstractFunction<T> implements CaseWh
                .visit(K_CASE);
 
             int size = compareValues.size();
-            switch (ctx.configuration().dialect()) {
+            switch (ctx.family()) {
 
                 // The DERBY dialect doesn't support the simple CASE clause
                 case DERBY: {

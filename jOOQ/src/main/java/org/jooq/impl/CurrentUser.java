@@ -37,15 +37,18 @@
  */
 package org.jooq.impl;
 
+import static org.jooq.impl.Keywords.F_CURRENTUSER;
+import static org.jooq.impl.Keywords.F_CURRENT_USER;
+import static org.jooq.impl.Keywords.F_USER;
+import static org.jooq.impl.Names.N_CURRENT_USER;
 import static org.jooq.impl.SQLDataType.VARCHAR;
 
-import org.jooq.Configuration;
-import org.jooq.Field;
+import org.jooq.Context;
 
 /**
  * @author Lukas Eder
  */
-final class CurrentUser extends AbstractFunction<String> {
+final class CurrentUser extends AbstractField<String> {
 
     /**
      * Generated UID
@@ -53,12 +56,15 @@ final class CurrentUser extends AbstractFunction<String> {
     private static final long serialVersionUID = -7273879239726265322L;
 
     CurrentUser() {
-        super("current_user", VARCHAR);
+        super(N_CURRENT_USER, VARCHAR);
     }
 
     @Override
-    final Field<String> getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
+
+
 
 
 
@@ -82,12 +88,15 @@ final class CurrentUser extends AbstractFunction<String> {
             case FIREBIRD:
             case HSQLDB:
             case POSTGRES:
-                return DSL.field("{current_user}", VARCHAR);
+                ctx.visit(F_CURRENT_USER);
+                break;
 
             case SQLITE:
-                return DSL.inline("");
+                ctx.visit(DSL.inline(""));
+                break;
+            default:
+                ctx.visit(F_CURRENT_USER).sql("()");
+                break;
         }
-
-        return DSL.function("current_user", VARCHAR);
     }
 }

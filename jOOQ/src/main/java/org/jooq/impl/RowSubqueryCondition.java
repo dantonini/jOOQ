@@ -45,6 +45,7 @@ import static org.jooq.Comparator.NOT_EQUALS;
 import static org.jooq.Comparator.NOT_IN;
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 import static org.jooq.SQLDialect.MARIADB;
@@ -59,9 +60,8 @@ import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.row;
 import static org.jooq.impl.DSL.select;
-import static org.jooq.impl.Tools.BooleanDataKey.DATA_ROW_VALUE_EXPRESSION_PREDICATE_SUBQUERY;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 import org.jooq.Clause;
 import org.jooq.Comparator;
@@ -78,6 +78,7 @@ import org.jooq.Row;
 import org.jooq.RowN;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
+import org.jooq.impl.Tools.BooleanDataKey;
 
 /**
  * @author Lukas Eder
@@ -87,18 +88,18 @@ final class RowSubqueryCondition extends AbstractCondition {
     /**
      * Generated UID
      */
-    private static final long                serialVersionUID         = -1806139685201770706L;
-    private static final Clause[]            CLAUSES                  = { CONDITION, CONDITION_COMPARISON };
-    private static final EnumSet<SQLDialect> SUPPORT_NATIVE           = EnumSet.of(H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE);
+    private static final long            serialVersionUID         = -1806139685201770706L;
+    private static final Clause[]        CLAUSES                  = { CONDITION, CONDITION_COMPARISON };
+    private static final Set<SQLDialect> SUPPORT_NATIVE           = SQLDialect.supportedBy(H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE);
 
 
 
 
 
-    private final Row                        left;
-    private final Select<?>                  right;
-    private final QuantifiedSelect<?>        rightQuantified;
-    private final Comparator                 comparator;
+    private final Row                    left;
+    private final Select<?>              right;
+    private final QuantifiedSelect<?>    rightQuantified;
+    private final Comparator             comparator;
 
     RowSubqueryCondition(Row left, Select<?> right, Comparator comparator) {
         this.left = left;
@@ -128,7 +129,7 @@ final class RowSubqueryCondition extends AbstractCondition {
         final Configuration configuration = ctx.configuration();
         final RenderContext render = ctx instanceof RenderContext ? (RenderContext) ctx : null;
 
-        SQLDialect family = configuration.dialect().family();
+        SQLDialect family = configuration.family();
 
         // [#3505] TODO: Emulate this where it is not supported
         if (rightQuantified != null) {
@@ -221,14 +222,13 @@ final class RowSubqueryCondition extends AbstractCondition {
             if (rightQuantified == null) {
 
                 // Some databases need extra parentheses around the RHS
-                boolean extraParentheses = false
-
-
-
-                    ;
+                boolean extraParentheses = false;
 
                 ctx.sql(extraParentheses ? "((" : "(");
-                ctx.data(DATA_ROW_VALUE_EXPRESSION_PREDICATE_SUBQUERY, true);
+
+
+
+
                 ctx.subquery(true)
                    .formatIndentStart()
                    .formatNewLine()
@@ -236,17 +236,26 @@ final class RowSubqueryCondition extends AbstractCondition {
                    .formatIndentEnd()
                    .formatNewLine()
                    .subquery(false);
-                ctx.data().remove(DATA_ROW_VALUE_EXPRESSION_PREDICATE_SUBQUERY);
+
+
+
+
                 ctx.sql(extraParentheses ? "))" : ")");
             }
 
             // [#2054] Quantified row value expression comparison predicates shouldn't have parentheses before ANY or ALL
             else {
-                ctx.data(DATA_ROW_VALUE_EXPRESSION_PREDICATE_SUBQUERY, true);
+
+
+
+
                 ctx.subquery(true)
                    .visit(rightQuantified)
                    .subquery(false);
-                ctx.data().remove(DATA_ROW_VALUE_EXPRESSION_PREDICATE_SUBQUERY);
+
+
+
+
             }
         }
 

@@ -46,68 +46,80 @@ import java.util.Set;
 
 import org.jooq.Catalog;
 import org.jooq.Configuration;
+import org.jooq.DDLExportConfiguration;
+import org.jooq.Queries;
 import org.jooq.Schema;
 import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.UniqueKey;
+import org.jooq.exception.DataAccessException;
+import org.jooq.util.xml.jaxb.InformationSchema;
 
 /**
  * @author Lukas Eder
  */
 final class TableMetaImpl extends AbstractMeta {
 
-    private static final long   serialVersionUID = 2910000827304539796L;
-
-    @SuppressWarnings("unused")
-    private final Configuration configuration;
-    private final Table<?>[]    tables;
+    private static final long serialVersionUID = 2910000827304539796L;
+    private final Table<?>[]  tables;
 
     TableMetaImpl(Configuration configuration, Table<?>[] tables) {
-        this.configuration = configuration;
+        super(configuration);
+
         this.tables = tables;
     }
 
     @Override
-    public final List<Catalog> getCatalogs() {
-        Set<Catalog> result = new LinkedHashSet<Catalog>();
+    protected final List<Catalog> getCatalogs0() {
+        Set<Catalog> result = new LinkedHashSet<>();
 
         for (Table<?> table : tables)
             if (table.getSchema() != null)
                 if (table.getSchema().getCatalog() != null)
                     result.add(table.getSchema().getCatalog());
 
-        return new ArrayList<Catalog>(result);
+        return new ArrayList<>(result);
     }
 
     @Override
-    public final List<Schema> getSchemas() {
-        Set<Schema> result = new LinkedHashSet<Schema>();
+    protected final List<Schema> getSchemas0() {
+        Set<Schema> result = new LinkedHashSet<>();
 
         for (Table<?> table : tables)
             if (table.getSchema() != null)
                 result.add(table.getSchema());
 
-        return new ArrayList<Schema>(result);
+        return new ArrayList<>(result);
     }
 
     @Override
-    public final List<Table<?>> getTables() {
+    protected final List<Table<?>> getTables0() {
         return Collections.unmodifiableList(Arrays.asList(tables));
     }
 
     @Override
-    public final List<Sequence<?>> getSequences() {
+    protected final List<Sequence<?>> getSequences0() {
         return Collections.emptyList();
     }
 
     @Override
-    public final List<UniqueKey<?>> getPrimaryKeys() {
-        List<UniqueKey<?>> result = new ArrayList<UniqueKey<?>>();
+    protected final List<UniqueKey<?>> getPrimaryKeys0() {
+        List<UniqueKey<?>> result = new ArrayList<>();
 
         for (Table<?> table : tables)
             if (table.getPrimaryKey() != null)
                 result.add(table.getPrimaryKey());
 
         return result;
+    }
+
+    @Override
+    public Queries ddl(DDLExportConfiguration exportConfiguration) throws DataAccessException {
+        return new DDL(dsl(), exportConfiguration).queries(tables);
+    }
+
+    @Override
+    public InformationSchema informationSchema() throws DataAccessException {
+        return InformationSchemaExport.exportTables(configuration(), getTables());
     }
 }

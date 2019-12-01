@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.meta.jaxb;
 
 import java.io.Serializable;
@@ -20,6 +13,8 @@ import javax.xml.bind.annotation.XmlList;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -35,7 +30,7 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class Database implements Serializable
+public class Database implements Serializable, XMLAppendable
 {
 
     private final static long serialVersionUID = 31200L;
@@ -46,6 +41,8 @@ public class Database implements Serializable
     protected List<RegexFlag> regexFlags;
     @XmlElement(defaultValue = "true")
     protected Boolean regexMatchesPartialQualification = true;
+    @XmlElement(defaultValue = "true")
+    protected Boolean sqlMatchesPartialQualification = true;
     @XmlElement(defaultValue = ".*")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String includes = ".*";
@@ -56,6 +53,8 @@ public class Database implements Serializable
     protected Boolean includeExcludeColumns = false;
     @XmlElement(defaultValue = "true")
     protected Boolean includeTables = true;
+    @XmlElement(defaultValue = "true")
+    protected Boolean includeEmbeddables = true;
     @XmlElement(defaultValue = "true")
     protected Boolean includeRoutines = true;
     @XmlElement(defaultValue = "false")
@@ -81,6 +80,10 @@ public class Database implements Serializable
     @XmlElement(defaultValue = "true")
     protected Boolean includeForeignKeys = true;
     @XmlElement(defaultValue = "true")
+    protected Boolean includeCheckConstraints = true;
+    @XmlElement(defaultValue = "false")
+    protected Boolean includeSystemCheckConstraints = false;
+    @XmlElement(defaultValue = "true")
     protected Boolean includeInvisibleColumns = true;
     @XmlElement(defaultValue = "")
     @XmlJavaTypeAdapter(StringAdapter.class)
@@ -103,6 +106,8 @@ public class Database implements Serializable
     protected Boolean ignoreProcedureReturnValues = false;
     @XmlElement(defaultValue = "true")
     protected Boolean unsignedTypes = true;
+    @XmlElement(defaultValue = "true")
+    protected Boolean integerDisplayWidths = true;
     @XmlElement(defaultValue = "")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String inputCatalog = "";
@@ -131,6 +136,8 @@ public class Database implements Serializable
     protected Boolean tableValuedFunctions;
     @XmlElement(defaultValue = "5")
     protected Integer logSlowQueriesAfterSeconds = 5;
+    @XmlElement(defaultValue = "5")
+    protected Integer logSlowResultsAfterSeconds = 5;
     @XmlElementWrapper(name = "properties")
     @XmlElement(name = "property")
     protected List<Property> properties;
@@ -140,6 +147,9 @@ public class Database implements Serializable
     @XmlElementWrapper(name = "schemata")
     @XmlElement(name = "schema")
     protected List<SchemaMappingType> schemata;
+    @XmlElementWrapper(name = "embeddables")
+    @XmlElement(name = "embeddable")
+    protected List<Embeddable> embeddables;
     @XmlElementWrapper(name = "customTypes")
     @XmlElement(name = "customType")
     protected List<CustomType> customTypes;
@@ -157,7 +167,7 @@ public class Database implements Serializable
      * Natively supported values are:
      * <ul>
      * <li>{@link org.jooq.meta.ase.ASEDatabase}</li>
-     * <li>{@link org.jooq.meta.cubrid.CUBRIDDatabase}</li>
+     * <li>{@link org.jooq.meta.cockroachdb.CockroachDBDatabase}</li>
      * <li>{@link org.jooq.meta.db2.DB2Database}</li>
      * <li>{@link org.jooq.meta.derby.DerbyDatabase}</li>
      * <li>{@link org.jooq.meta.firebird.FirebirdDatabase}</li>
@@ -195,21 +205,55 @@ public class Database implements Serializable
      * You can also provide your own org.jooq.meta.Database implementation
      * here, if your database is currently not supported
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Sets the value of the name property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The database dialect from jooq-meta.
+     * Available dialects are named <code>org.util.[database].[database]Database</code>.
+     * <p>
+     * Natively supported values are:
+     * <ul>
+     * <li>{@link org.jooq.meta.ase.ASEDatabase}</li>
+     * <li>{@link org.jooq.meta.cockroachdb.CockroachDBDatabase}</li>
+     * <li>{@link org.jooq.meta.db2.DB2Database}</li>
+     * <li>{@link org.jooq.meta.derby.DerbyDatabase}</li>
+     * <li>{@link org.jooq.meta.firebird.FirebirdDatabase}</li>
+     * <li>{@link org.jooq.meta.h2.H2Database}</li>
+     * <li>{@link org.jooq.meta.hana.HanaDatabase}</li>
+     * <li>{@link org.jooq.meta.hsqldb.HSQLDBDatabase}</li>
+     * <li>{@link org.jooq.meta.informix.InformixDatabase}</li>
+     * <li>{@link org.jooq.meta.ingres.IngresDatabase}</li>
+     * <li>{@link org.jooq.meta.mariadb.MariaDBDatabase}</li>
+     * <li>{@link org.jooq.meta.mysql.MySQLDatabase}</li>
+     * <li>{@link org.jooq.meta.oracle.OracleDatabase}</li>
+     * <li>{@link org.jooq.meta.postgres.PostgresDatabase}</li>
+     * <li>{@link org.jooq.meta.redshift.RedshiftDatabase}</li>
+     * <li>{@link org.jooq.meta.sqlite.SQLiteDatabase}</li>
+     * <li>{@link org.jooq.meta.sqlserver.SQLServerDatabase}</li>
+     * <li>{@link org.jooq.meta.sybase.SybaseDatabase}</li>
+     * <li>{@link org.jooq.meta.vertica.VerticaDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer generic JDBC DatabaseMetaData (e.g. for MS Access).
+     * <ul>
+     * <li>{@link org.jooq.meta.jdbc.JDBCDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer standard jOOQ-meta XML formats.
+     * <ul>
+     * <li>{@link org.jooq.meta.xml.XMLDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer JPA annotated entities
+     * <ul>
+     * <li>{@link org.jooq.meta.extensions.jpa.JPADatabase}</li>
+     * </ul>
+     * <p>
+     * You can also provide your own org.jooq.meta.Database implementation
+     * here, if your database is currently not supported
      *
      */
     public void setName(String value) {
@@ -272,6 +316,30 @@ public class Database implements Serializable
     }
 
     /**
+     * Whether SQL queries that match qualified object names also match partial qualifications (e.g. `table\.column` matches `schema.table.column`) or only full and/or no qualifications (e.g. `schema\.table\.column` and `column` match `schema.table.column`)
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isSqlMatchesPartialQualification() {
+        return sqlMatchesPartialQualification;
+    }
+
+    /**
+     * Sets the value of the sqlMatchesPartialQualification property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setSqlMatchesPartialQualification(Boolean value) {
+        this.sqlMatchesPartialQualification = value;
+    }
+
+    /**
      * All elements that are generated from your schema.
      * <p>
      * This is a Java regular expression. Use the pipe to separate several expressions.
@@ -283,21 +351,22 @@ public class Database implements Serializable
      * <p>
      * Whitespace is ignored and comments are possible unless overridden in {@link #getRegexFlags()}.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getIncludes() {
         return includes;
     }
 
     /**
-     * Sets the value of the includes property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * All elements that are generated from your schema.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * Watch out for case-sensitivity. Depending on your database, this might be
+     * important!
+     * <p>
+     * You can create case-insensitive regular expressions
+     * using this syntax: <code>(?i:expr)</code>
+     * <p>
+     * Whitespace is ignored and comments are possible unless overridden in {@link #getRegexFlags()}.
      *
      */
     public void setIncludes(String value) {
@@ -310,21 +379,16 @@ public class Database implements Serializable
      * This is a Java regular expression. Use the pipe to separate several expressions.
      * Excludes match before includes, i.e. excludes have a higher priority.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getExcludes() {
         return excludes;
     }
 
     /**
-     * Sets the value of the excludes property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * All elements that are excluded from your schema.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * Excludes match before includes, i.e. excludes have a higher priority.
      *
      */
     public void setExcludes(String value) {
@@ -377,6 +441,30 @@ public class Database implements Serializable
      */
     public void setIncludeTables(Boolean value) {
         this.includeTables = value;
+    }
+
+    /**
+     * This flag indicates whether embeddable types should be included in output produced by this database
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isIncludeEmbeddables() {
+        return includeEmbeddables;
+    }
+
+    /**
+     * Sets the value of the includeEmbeddables property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setIncludeEmbeddables(Boolean value) {
+        this.includeEmbeddables = value;
     }
 
     /**
@@ -668,6 +756,54 @@ public class Database implements Serializable
     }
 
     /**
+     * This flag indicates whether check constraints should be included in output produced by this database
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isIncludeCheckConstraints() {
+        return includeCheckConstraints;
+    }
+
+    /**
+     * Sets the value of the includeCheckConstraints property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setIncludeCheckConstraints(Boolean value) {
+        this.includeCheckConstraints = value;
+    }
+
+    /**
+     * This flag indicates whether system generated check constraints should be included in output produced by this database
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isIncludeSystemCheckConstraints() {
+        return includeSystemCheckConstraints;
+    }
+
+    /**
+     * Sets the value of the includeSystemCheckConstraints property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setIncludeSystemCheckConstraints(Boolean value) {
+        this.includeSystemCheckConstraints = value;
+    }
+
+    /**
      * This flag indicates whether invisible columns should be included in output produced by this database
      *
      * @return
@@ -695,11 +831,7 @@ public class Database implements Serializable
      * All table and view columns that are used as "version" fields for optimistic locking.
      * <p>
      * This is a Java regular expression. Use the pipe to separate several expressions.
-     * See {@link org.jooq.UpdatableRecord.store()} and {@link org.jooq.UpdatableRecord.delete()} for details about optimistic locking.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
      *
      */
     public String getRecordVersionFields() {
@@ -707,11 +839,10 @@ public class Database implements Serializable
     }
 
     /**
-     * Sets the value of the recordVersionFields property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * All table and view columns that are used as "version" fields for optimistic locking.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
      *
      */
     public void setRecordVersionFields(String value) {
@@ -722,11 +853,7 @@ public class Database implements Serializable
      * All table and view columns that are used as "timestamp" fields for optimistic locking.
      * <p>
      * This is a Java regular expression. Use the pipe to separate several expressions.
-     * See {@link org.jooq.UpdatableRecord.store()} and {@link org.jooq.UpdatableRecord.delete()} for details about optimistic locking.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
      *
      */
     public String getRecordTimestampFields() {
@@ -734,11 +861,10 @@ public class Database implements Serializable
     }
 
     /**
-     * Sets the value of the recordTimestampFields property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * All table and view columns that are used as "timestamp" fields for optimistic locking.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
      *
      */
     public void setRecordTimestampFields(String value) {
@@ -750,21 +876,15 @@ public class Database implements Serializable
      * <p>
      * To be used if columns are not detected as automatically as identities.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getSyntheticIdentities() {
         return syntheticIdentities;
     }
 
     /**
-     * Sets the value of the syntheticIdentities property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A regular expression matching all columns that represent identities.
+     * <p>
+     * To be used if columns are not detected as automatically as identities.
      *
      */
     public void setSyntheticIdentities(String value) {
@@ -777,17 +897,13 @@ public class Database implements Serializable
      * <p>
      * To be used with:
      * <ul>
-     * <li>{@link org.jooq.UpdatableRecord.store()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.update()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.delete()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.refresh()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
      * </ul>
      * <p>
      * Synthetic primary keys will override existing primary keys.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
      *
      */
     public String getSyntheticPrimaryKeys() {
@@ -795,11 +911,18 @@ public class Database implements Serializable
     }
 
     /**
-     * Sets the value of the syntheticPrimaryKeys property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A regular expression matching all columns that participate in "synthetic" primary keys,
+     * which should be placed on generated {@link org.jooq.UpdatableRecord}
+     * <p>
+     * To be used with:
+     * <ul>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
+     * </ul>
+     * <p>
+     * Synthetic primary keys will override existing primary keys.
      *
      */
     public void setSyntheticPrimaryKeys(String value) {
@@ -812,19 +935,15 @@ public class Database implements Serializable
      * <p>
      * To be used with:
      * <ul>
-     * <li>{@link org.jooq.UpdatableRecord.store()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.update()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.delete()}</li>
-     * <li>{@link org.jooq.UpdatableRecord.refresh()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
      * </ul>
      * <p>
      * If several keys match, a warning is emitted and the first one encountered will be used.
      * <p>
      * This flag will also replace synthetic primary keys, if it matches.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
      *
      */
     public String getOverridePrimaryKeys() {
@@ -832,11 +951,20 @@ public class Database implements Serializable
     }
 
     /**
-     * Sets the value of the overridePrimaryKeys property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * All (UNIQUE) key names that should be used instead of primary keys on
+     * generated {@link org.jooq.UpdatableRecord}.
+     * <p>
+     * To be used with:
+     * <ul>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
+     * </ul>
+     * <p>
+     * If several keys match, a warning is emitted and the first one encountered will be used.
+     * <p>
+     * This flag will also replace synthetic primary keys, if it matches.
      *
      */
     public void setOverridePrimaryKeys(String value) {
@@ -883,6 +1011,7 @@ public class Database implements Serializable
      *     {@link Boolean }
      *
      */
+    @Deprecated
     public Boolean isIgnoreProcedureReturnValues() {
         return ignoreProcedureReturnValues;
     }
@@ -895,6 +1024,7 @@ public class Database implements Serializable
      *     {@link Boolean }
      *
      */
+    @Deprecated
     public void setIgnoreProcedureReturnValues(Boolean value) {
         this.ignoreProcedureReturnValues = value;
     }
@@ -924,14 +1054,34 @@ public class Database implements Serializable
     }
 
     /**
+     * Include display width in type declaration. In some RDBMS (e.g. MariaDB, MySQL), fixed width integer types are optionally accompanied by a display width. This is sometimes abused to model BOOLEAN types via TINYINT(1). This flag allows for including that display width in the type declaration exposed by jOOQ-meta code, as if it were a numeric precision.
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isIntegerDisplayWidths() {
+        return integerDisplayWidths;
+    }
+
+    /**
+     * Sets the value of the integerDisplayWidths property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setIntegerDisplayWidths(Boolean value) {
+        this.integerDisplayWidths = value;
+    }
+
+    /**
      * The catalog that is used locally as a source for meta information.
      * <p>
      * This cannot be combined with the {@link #getCatalogs()} configuration element.
      * If left empty (and without any {@link #getCatalogs()} configuration  element), jOOQ will generate all available catalogs.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
      *
      */
     public String getInputCatalog() {
@@ -939,11 +1089,10 @@ public class Database implements Serializable
     }
 
     /**
-     * Sets the value of the inputCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The catalog that is used locally as a source for meta information.
+     * <p>
+     * This cannot be combined with the {@link #getCatalogs()} configuration element.
+     * If left empty (and without any {@link #getCatalogs()} configuration  element), jOOQ will generate all available catalogs.
      *
      */
     public void setInputCatalog(String value) {
@@ -959,21 +1108,19 @@ public class Database implements Serializable
      * <p>
      * This will be ignored if {@link #isOutputCatalogToDefault()} is set to true
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getOutputCatalog() {
         return outputCatalog;
     }
 
     /**
-     * Sets the value of the outputCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The catalog that is used in generated source code.
+     * <p>
+     * Use this to override your local development
+     * catalog name for source code generation. If not specified, this
+     * will be the same as {@link #getInputCatalog()}
+     * <p>
+     * This will be ignored if {@link #isOutputCatalogToDefault()} is set to true
      *
      */
     public void setOutputCatalog(String value) {
@@ -1011,21 +1158,16 @@ public class Database implements Serializable
      * This cannot be combined with the {@link #getSchemata()} configuration element.
      * If left empty (and without any {@link #getSchemata()} configuration element), jOOQ will generate all available schemata.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getInputSchema() {
         return inputSchema;
     }
 
     /**
-     * Sets the value of the inputSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The schema that is used locally as a source for meta information.
+     * <p>
+     * This cannot be combined with the {@link #getSchemata()} configuration element.
+     * If left empty (and without any {@link #getSchemata()} configuration element), jOOQ will generate all available schemata.
      *
      */
     public void setInputSchema(String value) {
@@ -1041,21 +1183,19 @@ public class Database implements Serializable
      *
      * This will be ignored if {@link #isOutputSchemaToDefault()} is set to true
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getOutputSchema() {
         return outputSchema;
     }
 
     /**
-     * Sets the value of the outputSchema property.
+     * The schema that is used in generated source code.
+     * <p>
+     * Use this to override your local development
+     * schema name for source code generation. If not specified, this
+     * will be the same as {@link #getInputSchema()}.
      *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * This will be ignored if {@link #isOutputSchemaToDefault()} is set to true
      *
      */
     public void setOutputSchema(String value) {
@@ -1103,21 +1243,26 @@ public class Database implements Serializable
      * Schema versions will be generated into the {@link javax.annotation.Generated} annotation on
      * generated artefacts.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getSchemaVersionProvider() {
         return schemaVersionProvider;
     }
 
     /**
-     * Sets the value of the schemaVersionProvider property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A custom version number that, if available, will be used to assess whether the
+     * {@link #getInputSchema()} will need to be regenerated.
+     * <p>
+     * There are three operation modes for this element:
+     * <ul>
+     * <li>The value is a class that can be found on the classpath and that implements
+     *   {@link org.jooq.meta.SchemaVersionProvider}. Such classes must provide a default constructor</li>
+     * <li>The value is a SELECT statement that returns one record with one column. The
+     *   SELECT statement may contain a named variable called :schema_name</li>
+     * <li>The value is a constant, such as a Maven property</li>
+     * </ul>
+     * <p>
+     * Schema versions will be generated into the {@link javax.annotation.Generated} annotation on
+     * generated artefacts.
      *
      */
     public void setSchemaVersionProvider(String value) {
@@ -1139,21 +1284,25 @@ public class Database implements Serializable
      * Catalog versions will be generated into the {@link javax.annotation.Generated} annotation on
      * generated artefacts.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getCatalogVersionProvider() {
         return catalogVersionProvider;
     }
 
     /**
-     * Sets the value of the catalogVersionProvider property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A custom version number that, if available, will be used to assess whether the
+     * {@link #getInputCatalog()} from a given catalog will need to be regenerated.
+     * <p>
+     * There are three operation modes for this element:
+     * <ul>
+     * <li>The value is a class that can be found on the classpath and that implements
+     *   {@link org.jooq.meta.CatalogVersionProvider}. Such classes must provide a default constructor</li>
+     * <li>The value is a SELECT statement that returns one record with one column. The
+     *   SELECT statement may contain a named variable called :catalog_name</li>
+     * <li>The value is a constant, such as a Maven property</li>
+     * <p>
+     * Catalog versions will be generated into the {@link javax.annotation.Generated} annotation on
+     * generated artefacts.
      *
      */
     public void setCatalogVersionProvider(String value) {
@@ -1165,21 +1314,15 @@ public class Database implements Serializable
      * <p>
      * This comparator can be used to influence the order of any object that is produced by jOOQ meta, and thus, indirectly, the order of declared objects in generated code.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getOrderProvider() {
         return orderProvider;
     }
 
     /**
-     * Sets the value of the orderProvider property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A custom {@link java.util.Comparator} that can compare two {@link org.jooq.meta.Definition} objects to determine their order.
+     * <p>
+     * This comparator can be used to influence the order of any object that is produced by jOOQ meta, and thus, indirectly, the order of declared objects in generated code.
      *
      */
     public void setOrderProvider(String value) {
@@ -1245,25 +1388,33 @@ public class Database implements Serializable
     /**
      * The number of seconds that are considered "slow" before a query is logged to indicate a bug, 0 for not logging.
      *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
      */
     public Integer getLogSlowQueriesAfterSeconds() {
         return logSlowQueriesAfterSeconds;
     }
 
     /**
-     * Sets the value of the logSlowQueriesAfterSeconds property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
+     * The number of seconds that are considered "slow" before a query is logged to indicate a bug, 0 for not logging.
      *
      */
     public void setLogSlowQueriesAfterSeconds(Integer value) {
         this.logSlowQueriesAfterSeconds = value;
+    }
+
+    /**
+     * The number of seconds that are considered "slow" before a result set is logged to indicate a bug, 0 for not logging.
+     *
+     */
+    public Integer getLogSlowResultsAfterSeconds() {
+        return logSlowResultsAfterSeconds;
+    }
+
+    /**
+     * The number of seconds that are considered "slow" before a result set is logged to indicate a bug, 0 for not logging.
+     *
+     */
+    public void setLogSlowResultsAfterSeconds(Integer value) {
+        this.logSlowResultsAfterSeconds = value;
     }
 
     public List<Property> getProperties() {
@@ -1299,6 +1450,18 @@ public class Database implements Serializable
         this.schemata = schemata;
     }
 
+    public List<Embeddable> getEmbeddables() {
+        if (embeddables == null) {
+            embeddables = new ArrayList<Embeddable>();
+        }
+        return embeddables;
+    }
+
+    public void setEmbeddables(List<Embeddable> embeddables) {
+        this.embeddables = embeddables;
+    }
+
+    @Deprecated
     public List<CustomType> getCustomTypes() {
         if (customTypes == null) {
             customTypes = new ArrayList<CustomType>();
@@ -1306,10 +1469,12 @@ public class Database implements Serializable
         return customTypes;
     }
 
+    @Deprecated
     public void setCustomTypes(List<CustomType> customTypes) {
         this.customTypes = customTypes;
     }
 
+    @Deprecated
     public List<EnumType> getEnumTypes() {
         if (enumTypes == null) {
             enumTypes = new ArrayList<EnumType>();
@@ -1317,6 +1482,7 @@ public class Database implements Serializable
         return enumTypes;
     }
 
+    @Deprecated
     public void setEnumTypes(List<EnumType> enumTypes) {
         this.enumTypes = enumTypes;
     }
@@ -1332,11 +1498,81 @@ public class Database implements Serializable
         this.forcedTypes = forcedTypes;
     }
 
+    /**
+     * The database dialect from jooq-meta.
+     * Available dialects are named <code>org.util.[database].[database]Database</code>.
+     * <p>
+     * Natively supported values are:
+     * <ul>
+     * <li>{@link org.jooq.meta.ase.ASEDatabase}</li>
+     * <li>{@link org.jooq.meta.cockroachdb.CockroachDBDatabase}</li>
+     * <li>{@link org.jooq.meta.db2.DB2Database}</li>
+     * <li>{@link org.jooq.meta.derby.DerbyDatabase}</li>
+     * <li>{@link org.jooq.meta.firebird.FirebirdDatabase}</li>
+     * <li>{@link org.jooq.meta.h2.H2Database}</li>
+     * <li>{@link org.jooq.meta.hana.HanaDatabase}</li>
+     * <li>{@link org.jooq.meta.hsqldb.HSQLDBDatabase}</li>
+     * <li>{@link org.jooq.meta.informix.InformixDatabase}</li>
+     * <li>{@link org.jooq.meta.ingres.IngresDatabase}</li>
+     * <li>{@link org.jooq.meta.mariadb.MariaDBDatabase}</li>
+     * <li>{@link org.jooq.meta.mysql.MySQLDatabase}</li>
+     * <li>{@link org.jooq.meta.oracle.OracleDatabase}</li>
+     * <li>{@link org.jooq.meta.postgres.PostgresDatabase}</li>
+     * <li>{@link org.jooq.meta.redshift.RedshiftDatabase}</li>
+     * <li>{@link org.jooq.meta.sqlite.SQLiteDatabase}</li>
+     * <li>{@link org.jooq.meta.sqlserver.SQLServerDatabase}</li>
+     * <li>{@link org.jooq.meta.sybase.SybaseDatabase}</li>
+     * <li>{@link org.jooq.meta.vertica.VerticaDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer generic JDBC DatabaseMetaData (e.g. for MS Access).
+     * <ul>
+     * <li>{@link org.jooq.meta.jdbc.JDBCDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer standard jOOQ-meta XML formats.
+     * <ul>
+     * <li>{@link org.jooq.meta.xml.XMLDatabase}</li>
+     * </ul>
+     * <p>
+     * This value can be used to reverse-engineer JPA annotated entities
+     * <ul>
+     * <li>{@link org.jooq.meta.extensions.jpa.JPADatabase}</li>
+     * </ul>
+     * <p>
+     * You can also provide your own org.jooq.meta.Database implementation
+     * here, if your database is currently not supported
+     *
+     */
     public Database withName(String value) {
         setName(value);
         return this;
     }
 
+    /**
+     * The flags that will be applied to all regular expressions from this configuration by default.
+     * <p>
+     * The default value is "COMMENTS CASE_INSENSITIVE"Gets the value of the regexFlags property.
+     *
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the regexFlags property.
+     *
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getRegexFlags().add(newItem);
+     * </pre>
+     *
+     *
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link RegexFlag }
+     *
+     *
+     */
     public Database withRegexFlags(RegexFlag... values) {
         if (values!= null) {
             for (RegexFlag value: values) {
@@ -1346,6 +1582,30 @@ public class Database implements Serializable
         return this;
     }
 
+    /**
+     * The flags that will be applied to all regular expressions from this configuration by default.
+     * <p>
+     * The default value is "COMMENTS CASE_INSENSITIVE"Gets the value of the regexFlags property.
+     *
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the regexFlags property.
+     *
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getRegexFlags().add(newItem);
+     * </pre>
+     *
+     *
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link RegexFlag }
+     *
+     *
+     */
     public Database withRegexFlags(Collection<RegexFlag> values) {
         if (values!= null) {
             getRegexFlags().addAll(values);
@@ -1358,11 +1618,36 @@ public class Database implements Serializable
         return this;
     }
 
+    public Database withSqlMatchesPartialQualification(Boolean value) {
+        setSqlMatchesPartialQualification(value);
+        return this;
+    }
+
+    /**
+     * All elements that are generated from your schema.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * Watch out for case-sensitivity. Depending on your database, this might be
+     * important!
+     * <p>
+     * You can create case-insensitive regular expressions
+     * using this syntax: <code>(?i:expr)</code>
+     * <p>
+     * Whitespace is ignored and comments are possible unless overridden in {@link #getRegexFlags()}.
+     *
+     */
     public Database withIncludes(String value) {
         setIncludes(value);
         return this;
     }
 
+    /**
+     * All elements that are excluded from your schema.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * Excludes match before includes, i.e. excludes have a higher priority.
+     *
+     */
     public Database withExcludes(String value) {
         setExcludes(value);
         return this;
@@ -1375,6 +1660,11 @@ public class Database implements Serializable
 
     public Database withIncludeTables(Boolean value) {
         setIncludeTables(value);
+        return this;
+    }
+
+    public Database withIncludeEmbeddables(Boolean value) {
+        setIncludeEmbeddables(value);
         return this;
     }
 
@@ -1438,31 +1728,93 @@ public class Database implements Serializable
         return this;
     }
 
+    public Database withIncludeCheckConstraints(Boolean value) {
+        setIncludeCheckConstraints(value);
+        return this;
+    }
+
+    public Database withIncludeSystemCheckConstraints(Boolean value) {
+        setIncludeSystemCheckConstraints(value);
+        return this;
+    }
+
     public Database withIncludeInvisibleColumns(Boolean value) {
         setIncludeInvisibleColumns(value);
         return this;
     }
 
+    /**
+     * All table and view columns that are used as "version" fields for optimistic locking.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
+     *
+     */
     public Database withRecordVersionFields(String value) {
         setRecordVersionFields(value);
         return this;
     }
 
+    /**
+     * All table and view columns that are used as "timestamp" fields for optimistic locking.
+     * <p>
+     * This is a Java regular expression. Use the pipe to separate several expressions.
+     * See {@link org.jooq.UpdatableRecord#store()} and {@link org.jooq.UpdatableRecord#delete()} for details about optimistic locking.
+     *
+     */
     public Database withRecordTimestampFields(String value) {
         setRecordTimestampFields(value);
         return this;
     }
 
+    /**
+     * A regular expression matching all columns that represent identities.
+     * <p>
+     * To be used if columns are not detected as automatically as identities.
+     *
+     */
     public Database withSyntheticIdentities(String value) {
         setSyntheticIdentities(value);
         return this;
     }
 
+    /**
+     * A regular expression matching all columns that participate in "synthetic" primary keys,
+     * which should be placed on generated {@link org.jooq.UpdatableRecord}
+     * <p>
+     * To be used with:
+     * <ul>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
+     * </ul>
+     * <p>
+     * Synthetic primary keys will override existing primary keys.
+     *
+     */
     public Database withSyntheticPrimaryKeys(String value) {
         setSyntheticPrimaryKeys(value);
         return this;
     }
 
+    /**
+     * All (UNIQUE) key names that should be used instead of primary keys on
+     * generated {@link org.jooq.UpdatableRecord}.
+     * <p>
+     * To be used with:
+     * <ul>
+     * <li>{@link org.jooq.UpdatableRecord#store()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#update()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#delete()}</li>
+     * <li>{@link org.jooq.UpdatableRecord#refresh()}</li>
+     * </ul>
+     * <p>
+     * If several keys match, a warning is emitted and the first one encountered will be used.
+     * <p>
+     * This flag will also replace synthetic primary keys, if it matches.
+     *
+     */
     public Database withOverridePrimaryKeys(String value) {
         setOverridePrimaryKeys(value);
         return this;
@@ -1483,11 +1835,33 @@ public class Database implements Serializable
         return this;
     }
 
+    public Database withIntegerDisplayWidths(Boolean value) {
+        setIntegerDisplayWidths(value);
+        return this;
+    }
+
+    /**
+     * The catalog that is used locally as a source for meta information.
+     * <p>
+     * This cannot be combined with the {@link #getCatalogs()} configuration element.
+     * If left empty (and without any {@link #getCatalogs()} configuration  element), jOOQ will generate all available catalogs.
+     *
+     */
     public Database withInputCatalog(String value) {
         setInputCatalog(value);
         return this;
     }
 
+    /**
+     * The catalog that is used in generated source code.
+     * <p>
+     * Use this to override your local development
+     * catalog name for source code generation. If not specified, this
+     * will be the same as {@link #getInputCatalog()}
+     * <p>
+     * This will be ignored if {@link #isOutputCatalogToDefault()} is set to true
+     *
+     */
     public Database withOutputCatalog(String value) {
         setOutputCatalog(value);
         return this;
@@ -1498,11 +1872,28 @@ public class Database implements Serializable
         return this;
     }
 
+    /**
+     * The schema that is used locally as a source for meta information.
+     * <p>
+     * This cannot be combined with the {@link #getSchemata()} configuration element.
+     * If left empty (and without any {@link #getSchemata()} configuration element), jOOQ will generate all available schemata.
+     *
+     */
     public Database withInputSchema(String value) {
         setInputSchema(value);
         return this;
     }
 
+    /**
+     * The schema that is used in generated source code.
+     * <p>
+     * Use this to override your local development
+     * schema name for source code generation. If not specified, this
+     * will be the same as {@link #getInputSchema()}.
+     *
+     * This will be ignored if {@link #isOutputSchemaToDefault()} is set to true
+     *
+     */
     public Database withOutputSchema(String value) {
         setOutputSchema(value);
         return this;
@@ -1513,16 +1904,55 @@ public class Database implements Serializable
         return this;
     }
 
+    /**
+     * A custom version number that, if available, will be used to assess whether the
+     * {@link #getInputSchema()} will need to be regenerated.
+     * <p>
+     * There are three operation modes for this element:
+     * <ul>
+     * <li>The value is a class that can be found on the classpath and that implements
+     *   {@link org.jooq.meta.SchemaVersionProvider}. Such classes must provide a default constructor</li>
+     * <li>The value is a SELECT statement that returns one record with one column. The
+     *   SELECT statement may contain a named variable called :schema_name</li>
+     * <li>The value is a constant, such as a Maven property</li>
+     * </ul>
+     * <p>
+     * Schema versions will be generated into the {@link javax.annotation.Generated} annotation on
+     * generated artefacts.
+     *
+     */
     public Database withSchemaVersionProvider(String value) {
         setSchemaVersionProvider(value);
         return this;
     }
 
+    /**
+     * A custom version number that, if available, will be used to assess whether the
+     * {@link #getInputCatalog()} from a given catalog will need to be regenerated.
+     * <p>
+     * There are three operation modes for this element:
+     * <ul>
+     * <li>The value is a class that can be found on the classpath and that implements
+     *   {@link org.jooq.meta.CatalogVersionProvider}. Such classes must provide a default constructor</li>
+     * <li>The value is a SELECT statement that returns one record with one column. The
+     *   SELECT statement may contain a named variable called :catalog_name</li>
+     * <li>The value is a constant, such as a Maven property</li>
+     * <p>
+     * Catalog versions will be generated into the {@link javax.annotation.Generated} annotation on
+     * generated artefacts.
+     *
+     */
     public Database withCatalogVersionProvider(String value) {
         setCatalogVersionProvider(value);
         return this;
     }
 
+    /**
+     * A custom {@link java.util.Comparator} that can compare two {@link org.jooq.meta.Definition} objects to determine their order.
+     * <p>
+     * This comparator can be used to influence the order of any object that is produced by jOOQ meta, and thus, indirectly, the order of declared objects in generated code.
+     *
+     */
     public Database withOrderProvider(String value) {
         setOrderProvider(value);
         return this;
@@ -1538,8 +1968,21 @@ public class Database implements Serializable
         return this;
     }
 
+    /**
+     * The number of seconds that are considered "slow" before a query is logged to indicate a bug, 0 for not logging.
+     *
+     */
     public Database withLogSlowQueriesAfterSeconds(Integer value) {
         setLogSlowQueriesAfterSeconds(value);
+        return this;
+    }
+
+    /**
+     * The number of seconds that are considered "slow" before a result set is logged to indicate a bug, 0 for not logging.
+     *
+     */
+    public Database withLogSlowResultsAfterSeconds(Integer value) {
+        setLogSlowResultsAfterSeconds(value);
         return this;
     }
 
@@ -1606,6 +2049,28 @@ public class Database implements Serializable
         return this;
     }
 
+    public Database withEmbeddables(Embeddable... values) {
+        if (values!= null) {
+            for (Embeddable value: values) {
+                getEmbeddables().add(value);
+            }
+        }
+        return this;
+    }
+
+    public Database withEmbeddables(Collection<Embeddable> values) {
+        if (values!= null) {
+            getEmbeddables().addAll(values);
+        }
+        return this;
+    }
+
+    public Database withEmbeddables(List<Embeddable> embeddables) {
+        setEmbeddables(embeddables);
+        return this;
+    }
+
+    @Deprecated
     public Database withCustomTypes(CustomType... values) {
         if (values!= null) {
             for (CustomType value: values) {
@@ -1615,6 +2080,7 @@ public class Database implements Serializable
         return this;
     }
 
+    @Deprecated
     public Database withCustomTypes(Collection<CustomType> values) {
         if (values!= null) {
             getCustomTypes().addAll(values);
@@ -1622,11 +2088,13 @@ public class Database implements Serializable
         return this;
     }
 
+    @Deprecated
     public Database withCustomTypes(List<CustomType> customTypes) {
         setCustomTypes(customTypes);
         return this;
     }
 
+    @Deprecated
     public Database withEnumTypes(EnumType... values) {
         if (values!= null) {
             for (EnumType value: values) {
@@ -1636,6 +2104,7 @@ public class Database implements Serializable
         return this;
     }
 
+    @Deprecated
     public Database withEnumTypes(Collection<EnumType> values) {
         if (values!= null) {
             getEnumTypes().addAll(values);
@@ -1643,6 +2112,7 @@ public class Database implements Serializable
         return this;
     }
 
+    @Deprecated
     public Database withEnumTypes(List<EnumType> enumTypes) {
         setEnumTypes(enumTypes);
         return this;
@@ -1670,267 +2140,67 @@ public class Database implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("name", name);
+        builder.append("regexFlags", "regexFlags", regexFlags);
+        builder.append("regexMatchesPartialQualification", regexMatchesPartialQualification);
+        builder.append("sqlMatchesPartialQualification", sqlMatchesPartialQualification);
+        builder.append("includes", includes);
+        builder.append("excludes", excludes);
+        builder.append("includeExcludeColumns", includeExcludeColumns);
+        builder.append("includeTables", includeTables);
+        builder.append("includeEmbeddables", includeEmbeddables);
+        builder.append("includeRoutines", includeRoutines);
+        builder.append("includeTriggerRoutines", includeTriggerRoutines);
+        builder.append("includePackages", includePackages);
+        builder.append("includePackageRoutines", includePackageRoutines);
+        builder.append("includePackageUDTs", includePackageUDTs);
+        builder.append("includePackageConstants", includePackageConstants);
+        builder.append("includeUDTs", includeUDTs);
+        builder.append("includeSequences", includeSequences);
+        builder.append("includeIndexes", includeIndexes);
+        builder.append("includePrimaryKeys", includePrimaryKeys);
+        builder.append("includeUniqueKeys", includeUniqueKeys);
+        builder.append("includeForeignKeys", includeForeignKeys);
+        builder.append("includeCheckConstraints", includeCheckConstraints);
+        builder.append("includeSystemCheckConstraints", includeSystemCheckConstraints);
+        builder.append("includeInvisibleColumns", includeInvisibleColumns);
+        builder.append("recordVersionFields", recordVersionFields);
+        builder.append("recordTimestampFields", recordTimestampFields);
+        builder.append("syntheticIdentities", syntheticIdentities);
+        builder.append("syntheticPrimaryKeys", syntheticPrimaryKeys);
+        builder.append("overridePrimaryKeys", overridePrimaryKeys);
+        builder.append("dateAsTimestamp", dateAsTimestamp);
+        builder.append("ignoreProcedureReturnValues", ignoreProcedureReturnValues);
+        builder.append("unsignedTypes", unsignedTypes);
+        builder.append("integerDisplayWidths", integerDisplayWidths);
+        builder.append("inputCatalog", inputCatalog);
+        builder.append("outputCatalog", outputCatalog);
+        builder.append("outputCatalogToDefault", outputCatalogToDefault);
+        builder.append("inputSchema", inputSchema);
+        builder.append("outputSchema", outputSchema);
+        builder.append("outputSchemaToDefault", outputSchemaToDefault);
+        builder.append("schemaVersionProvider", schemaVersionProvider);
+        builder.append("catalogVersionProvider", catalogVersionProvider);
+        builder.append("orderProvider", orderProvider);
+        builder.append("forceIntegerTypesOnZeroScaleDecimals", forceIntegerTypesOnZeroScaleDecimals);
+        builder.append("tableValuedFunctions", tableValuedFunctions);
+        builder.append("logSlowQueriesAfterSeconds", logSlowQueriesAfterSeconds);
+        builder.append("logSlowResultsAfterSeconds", logSlowResultsAfterSeconds);
+        builder.append("properties", "property", properties);
+        builder.append("catalogs", "catalog", catalogs);
+        builder.append("schemata", "schema", schemata);
+        builder.append("embeddables", "embeddable", embeddables);
+        builder.append("customTypes", "customType", customTypes);
+        builder.append("enumTypes", "enumType", enumTypes);
+        builder.append("forcedTypes", "forcedType", forcedTypes);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (name!= null) {
-            sb.append("<name>");
-            sb.append(name);
-            sb.append("</name>");
-        }
-        if (regexFlags!= null) {
-            sb.append("<regexFlags>");
-            for (int i = 0; (i<regexFlags.size()); i ++) {
-                sb.append("<regexFlags>");
-                sb.append(regexFlags.get(i));
-                sb.append("</regexFlags>");
-            }
-            sb.append("</regexFlags>");
-        }
-        if (regexMatchesPartialQualification!= null) {
-            sb.append("<regexMatchesPartialQualification>");
-            sb.append(regexMatchesPartialQualification);
-            sb.append("</regexMatchesPartialQualification>");
-        }
-        if (includes!= null) {
-            sb.append("<includes>");
-            sb.append(includes);
-            sb.append("</includes>");
-        }
-        if (excludes!= null) {
-            sb.append("<excludes>");
-            sb.append(excludes);
-            sb.append("</excludes>");
-        }
-        if (includeExcludeColumns!= null) {
-            sb.append("<includeExcludeColumns>");
-            sb.append(includeExcludeColumns);
-            sb.append("</includeExcludeColumns>");
-        }
-        if (includeTables!= null) {
-            sb.append("<includeTables>");
-            sb.append(includeTables);
-            sb.append("</includeTables>");
-        }
-        if (includeRoutines!= null) {
-            sb.append("<includeRoutines>");
-            sb.append(includeRoutines);
-            sb.append("</includeRoutines>");
-        }
-        if (includeTriggerRoutines!= null) {
-            sb.append("<includeTriggerRoutines>");
-            sb.append(includeTriggerRoutines);
-            sb.append("</includeTriggerRoutines>");
-        }
-        if (includePackages!= null) {
-            sb.append("<includePackages>");
-            sb.append(includePackages);
-            sb.append("</includePackages>");
-        }
-        if (includePackageRoutines!= null) {
-            sb.append("<includePackageRoutines>");
-            sb.append(includePackageRoutines);
-            sb.append("</includePackageRoutines>");
-        }
-        if (includePackageUDTs!= null) {
-            sb.append("<includePackageUDTs>");
-            sb.append(includePackageUDTs);
-            sb.append("</includePackageUDTs>");
-        }
-        if (includePackageConstants!= null) {
-            sb.append("<includePackageConstants>");
-            sb.append(includePackageConstants);
-            sb.append("</includePackageConstants>");
-        }
-        if (includeUDTs!= null) {
-            sb.append("<includeUDTs>");
-            sb.append(includeUDTs);
-            sb.append("</includeUDTs>");
-        }
-        if (includeSequences!= null) {
-            sb.append("<includeSequences>");
-            sb.append(includeSequences);
-            sb.append("</includeSequences>");
-        }
-        if (includeIndexes!= null) {
-            sb.append("<includeIndexes>");
-            sb.append(includeIndexes);
-            sb.append("</includeIndexes>");
-        }
-        if (includePrimaryKeys!= null) {
-            sb.append("<includePrimaryKeys>");
-            sb.append(includePrimaryKeys);
-            sb.append("</includePrimaryKeys>");
-        }
-        if (includeUniqueKeys!= null) {
-            sb.append("<includeUniqueKeys>");
-            sb.append(includeUniqueKeys);
-            sb.append("</includeUniqueKeys>");
-        }
-        if (includeForeignKeys!= null) {
-            sb.append("<includeForeignKeys>");
-            sb.append(includeForeignKeys);
-            sb.append("</includeForeignKeys>");
-        }
-        if (includeInvisibleColumns!= null) {
-            sb.append("<includeInvisibleColumns>");
-            sb.append(includeInvisibleColumns);
-            sb.append("</includeInvisibleColumns>");
-        }
-        if (recordVersionFields!= null) {
-            sb.append("<recordVersionFields>");
-            sb.append(recordVersionFields);
-            sb.append("</recordVersionFields>");
-        }
-        if (recordTimestampFields!= null) {
-            sb.append("<recordTimestampFields>");
-            sb.append(recordTimestampFields);
-            sb.append("</recordTimestampFields>");
-        }
-        if (syntheticIdentities!= null) {
-            sb.append("<syntheticIdentities>");
-            sb.append(syntheticIdentities);
-            sb.append("</syntheticIdentities>");
-        }
-        if (syntheticPrimaryKeys!= null) {
-            sb.append("<syntheticPrimaryKeys>");
-            sb.append(syntheticPrimaryKeys);
-            sb.append("</syntheticPrimaryKeys>");
-        }
-        if (overridePrimaryKeys!= null) {
-            sb.append("<overridePrimaryKeys>");
-            sb.append(overridePrimaryKeys);
-            sb.append("</overridePrimaryKeys>");
-        }
-        if (dateAsTimestamp!= null) {
-            sb.append("<dateAsTimestamp>");
-            sb.append(dateAsTimestamp);
-            sb.append("</dateAsTimestamp>");
-        }
-        if (ignoreProcedureReturnValues!= null) {
-            sb.append("<ignoreProcedureReturnValues>");
-            sb.append(ignoreProcedureReturnValues);
-            sb.append("</ignoreProcedureReturnValues>");
-        }
-        if (unsignedTypes!= null) {
-            sb.append("<unsignedTypes>");
-            sb.append(unsignedTypes);
-            sb.append("</unsignedTypes>");
-        }
-        if (inputCatalog!= null) {
-            sb.append("<inputCatalog>");
-            sb.append(inputCatalog);
-            sb.append("</inputCatalog>");
-        }
-        if (outputCatalog!= null) {
-            sb.append("<outputCatalog>");
-            sb.append(outputCatalog);
-            sb.append("</outputCatalog>");
-        }
-        if (outputCatalogToDefault!= null) {
-            sb.append("<outputCatalogToDefault>");
-            sb.append(outputCatalogToDefault);
-            sb.append("</outputCatalogToDefault>");
-        }
-        if (inputSchema!= null) {
-            sb.append("<inputSchema>");
-            sb.append(inputSchema);
-            sb.append("</inputSchema>");
-        }
-        if (outputSchema!= null) {
-            sb.append("<outputSchema>");
-            sb.append(outputSchema);
-            sb.append("</outputSchema>");
-        }
-        if (outputSchemaToDefault!= null) {
-            sb.append("<outputSchemaToDefault>");
-            sb.append(outputSchemaToDefault);
-            sb.append("</outputSchemaToDefault>");
-        }
-        if (schemaVersionProvider!= null) {
-            sb.append("<schemaVersionProvider>");
-            sb.append(schemaVersionProvider);
-            sb.append("</schemaVersionProvider>");
-        }
-        if (catalogVersionProvider!= null) {
-            sb.append("<catalogVersionProvider>");
-            sb.append(catalogVersionProvider);
-            sb.append("</catalogVersionProvider>");
-        }
-        if (orderProvider!= null) {
-            sb.append("<orderProvider>");
-            sb.append(orderProvider);
-            sb.append("</orderProvider>");
-        }
-        if (forceIntegerTypesOnZeroScaleDecimals!= null) {
-            sb.append("<forceIntegerTypesOnZeroScaleDecimals>");
-            sb.append(forceIntegerTypesOnZeroScaleDecimals);
-            sb.append("</forceIntegerTypesOnZeroScaleDecimals>");
-        }
-        if (tableValuedFunctions!= null) {
-            sb.append("<tableValuedFunctions>");
-            sb.append(tableValuedFunctions);
-            sb.append("</tableValuedFunctions>");
-        }
-        if (logSlowQueriesAfterSeconds!= null) {
-            sb.append("<logSlowQueriesAfterSeconds>");
-            sb.append(logSlowQueriesAfterSeconds);
-            sb.append("</logSlowQueriesAfterSeconds>");
-        }
-        if (properties!= null) {
-            sb.append("<properties>");
-            for (int i = 0; (i<properties.size()); i ++) {
-                sb.append("<property>");
-                sb.append(properties.get(i));
-                sb.append("</property>");
-            }
-            sb.append("</properties>");
-        }
-        if (catalogs!= null) {
-            sb.append("<catalogs>");
-            for (int i = 0; (i<catalogs.size()); i ++) {
-                sb.append("<catalog>");
-                sb.append(catalogs.get(i));
-                sb.append("</catalog>");
-            }
-            sb.append("</catalogs>");
-        }
-        if (schemata!= null) {
-            sb.append("<schemata>");
-            for (int i = 0; (i<schemata.size()); i ++) {
-                sb.append("<schema>");
-                sb.append(schemata.get(i));
-                sb.append("</schema>");
-            }
-            sb.append("</schemata>");
-        }
-        if (customTypes!= null) {
-            sb.append("<customTypes>");
-            for (int i = 0; (i<customTypes.size()); i ++) {
-                sb.append("<customType>");
-                sb.append(customTypes.get(i));
-                sb.append("</customType>");
-            }
-            sb.append("</customTypes>");
-        }
-        if (enumTypes!= null) {
-            sb.append("<enumTypes>");
-            for (int i = 0; (i<enumTypes.size()); i ++) {
-                sb.append("<enumType>");
-                sb.append(enumTypes.get(i));
-                sb.append("</enumType>");
-            }
-            sb.append("</enumTypes>");
-        }
-        if (forcedTypes!= null) {
-            sb.append("<forcedTypes>");
-            for (int i = 0; (i<forcedTypes.size()); i ++) {
-                sb.append("<forcedType>");
-                sb.append(forcedTypes.get(i));
-                sb.append("</forcedType>");
-            }
-            sb.append("</forcedTypes>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override
@@ -1972,6 +2242,15 @@ public class Database implements Serializable
                 return false;
             }
         }
+        if (sqlMatchesPartialQualification == null) {
+            if (other.sqlMatchesPartialQualification!= null) {
+                return false;
+            }
+        } else {
+            if (!sqlMatchesPartialQualification.equals(other.sqlMatchesPartialQualification)) {
+                return false;
+            }
+        }
         if (includes == null) {
             if (other.includes!= null) {
                 return false;
@@ -2005,6 +2284,15 @@ public class Database implements Serializable
             }
         } else {
             if (!includeTables.equals(other.includeTables)) {
+                return false;
+            }
+        }
+        if (includeEmbeddables == null) {
+            if (other.includeEmbeddables!= null) {
+                return false;
+            }
+        } else {
+            if (!includeEmbeddables.equals(other.includeEmbeddables)) {
                 return false;
             }
         }
@@ -2116,6 +2404,24 @@ public class Database implements Serializable
                 return false;
             }
         }
+        if (includeCheckConstraints == null) {
+            if (other.includeCheckConstraints!= null) {
+                return false;
+            }
+        } else {
+            if (!includeCheckConstraints.equals(other.includeCheckConstraints)) {
+                return false;
+            }
+        }
+        if (includeSystemCheckConstraints == null) {
+            if (other.includeSystemCheckConstraints!= null) {
+                return false;
+            }
+        } else {
+            if (!includeSystemCheckConstraints.equals(other.includeSystemCheckConstraints)) {
+                return false;
+            }
+        }
         if (includeInvisibleColumns == null) {
             if (other.includeInvisibleColumns!= null) {
                 return false;
@@ -2194,6 +2500,15 @@ public class Database implements Serializable
             }
         } else {
             if (!unsignedTypes.equals(other.unsignedTypes)) {
+                return false;
+            }
+        }
+        if (integerDisplayWidths == null) {
+            if (other.integerDisplayWidths!= null) {
+                return false;
+            }
+        } else {
+            if (!integerDisplayWidths.equals(other.integerDisplayWidths)) {
                 return false;
             }
         }
@@ -2305,6 +2620,15 @@ public class Database implements Serializable
                 return false;
             }
         }
+        if (logSlowResultsAfterSeconds == null) {
+            if (other.logSlowResultsAfterSeconds!= null) {
+                return false;
+            }
+        } else {
+            if (!logSlowResultsAfterSeconds.equals(other.logSlowResultsAfterSeconds)) {
+                return false;
+            }
+        }
         if (properties == null) {
             if (other.properties!= null) {
                 return false;
@@ -2329,6 +2653,15 @@ public class Database implements Serializable
             }
         } else {
             if (!schemata.equals(other.schemata)) {
+                return false;
+            }
+        }
+        if (embeddables == null) {
+            if (other.embeddables!= null) {
+                return false;
+            }
+        } else {
+            if (!embeddables.equals(other.embeddables)) {
                 return false;
             }
         }
@@ -2369,10 +2702,12 @@ public class Database implements Serializable
         result = ((prime*result)+((name == null)? 0 :name.hashCode()));
         result = ((prime*result)+((regexFlags == null)? 0 :regexFlags.hashCode()));
         result = ((prime*result)+((regexMatchesPartialQualification == null)? 0 :regexMatchesPartialQualification.hashCode()));
+        result = ((prime*result)+((sqlMatchesPartialQualification == null)? 0 :sqlMatchesPartialQualification.hashCode()));
         result = ((prime*result)+((includes == null)? 0 :includes.hashCode()));
         result = ((prime*result)+((excludes == null)? 0 :excludes.hashCode()));
         result = ((prime*result)+((includeExcludeColumns == null)? 0 :includeExcludeColumns.hashCode()));
         result = ((prime*result)+((includeTables == null)? 0 :includeTables.hashCode()));
+        result = ((prime*result)+((includeEmbeddables == null)? 0 :includeEmbeddables.hashCode()));
         result = ((prime*result)+((includeRoutines == null)? 0 :includeRoutines.hashCode()));
         result = ((prime*result)+((includeTriggerRoutines == null)? 0 :includeTriggerRoutines.hashCode()));
         result = ((prime*result)+((includePackages == null)? 0 :includePackages.hashCode()));
@@ -2385,6 +2720,8 @@ public class Database implements Serializable
         result = ((prime*result)+((includePrimaryKeys == null)? 0 :includePrimaryKeys.hashCode()));
         result = ((prime*result)+((includeUniqueKeys == null)? 0 :includeUniqueKeys.hashCode()));
         result = ((prime*result)+((includeForeignKeys == null)? 0 :includeForeignKeys.hashCode()));
+        result = ((prime*result)+((includeCheckConstraints == null)? 0 :includeCheckConstraints.hashCode()));
+        result = ((prime*result)+((includeSystemCheckConstraints == null)? 0 :includeSystemCheckConstraints.hashCode()));
         result = ((prime*result)+((includeInvisibleColumns == null)? 0 :includeInvisibleColumns.hashCode()));
         result = ((prime*result)+((recordVersionFields == null)? 0 :recordVersionFields.hashCode()));
         result = ((prime*result)+((recordTimestampFields == null)? 0 :recordTimestampFields.hashCode()));
@@ -2394,6 +2731,7 @@ public class Database implements Serializable
         result = ((prime*result)+((dateAsTimestamp == null)? 0 :dateAsTimestamp.hashCode()));
         result = ((prime*result)+((ignoreProcedureReturnValues == null)? 0 :ignoreProcedureReturnValues.hashCode()));
         result = ((prime*result)+((unsignedTypes == null)? 0 :unsignedTypes.hashCode()));
+        result = ((prime*result)+((integerDisplayWidths == null)? 0 :integerDisplayWidths.hashCode()));
         result = ((prime*result)+((inputCatalog == null)? 0 :inputCatalog.hashCode()));
         result = ((prime*result)+((outputCatalog == null)? 0 :outputCatalog.hashCode()));
         result = ((prime*result)+((outputCatalogToDefault == null)? 0 :outputCatalogToDefault.hashCode()));
@@ -2406,9 +2744,11 @@ public class Database implements Serializable
         result = ((prime*result)+((forceIntegerTypesOnZeroScaleDecimals == null)? 0 :forceIntegerTypesOnZeroScaleDecimals.hashCode()));
         result = ((prime*result)+((tableValuedFunctions == null)? 0 :tableValuedFunctions.hashCode()));
         result = ((prime*result)+((logSlowQueriesAfterSeconds == null)? 0 :logSlowQueriesAfterSeconds.hashCode()));
+        result = ((prime*result)+((logSlowResultsAfterSeconds == null)? 0 :logSlowResultsAfterSeconds.hashCode()));
         result = ((prime*result)+((properties == null)? 0 :properties.hashCode()));
         result = ((prime*result)+((catalogs == null)? 0 :catalogs.hashCode()));
         result = ((prime*result)+((schemata == null)? 0 :schemata.hashCode()));
+        result = ((prime*result)+((embeddables == null)? 0 :embeddables.hashCode()));
         result = ((prime*result)+((customTypes == null)? 0 :customTypes.hashCode()));
         result = ((prime*result)+((enumTypes == null)? 0 :enumTypes.hashCode()));
         result = ((prime*result)+((forcedTypes == null)? 0 :forcedTypes.hashCode()));

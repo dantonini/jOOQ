@@ -56,43 +56,65 @@ import static org.jooq.Nullability.NULL;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
 import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 import static org.jooq.SQLDialect.HSQLDB;
+// ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
 // ...
 // ...
+import static org.jooq.impl.Cascade.CASCADE;
+import static org.jooq.impl.Cascade.RESTRICT;
+import static org.jooq.impl.ConstraintType.FOREIGN_KEY;
+import static org.jooq.impl.ConstraintType.PRIMARY_KEY;
+import static org.jooq.impl.ConstraintType.UNIQUE;
+import static org.jooq.impl.DSL.begin;
 import static org.jooq.impl.DSL.commentOnTable;
+import static org.jooq.impl.DSL.condition;
 import static org.jooq.impl.DSL.constraint;
+// ...
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.index;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.noCondition;
+import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.sql;
+// ...
 import static org.jooq.impl.Keywords.K_ADD;
+import static org.jooq.impl.Keywords.K_AFTER;
 import static org.jooq.impl.Keywords.K_ALTER;
 import static org.jooq.impl.Keywords.K_ALTER_COLUMN;
 import static org.jooq.impl.Keywords.K_ALTER_CONSTRAINT;
 import static org.jooq.impl.Keywords.K_ALTER_TABLE;
+import static org.jooq.impl.Keywords.K_BEFORE;
 import static org.jooq.impl.Keywords.K_CASCADE;
+import static org.jooq.impl.Keywords.K_CHANGE;
 import static org.jooq.impl.Keywords.K_CHANGE_COLUMN;
 import static org.jooq.impl.Keywords.K_COMMENT;
+import static org.jooq.impl.Keywords.K_CONSTRAINT;
+import static org.jooq.impl.Keywords.K_CONSTRAINTS;
 import static org.jooq.impl.Keywords.K_DEFAULT;
 import static org.jooq.impl.Keywords.K_DROP;
 import static org.jooq.impl.Keywords.K_DROP_COLUMN;
 import static org.jooq.impl.Keywords.K_DROP_CONSTRAINT;
+import static org.jooq.impl.Keywords.K_DROP_DEFAULT;
 import static org.jooq.impl.Keywords.K_DROP_NOT_NULL;
 import static org.jooq.impl.Keywords.K_ELSE;
 import static org.jooq.impl.Keywords.K_END_IF;
 import static org.jooq.impl.Keywords.K_EXCEPTION;
 import static org.jooq.impl.Keywords.K_EXEC;
+import static org.jooq.impl.Keywords.K_FIRST;
+import static org.jooq.impl.Keywords.K_FOREIGN_KEY;
 import static org.jooq.impl.Keywords.K_IF;
 import static org.jooq.impl.Keywords.K_IF_EXISTS;
 import static org.jooq.impl.Keywords.K_IF_NOT_EXISTS;
@@ -100,6 +122,8 @@ import static org.jooq.impl.Keywords.K_LIKE;
 import static org.jooq.impl.Keywords.K_MODIFY;
 import static org.jooq.impl.Keywords.K_NOT_NULL;
 import static org.jooq.impl.Keywords.K_NULL;
+import static org.jooq.impl.Keywords.K_POSITION;
+import static org.jooq.impl.Keywords.K_PRIMARY_KEY;
 import static org.jooq.impl.Keywords.K_RAISE;
 import static org.jooq.impl.Keywords.K_RENAME;
 import static org.jooq.impl.Keywords.K_RENAME_COLUMN;
@@ -109,6 +133,7 @@ import static org.jooq.impl.Keywords.K_RENAME_OBJECT;
 import static org.jooq.impl.Keywords.K_RENAME_TABLE;
 import static org.jooq.impl.Keywords.K_RENAME_TO;
 import static org.jooq.impl.Keywords.K_REPLACE;
+import static org.jooq.impl.Keywords.K_RESTRICT;
 import static org.jooq.impl.Keywords.K_SET_DATA_TYPE;
 import static org.jooq.impl.Keywords.K_SET_DEFAULT;
 import static org.jooq.impl.Keywords.K_SET_NOT_NULL;
@@ -118,6 +143,7 @@ import static org.jooq.impl.Keywords.K_TYPE;
 import static org.jooq.impl.Keywords.K_USING_INDEX;
 import static org.jooq.impl.Keywords.K_WHEN;
 import static org.jooq.impl.Keywords.K_WITH_NO_DATACOPY;
+import static org.jooq.impl.SQLDataType.VARCHAR;
 import static org.jooq.impl.Tools.begin;
 import static org.jooq.impl.Tools.beginExecuteImmediate;
 import static org.jooq.impl.Tools.beginTryCatch;
@@ -133,8 +159,11 @@ import static org.jooq.impl.Tools.BooleanDataKey.DATA_CONSTRAINT_REFERENCE;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
+import org.jooq.AlterTableAddStep;
 import org.jooq.AlterTableAlterStep;
 import org.jooq.AlterTableDropStep;
 import org.jooq.AlterTableFinalStep;
@@ -157,17 +186,21 @@ import org.jooq.Name;
 import org.jooq.Nullability;
 // ...
 import org.jooq.Query;
+import org.jooq.Record1;
 import org.jooq.SQLDialect;
+import org.jooq.Select;
 import org.jooq.Table;
+// ...
 
 /**
  * @author Lukas Eder
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
-final class AlterTableImpl extends AbstractQuery implements
+final class AlterTableImpl extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for ALTER TABLE behaviour
     AlterTableStep,
+    AlterTableAddStep,
     AlterTableDropStep,
     AlterTableAlterStep,
     AlterTableUsingIndexStep,
@@ -180,13 +213,19 @@ final class AlterTableImpl extends AbstractQuery implements
      */
     private static final long                serialVersionUID                      = 8904572826501186329L;
     private static final Clause[]            CLAUSES                               = { ALTER_TABLE };
-    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_EXISTS                  = EnumSet.of(CUBRID, DERBY, FIREBIRD, MARIADB);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_EXISTS_COLUMN           = EnumSet.of(CUBRID, DERBY, FIREBIRD);
-    private static final EnumSet<SQLDialect> SUPPORT_RENAME_TABLE                  = EnumSet.of(DERBY);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_RENAME_QUALIFIED_TABLE     = EnumSet.of(POSTGRES);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_ALTER_TYPE_AND_NULL        = EnumSet.of(POSTGRES);
-    private static final EnumSet<SQLDialect> REQUIRE_REPEAT_ADD_ON_MULTI_ALTER     = EnumSet.of(FIREBIRD, MARIADB, MYSQL, POSTGRES);
-    private static final EnumSet<SQLDialect> REQUIRE_REPEAT_DROP_ON_MULTI_ALTER    = EnumSet.of(FIREBIRD, MARIADB, MYSQL, POSTGRES);
+    private static final Set<SQLDialect>     NO_SUPPORT_IF_EXISTS                  = SQLDialect.supportedBy(CUBRID, DERBY, FIREBIRD, MARIADB);
+    private static final Set<SQLDialect>     NO_SUPPORT_IF_EXISTS_COLUMN           = SQLDialect.supportedBy(CUBRID, DERBY, FIREBIRD);
+    private static final Set<SQLDialect>     SUPPORT_RENAME_COLUMN                 = SQLDialect.supportedBy(DERBY);
+    private static final Set<SQLDialect>     SUPPORT_RENAME_TABLE                  = SQLDialect.supportedBy(DERBY);
+    private static final Set<SQLDialect>     NO_SUPPORT_RENAME_QUALIFIED_TABLE     = SQLDialect.supportedBy(POSTGRES);
+    private static final Set<SQLDialect>     NO_SUPPORT_ALTER_TYPE_AND_NULL        = SQLDialect.supportedBy(POSTGRES);
+    private static final Set<SQLDialect>     NO_SUPPORT_DROP_CONSTRAINT            = SQLDialect.supportedBy(MARIADB, MYSQL);
+    private static final Set<SQLDialect>     REQUIRE_REPEAT_ADD_ON_MULTI_ALTER     = SQLDialect.supportedBy(FIREBIRD, MARIADB, MYSQL, POSTGRES);
+    private static final Set<SQLDialect>     REQUIRE_REPEAT_DROP_ON_MULTI_ALTER    = SQLDialect.supportedBy(FIREBIRD, MARIADB, MYSQL, POSTGRES);
+
+
+
+
 
 
 
@@ -199,6 +238,7 @@ final class AlterTableImpl extends AbstractQuery implements
     private final Table<?>                   table;
     private final boolean                    ifExists;
     private boolean                          ifExistsColumn;
+    private boolean                          ifExistsConstraint;
     private boolean                          ifNotExistsColumn;
     private Comment                          comment;
     private Table<?>                         renameTo;
@@ -212,6 +252,9 @@ final class AlterTableImpl extends AbstractQuery implements
     private Field<?>                         addColumn;
     private DataType<?>                      addColumnType;
     private Constraint                       addConstraint;
+    private boolean                          addFirst;
+    private Field<?>                         addBefore;
+    private Field<?>                         addAfter;
 
 
 
@@ -220,9 +263,11 @@ final class AlterTableImpl extends AbstractQuery implements
     private Nullability                      alterColumnNullability;
     private DataType<?>                      alterColumnType;
     private Field<?>                         alterColumnDefault;
+    private boolean                          alterColumnDropDefault;
     private QueryPartList<Field<?>>          dropColumns;
-    private boolean                          dropColumnCascade;
     private Constraint                       dropConstraint;
+    private ConstraintType                   dropConstraintType;
+    private Cascade                          dropCascade;
 
     AlterTableImpl(Configuration configuration, Table<?> table) {
         this(configuration, table, false);
@@ -234,6 +279,33 @@ final class AlterTableImpl extends AbstractQuery implements
         this.table = table;
         this.ifExists = ifExists;
     }
+
+    final Table<?>                 $table()                  { return table; }
+    final boolean                  $ifExists()               { return ifExists; }
+    final boolean                  $ifExistsColumn()         { return ifExistsColumn; }
+    final boolean                  $ifExistsConstraint()     { return ifExistsConstraint; }
+    final boolean                  $ifNotExistsColumn()      { return ifNotExistsColumn; }
+    final List<FieldOrConstraint>  $add()                    { return add; }
+    final Field<?>                 $addColumn()              { return addColumn; }
+    final DataType<?>              $addColumnType()          { return addColumnType; }
+    final Constraint               $addConstraint()          { return addConstraint; }
+    final boolean                  $addFirst()               { return addFirst; }
+    final Field<?>                 $addBefore()              { return addBefore; }
+    final Field<?>                 $addAfter()               { return addAfter; }
+    final Field<?>                 $alterColumn()            { return alterColumn; }
+    final Nullability              $alterColumnNullability() { return alterColumnNullability; }
+    final DataType<?>              $alterColumnType()        { return alterColumnType; }
+    final Field<?>                 $alterColumnDefault()     { return alterColumnDefault; }
+    final boolean                  $alterColumnDropDefault() { return alterColumnDropDefault; }
+    final Table<?>                 $renameTo()               { return renameTo; }
+    final Field<?>                 $renameColumn()           { return renameColumn; }
+    final Field<?>                 $renameColumnTo()         { return renameColumnTo; }
+    final Constraint               $renameConstraint()       { return renameConstraint; }
+    final Constraint               $renameConstraintTo()     { return renameConstraintTo; }
+    final List<Field<?>>           $dropColumns()            { return dropColumns; }
+    final Cascade                  $dropCascade()            { return dropCascade; }
+    final Constraint               $dropConstraint()         { return dropConstraint; }
+    final ConstraintType           $dropConstraintType()     { return dropConstraintType; }
 
     // ------------------------------------------------------------------------
     // XXX: DSL API
@@ -374,7 +446,18 @@ final class AlterTableImpl extends AbstractQuery implements
 
     @Override
     public final AlterTableImpl add(Collection<? extends FieldOrConstraint> fields) {
-        add = new QueryPartList<FieldOrConstraint>(fields);
+
+        // [#9570] Better portability of single item ADD statements
+        if (fields.size() == 1) {
+            FieldOrConstraint first = fields.iterator().next();
+
+            if (first instanceof Field)
+                return add((Field<?>) first);
+            else if (first instanceof Constraint)
+                return add((Constraint) first);
+        }
+
+        add = new QueryPartList<>(fields);
         return this;
     }
 
@@ -462,6 +545,44 @@ final class AlterTableImpl extends AbstractQuery implements
         return this;
     }
 
+    @Override
+    public final AlterTableImpl first() {
+        addFirst = true;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl before(String columnName) {
+        return before(name(columnName));
+    }
+
+    @Override
+    public final AlterTableImpl before(Name columnName) {
+        return before(field(columnName));
+    }
+
+    @Override
+    public final AlterTableImpl before(Field<?> columnName) {
+        addBefore = columnName;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl after(String columnName) {
+        return after(name(columnName));
+    }
+
+    @Override
+    public final AlterTableImpl after(Name columnName) {
+        return after(field(columnName));
+    }
+
+    @Override
+    public final AlterTableImpl after(Field<?> columnName) {
+        addAfter = columnName;
+        return this;
+    }
+
 
 
 
@@ -534,12 +655,38 @@ final class AlterTableImpl extends AbstractQuery implements
 
     @Override
     public final AlterTableImpl defaultValue(Object literal) {
-        return defaultValue(Tools.field(literal));
+        return setDefault(literal);
     }
 
     @Override
     public final AlterTableImpl defaultValue(Field expression) {
+        return setDefault(expression);
+    }
+
+    @Override
+    public final AlterTableImpl default_(Object literal) {
+        return setDefault(literal);
+    }
+
+    @Override
+    public final AlterTableImpl default_(Field expression) {
+        return setDefault(expression);
+    }
+
+    @Override
+    public final AlterTableImpl setDefault(Object literal) {
+        return default_(Tools.field(literal));
+    }
+
+    @Override
+    public final AlterTableImpl setDefault(Field expression) {
         alterColumnDefault = expression;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl dropDefault() {
+        alterColumnDropDefault = true;
         return this;
     }
 
@@ -585,7 +732,7 @@ final class AlterTableImpl extends AbstractQuery implements
 
     @Override
     public final AlterTableImpl dropColumn(Field<?> field) {
-        return dropColumns(new Field[] { field });
+        return dropColumns0(Collections.singletonList(field));
     }
 
     @Override
@@ -641,35 +788,123 @@ final class AlterTableImpl extends AbstractQuery implements
 
     @Override
     public final AlterTableImpl dropColumns(Collection<? extends Field<?>> fields) {
-        dropColumns = new QueryPartList<Field<?>>(fields);
+        return dropColumns0(fields);
+    }
+
+    private final AlterTableImpl dropColumns0(Collection<? extends Field<?>> fields) {
+        dropColumns = new QueryPartList<>(fields);
         return this;
     }
 
     @Override
     public final AlterTableImpl drop(Constraint constraint) {
         dropConstraint = constraint;
+        dropConstraintType = null;
         return this;
     }
 
     @Override
+    public final AlterTableImpl dropConstraint(Constraint constraint) {
+        return drop(constraint);
+    }
+
+    @Override
     public final AlterTableImpl dropConstraint(Name constraint) {
-        return drop(DSL.constraint(constraint));
+        return dropConstraint(DSL.constraint(constraint));
     }
 
     @Override
     public final AlterTableImpl dropConstraint(String constraint) {
-        return drop(DSL.constraint(constraint));
+        return dropConstraint(DSL.constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropIfExists(Constraint constraint) {
+        ifExistsConstraint = true;
+        return drop(constraint);
+    }
+
+    @Override
+    public final AlterTableImpl dropConstraintIfExists(Constraint constraint) {
+        return dropIfExists(constraint);
+    }
+
+    @Override
+    public final AlterTableImpl dropConstraintIfExists(Name constraint) {
+        return dropIfExists(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropConstraintIfExists(String constraint) {
+        return dropIfExists(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropPrimaryKey() {
+        dropConstraintType = PRIMARY_KEY;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl dropPrimaryKey(Constraint constraint) {
+        dropConstraint = constraint;
+        dropConstraintType = PRIMARY_KEY;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl dropPrimaryKey(Name constraint) {
+        return dropPrimaryKey(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropPrimaryKey(String constraint) {
+        return dropPrimaryKey(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropUnique(Constraint constraint) {
+        dropConstraint = constraint;
+        dropConstraintType = UNIQUE;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl dropUnique(Name constraint) {
+        return dropUnique(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropUnique(String constraint) {
+        return dropUnique(constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropForeignKey(Constraint constraint) {
+        dropConstraint = constraint;
+        dropConstraintType = FOREIGN_KEY;
+        return this;
+    }
+
+    @Override
+    public final AlterTableImpl dropForeignKey(Name constraint) {
+        return dropForeignKey(DSL.constraint(constraint));
+    }
+
+    @Override
+    public final AlterTableImpl dropForeignKey(String constraint) {
+        return dropForeignKey(DSL.constraint(constraint));
     }
 
     @Override
     public final AlterTableFinalStep cascade() {
-        dropColumnCascade = true;
+        dropCascade = CASCADE;
         return this;
     }
 
     @Override
     public final AlterTableFinalStep restrict() {
-        dropColumnCascade = false;
+        dropCascade = RESTRICT;
         return this;
     }
 
@@ -705,6 +940,7 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
                 case MARIADB:
                 case MYSQL:
                     break;
@@ -714,6 +950,30 @@ final class AlterTableImpl extends AbstractQuery implements
                     return;
             }
         }
+
+        if (family == FIREBIRD) {
+            if (addFirst) {
+                begin(ctx);
+                beginExecuteImmediate(ctx);
+                accept1(ctx);
+                endExecuteImmediate(ctx);
+
+                ctx.formatSeparator();
+
+                beginExecuteImmediate(ctx);
+                ctx.visit(K_ALTER_TABLE).sql(' ').visit(table).sql(' ').visit(K_ALTER).sql(' ').visit(addColumn).sql(' ').visit(K_POSITION).sql(" 1");
+                endExecuteImmediate(ctx);
+                end(ctx);
+                return;
+            }
+        }
+
+
+
+
+
+
+
 
 
 
@@ -746,6 +1006,13 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
+
+
+
+
+
+
                 case MYSQL:
                     break;
 
@@ -765,11 +1032,50 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
                 case POSTGRES:
                     alterColumnTypeAndNullabilityInBlock(ctx);
                     return;
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         accept1(ctx);
     }
@@ -779,9 +1085,9 @@ final class AlterTableImpl extends AbstractQuery implements
 
         boolean omitAlterTable =
                (renameConstraint != null && family == HSQLDB)
-            || (renameColumn != null && family == DERBY);
+            || (renameColumn != null && SUPPORT_RENAME_COLUMN.contains(family));
         boolean renameTable = renameTo != null && SUPPORT_RENAME_TABLE.contains(family);
-        boolean renameObject = renameTo != null && (false                                                                   );
+        boolean renameObject = renameTo != null && (false);
 
         if (!omitAlterTable) {
             ctx.start(ALTER_TABLE_TABLE)
@@ -824,6 +1130,9 @@ final class AlterTableImpl extends AbstractQuery implements
             ctx.start(ALTER_TABLE_RENAME_COLUMN);
 
             switch (ctx.family()) {
+
+
+
                 case DERBY:
                     ctx.visit(K_RENAME_COLUMN).sql(' ')
                        .visit(renameColumn)
@@ -854,6 +1163,16 @@ final class AlterTableImpl extends AbstractQuery implements
                        .visit(renameColumnTo)
                        .qualify(qualify);
                     break;
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -909,7 +1228,7 @@ final class AlterTableImpl extends AbstractQuery implements
                    .qualify(qualify);
             else
                 ctx.qualify(false)
-                   .visit(                                                         K_RENAME_CONSTRAINT).sql(' ')
+                   .visit( K_RENAME_CONSTRAINT).sql(' ')
                    .visit(renameConstraint)
                    .formatSeparator()
                    .visit(K_TO).sql(' ')
@@ -920,8 +1239,10 @@ final class AlterTableImpl extends AbstractQuery implements
             ctx.end(ALTER_TABLE_RENAME_CONSTRAINT);
         }
         else if (add != null) {
+            boolean qualify = ctx.qualify();
             boolean multiAdd = REQUIRE_REPEAT_ADD_ON_MULTI_ALTER.contains(ctx.family());
-            boolean parens = !multiAdd                                                                                     ;
+            boolean parens = !multiAdd;
+            boolean comma = true;
 
             ctx.start(ALTER_TABLE_ADD)
                .visit(K_ADD)
@@ -939,12 +1260,14 @@ final class AlterTableImpl extends AbstractQuery implements
             for (int i = 0; i < add.size(); i++) {
                 if (i > 0)
                     if (multiAdd)
-                        ctx.sql(',').formatSeparator().visit(K_ADD).sql(' ');
+                        ctx.sql(comma ? "," : "").formatSeparator().visit(K_ADD).sql(' ');
                     else
-                        ctx.sql(',').formatSeparator();
+                        ctx.sql(comma ? "," : "").formatSeparator();
 
                 FieldOrConstraint part = add.get(i);
-                ctx.visit(part);
+                ctx.qualify(false)
+                   .visit(part)
+                   .qualify(qualify);
 
                 if (part instanceof Field) {
                     ctx.sql(' ');
@@ -959,6 +1282,7 @@ final class AlterTableImpl extends AbstractQuery implements
             if (parens)
                 ctx.sql(')');
 
+            acceptFirstBeforeAfter(ctx);
             ctx.end(ALTER_TABLE_ADD);
         }
         else if (addColumn != null) {
@@ -969,6 +1293,7 @@ final class AlterTableImpl extends AbstractQuery implements
 
             if (ifNotExistsColumn) {
                 switch (ctx.family()) {
+
 
 
 
@@ -1005,14 +1330,22 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+            acceptFirstBeforeAfter(ctx);
             ctx.end(ALTER_TABLE_ADD);
         }
         else if (addConstraint != null) {
             ctx.start(ALTER_TABLE_ADD);
 
             ctx.visit(K_ADD)
-               .sql(' ')
-               .visit(addConstraint);
+               .sql(' ');
+
+
+
+
+
+
+
+            ctx.visit(addConstraint);
 
 
 
@@ -1051,12 +1384,13 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
                 case CUBRID:
                 case MARIADB:
                 case MYSQL: {
 
                     // MySQL's CHANGE COLUMN clause has a mandatory RENAMING syntax...
-                    if (alterColumnDefault == null)
+                    if (alterColumnDefault == null && !alterColumnDropDefault)
                         ctx.visit(K_CHANGE_COLUMN)
                            .sql(' ').qualify(false).visit(alterColumn).qualify(true);
                     else
@@ -1085,6 +1419,7 @@ final class AlterTableImpl extends AbstractQuery implements
                     case DERBY:
                         ctx.sql(' ').visit(K_SET_DATA_TYPE);
                         break;
+
 
 
 
@@ -1126,6 +1461,7 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
                     default:
                         ctx.sql(' ').visit(K_SET_DEFAULT);
                         break;
@@ -1134,10 +1470,52 @@ final class AlterTableImpl extends AbstractQuery implements
                 ctx.sql(' ').visit(alterColumnDefault)
                    .end(ALTER_TABLE_ALTER_DEFAULT);
             }
+            else if (alterColumnDropDefault) {
+                ctx.start(ALTER_TABLE_ALTER_DEFAULT);
+
+                switch (family) {
+
+
+
+
+
+
+
+
+
+                    // MySQL supports DROP DEFAULT, but it does not work correctly:
+                    // https://bugs.mysql.com/bug.php?id=81010
+                    // Same for MariaDB
+                    case MARIADB:
+                    case MYSQL:
+                        ctx.sql(' ').visit(K_SET_DEFAULT).sql(' ').visit(K_NULL);
+                        break;
+
+                    default:
+                        ctx.sql(' ').visit(K_DROP_DEFAULT);
+                        break;
+                }
+
+                ctx.end(ALTER_TABLE_ALTER_DEFAULT);
+            }
             else if (alterColumnNullability != null) {
-                ctx.start(ALTER_TABLE_ALTER_NULL)
-                   .sql(' ').visit(alterColumnNullability.nullable() ? K_DROP_NOT_NULL : K_SET_NOT_NULL)
-                   .end(ALTER_TABLE_ALTER_NULL);
+                switch (ctx.family()) {
+
+
+
+
+
+
+
+
+
+                    default:
+                        ctx.start(ALTER_TABLE_ALTER_NULL)
+                           .sql(' ').visit(alterColumnNullability.nullable() ? K_DROP_NOT_NULL : K_SET_NOT_NULL)
+                           .end(ALTER_TABLE_ALTER_NULL);
+
+                        break;
+                }
             }
 
             ctx.end(ALTER_TABLE_ALTER);
@@ -1159,12 +1537,19 @@ final class AlterTableImpl extends AbstractQuery implements
                        .visit(dropColumn)
                        .qualify(true);
 
+
+
+
+
+
+
                     separator = ", ";
                 }
             }
             else {
                 acceptDropColumn(ctx);
                 acceptIfExistsColumn(ctx);
+
 
 
 
@@ -1183,10 +1568,9 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
-
-                if (dropColumnCascade)
-                    ctx.sql(' ').visit(K_CASCADE);
             }
+
+            acceptCascade(ctx);
 
 
 
@@ -1199,16 +1583,80 @@ final class AlterTableImpl extends AbstractQuery implements
             ctx.start(ALTER_TABLE_DROP);
             ctx.data(DATA_CONSTRAINT_REFERENCE, true);
 
-            ctx.visit(K_DROP_CONSTRAINT)
-               .sql(' ')
-               .visit(dropConstraint);
+            if (dropConstraintType == FOREIGN_KEY && NO_SUPPORT_DROP_CONSTRAINT.contains(family)) {
+                ctx.visit(K_DROP).sql(' ').visit(K_FOREIGN_KEY)
+                   .sql(' ')
+                   .visit(dropConstraint);
+            }
+            else if (dropConstraintType == PRIMARY_KEY && NO_SUPPORT_DROP_CONSTRAINT.contains(family)) {
+                ctx.visit(K_DROP).sql(' ').visit(K_PRIMARY_KEY);
+            }
+            else {
+                ctx.visit(K_DROP_CONSTRAINT).sql(' ');
+
+                if (ifExistsConstraint)
+                    ctx.visit(K_IF_EXISTS).sql(' ');
+
+                ctx.visit(dropConstraint);
+            }
+
+            acceptCascade(ctx);
 
             ctx.data().remove(DATA_CONSTRAINT_REFERENCE);
+            ctx.end(ALTER_TABLE_DROP);
+        }
+        else if (dropConstraintType == PRIMARY_KEY) {
+            ctx.start(ALTER_TABLE_DROP);
+            ctx.visit(K_DROP).sql(' ').visit(K_PRIMARY_KEY);
             ctx.end(ALTER_TABLE_DROP);
         }
 
         if (!omitAlterTable)
             ctx.formatIndentEnd();
+    }
+
+    private final void acceptCascade(Context<?> ctx) {
+        switch (ctx.family()) {
+            case H2:
+                // H2 defaults to CASCADE but doesn't support the keywords
+                break;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            case HSQLDB:
+            case POSTGRES:
+            default:
+                if (dropCascade == CASCADE)
+                    ctx.sql(' ').visit(K_CASCADE);
+                else if (dropCascade == RESTRICT)
+                    ctx.sql(' ').visit(K_RESTRICT);
+
+                break;
+        }
+    }
+
+    private final void acceptFirstBeforeAfter(Context<?> ctx) {
+        boolean previous = ctx.qualify();
+
+        if (addFirst && ctx.family() != FIREBIRD)
+            ctx.sql(' ').visit(K_FIRST);
+        else if (addBefore != null)
+            ctx.sql(' ').visit(K_BEFORE).sql(' ').qualify(false).visit(addBefore).qualify(previous);
+        else if (addAfter != null)
+            ctx.sql(' ').visit(K_AFTER).sql(' ').qualify(false).visit(addAfter).qualify(previous);
     }
 
     private final void acceptDropColumn(Context<?> ctx) {
@@ -1253,6 +1701,7 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
                 case H2:
                 case MARIADB:
                 case POSTGRES:
@@ -1262,6 +1711,22 @@ final class AlterTableImpl extends AbstractQuery implements
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1394,7 +1859,8 @@ final class AlterTableImpl extends AbstractQuery implements
 
             case POSTGRES: {
                 AlterTableAlterStep<?> step = ctx.dsl().alterTable(table).alterColumn(alterColumn);
-                ctx.visit(alterColumnType.nullable() ? step.dropNotNull() : step.setNotNull());
+                ctx.visit(alterColumnType.nullable() ? step.dropNotNull() : step.setNotNull())
+                   .sql(';');
                 break;
             }
         }

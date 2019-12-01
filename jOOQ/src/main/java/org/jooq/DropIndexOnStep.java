@@ -41,6 +41,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -51,6 +52,7 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
@@ -83,7 +85,7 @@ import static org.jooq.SQLDialect.SQLITE;
  *
  * @author Lukas Eder
  */
-public interface DropIndexOnStep extends DropIndexFinalStep {
+public interface DropIndexOnStep extends DropIndexCascadeStep {
 
     /**
      * Specify the table expression on which to drop an index.
@@ -95,8 +97,8 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(Table<?> table);
+    @Support
+    DropIndexCascadeStep on(Table<?> table);
 
     /**
      * Specify the table expression on which to drop an index.
@@ -108,8 +110,8 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(String tableName);
+    @Support
+    DropIndexCascadeStep on(String tableName);
 
     /**
      * Specify the table expression on which to drop an index.
@@ -121,6 +123,6 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(Name tableName);
+    @Support
+    DropIndexCascadeStep on(Name tableName);
 }

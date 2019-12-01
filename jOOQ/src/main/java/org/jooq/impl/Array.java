@@ -38,16 +38,20 @@
 package org.jooq.impl;
 
 // ...
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
 import static org.jooq.impl.Keywords.K_ARRAY;
 import static org.jooq.impl.Keywords.K_INT;
+import static org.jooq.impl.Names.N_ARRAY;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.jooq.Context;
 import org.jooq.DataType;
 import org.jooq.Field;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 
 /**
  * @author Lukas Eder
@@ -57,14 +61,15 @@ final class Array<T> extends AbstractField<T[]> {
     /**
      * Generated UID
      */
-    private static final long    serialVersionUID = -6629785423729163857L;
+    private static final long            serialVersionUID = -6629785423729163857L;
+    private static final Set<SQLDialect> REQUIRES_CAST    = SQLDialect.supportedBy(POSTGRES);
 
-    private final Fields<Record> fields;
+    private final Fields<Record>         fields;
 
     Array(Collection<? extends Field<T>> fields) {
-        super(DSL.name("array"), type(fields));
+        super(N_ARRAY, type(fields));
 
-        this.fields = new Fields<Record>(fields);
+        this.fields = new Fields<>(fields);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -78,22 +83,13 @@ final class Array<T> extends AbstractField<T[]> {
     @Override
     public final void accept(Context<?> ctx) {
         switch (ctx.family()) {
+
+
+
+
+
+
             case H2:
-                ctx.sql('(').visit(fields);
-
-                // [#7878] Single element arrays in H2 need a trailing comma to distinguish between e.g.
-                //         (1), the parenthesised integer, and (1,) the array.
-                //         See: http://h2database.com/html/grammar.html#array
-                if (fields.size() == 1)
-                    ctx.sql(',');
-
-                ctx.sql(')');
-                break;
-
-
-
-
-
             case HSQLDB:
             case POSTGRES:
             default:
@@ -102,7 +98,7 @@ final class Array<T> extends AbstractField<T[]> {
                    .visit(fields)
                    .sql(']');
 
-                if (fields.fields.length == 0 && (                                                            ctx.family() == POSTGRES))
+                if (fields.fields.length == 0 && REQUIRES_CAST.contains(ctx.family()))
                     ctx.sql("::").visit(K_INT).sql("[]");
 
                 break;

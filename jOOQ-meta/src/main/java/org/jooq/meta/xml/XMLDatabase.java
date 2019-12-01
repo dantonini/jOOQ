@@ -45,10 +45,9 @@ import static org.jooq.tools.StringUtils.isBlank;
 import static org.jooq.util.xml.jaxb.TableConstraintType.PRIMARY_KEY;
 import static org.jooq.util.xml.jaxb.TableConstraintType.UNIQUE;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -64,7 +63,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import javax.xml.bind.JAXB;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -79,8 +77,7 @@ import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.SortOrder;
-import org.jooq.conf.MiniJAXB;
-import org.jooq.exception.ExceptionTools;
+import org.jooq.Source;
 import org.jooq.impl.DSL;
 import org.jooq.meta.AbstractDatabase;
 import org.jooq.meta.AbstractIndexDefinition;
@@ -88,6 +85,7 @@ import org.jooq.meta.ArrayDefinition;
 import org.jooq.meta.CatalogDefinition;
 import org.jooq.meta.ColumnDefinition;
 import org.jooq.meta.DataTypeDefinition;
+import org.jooq.meta.DefaultCheckConstraintDefinition;
 import org.jooq.meta.DefaultDataTypeDefinition;
 import org.jooq.meta.DefaultIndexColumnDefinition;
 import org.jooq.meta.DefaultRelations;
@@ -106,6 +104,9 @@ import org.jooq.meta.tools.FilePattern;
 import org.jooq.meta.tools.FilePattern.Loader;
 import org.jooq.tools.JooqLogger;
 import org.jooq.tools.StringUtils;
+import org.jooq.tools.jdbc.JDBCUtils;
+import org.jooq.util.jaxb.tools.MiniJAXB;
+import org.jooq.util.xml.jaxb.CheckConstraint;
 import org.jooq.util.xml.jaxb.Index;
 import org.jooq.util.xml.jaxb.IndexColumnUsage;
 import org.jooq.util.xml.jaxb.InformationSchema;
@@ -152,60 +153,60 @@ public class XMLDatabase extends AbstractDatabase {
             try {
                 FilePattern.load("UTF-8", xml, FilePattern.fileComparator(sort), new Loader() {
                     @Override
-                    public void load(String enc, InputStream in) throws Exception {
+                    public void load(Source source) throws Exception {
                         String content;
+                        Reader reader = null;
 
-                        if (StringUtils.isBlank(xsl)) {
-                            byte[] bytes = bytes(in);
+                        try {
+                            if (StringUtils.isBlank(xsl)) {
 
-                            // [#7414] Default to reading UTF-8
-                            content = new String(bytes, "UTF-8");
+                                // [#7414] Default to reading UTF-8
+                                content = source.readString();
 
-                            // [#7414] Alternatively, read the encoding from the XML file
-                            try {
-                                XMLStreamReader reader = XMLInputFactory.newInstance().createXMLStreamReader(new StringReader(content));
-                                String encoding = reader.getCharacterEncodingScheme();
+                                // [#7414] Alternatively, read the encoding from the XML file
+                                try {
+                                    XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(new StringReader(content));
+                                    String encoding = xmlReader.getCharacterEncodingScheme();
 
-                                // Returned encoding can be null in the presence of a BOM
-                                // See https://stackoverflow.com/a/27147259/521799
-                                if (encoding != null && !"UTF-8".equals(encoding))
-                                    content = new String(bytes, encoding);
-                            }
-                            catch (XMLStreamException e) {
-                                log.warn("Could not open XML Stream: " + e.getMessage());
-                            }
-                            catch (UnsupportedEncodingException e) {
-                                log.warn("Unsupported encoding: " + e.getMessage());
-                            }
-                        }
-                        else {
-                            InputStream xslIs = null;
-
-                            try {
-                                log.info("Using XSL file", xsl);
-
-                                xslIs = XMLDatabase.class.getResourceAsStream(xsl);
-                                if (xslIs == null)
-                                    xslIs = new FileInputStream(xsl);
-
-                                StringWriter writer = new StringWriter();
-                                TransformerFactory factory = TransformerFactory.newInstance();
-                                Transformer transformer = factory.newTransformer(new StreamSource(xslIs));
-
-                                transformer.transform(new StreamSource(in), new StreamResult(writer));
-                                content = writer.getBuffer().toString();
-                            }
-                            catch (TransformerException e) {
-                                throw new RuntimeException("Error while transforming XML file " + xml + " with XSL file " + xsl, e);
-                            }
-                            finally {
-                                if (xslIs != null) {
-                                    try {
-                                        xslIs.close();
-                                    }
-                                    catch (Exception ignore) {}
+                                    // Returned encoding can be null in the presence of a BOM
+                                    // See https://stackoverflow.com/a/27147259/521799
+                                    if (encoding != null && !"UTF-8".equals(encoding))
+                                        content = new String(content.getBytes("UTF-8"), encoding);
+                                }
+                                catch (XMLStreamException e) {
+                                    log.warn("Could not open XML Stream: " + e.getMessage());
+                                }
+                                catch (UnsupportedEncodingException e) {
+                                    log.warn("Unsupported encoding: " + e.getMessage());
                                 }
                             }
+                            else {
+                                InputStream xslIs = null;
+
+                                try {
+                                    log.info("Using XSL file", xsl);
+
+                                    xslIs = XMLDatabase.class.getResourceAsStream(xsl);
+                                    if (xslIs == null)
+                                        xslIs = new FileInputStream(xsl);
+
+                                    StringWriter writer = new StringWriter();
+                                    TransformerFactory factory = TransformerFactory.newInstance();
+                                    Transformer transformer = factory.newTransformer(new StreamSource(xslIs));
+
+                                    transformer.transform(new StreamSource(reader), new StreamResult(writer));
+                                    content = writer.getBuffer().toString();
+                                }
+                                catch (TransformerException e) {
+                                    throw new RuntimeException("Error while transforming XML file " + xml + " with XSL file " + xsl, e);
+                                }
+                                finally {
+                                    JDBCUtils.safeClose(xslIs);
+                                }
+                            }
+                        }
+                        finally {
+                            JDBCUtils.safeClose(reader);
                         }
 
                         // TODO [#1201] Add better error handling here
@@ -217,32 +218,7 @@ public class XMLDatabase extends AbstractDatabase {
                             "<information_schema>",
                             "<information_schema xmlns=\"" + Constants.NS_META + "\">");
 
-                        // [#7579] [#8044] Workaround for obscure JAXB bug on JDK 9+
-                        content = MiniJAXB.jaxbNamespaceBugWorkaround(content, new InformationSchema());
-
-                        try {
-                            info = MiniJAXB.append(info, JAXB.unmarshal(new StringReader(content), InformationSchema.class));
-                        }
-                        catch (Throwable t) {
-                            if (ExceptionTools.getCause(t, ClassNotFoundException.class) != null ||
-                                ExceptionTools.getCause(t, Error.class) != null) {
-
-                                info = MiniJAXB.append(info, MiniJAXB.unmarshal(content, InformationSchema.class));
-                            }
-                            else
-                                throw t;
-                        }
-                    }
-
-                    private byte[] bytes(InputStream in) throws IOException {
-                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                        int read;
-                        byte[] buffer = new byte[16384];
-
-                        while ((read = in.read(buffer, 0, buffer.length)) != -1)
-                            bos.write(buffer, 0, read);
-
-                        return bos.toByteArray();
+                        info = MiniJAXB.append(info, MiniJAXB.unmarshal(content, InformationSchema.class));
                     }
                 });
             }
@@ -270,9 +246,9 @@ public class XMLDatabase extends AbstractDatabase {
 
     @Override
     protected List<IndexDefinition> getIndexes0() throws SQLException {
-        List<IndexDefinition> result = new ArrayList<IndexDefinition>();
+        List<IndexDefinition> result = new ArrayList<>();
 
-        final Map<Name, SortedSet<IndexColumnUsage>> indexColumnUsage = new HashMap<Name, SortedSet<IndexColumnUsage>>();
+        final Map<Name, SortedSet<IndexColumnUsage>> indexColumnUsage = new HashMap<>();
         for (IndexColumnUsage ic : info().getIndexColumnUsages()) {
             Name name = name(ic.getIndexCatalog(), ic.getIndexSchema(), ic.getTableName(), ic.getIndexName());
 
@@ -323,7 +299,7 @@ public class XMLDatabase extends AbstractDatabase {
                     private final List<IndexColumnDefinition> indexColumns;
 
                     {
-                        indexColumns = new ArrayList<IndexColumnDefinition>();
+                        indexColumns = new ArrayList<>();
                         SortedSet<IndexColumnUsage> list = indexColumnUsage.get(name);
 
                         if (list != null)
@@ -386,7 +362,7 @@ public class XMLDatabase extends AbstractDatabase {
     }
 
     private List<KeyColumnUsage> keyColumnUsage(TableConstraintType constraintType) {
-        List<KeyColumnUsage> result = new ArrayList<KeyColumnUsage>();
+        List<KeyColumnUsage> result = new ArrayList<>();
 
         for (TableConstraint constraint : info().getTableConstraints())
             if (constraintType == constraint.getConstraintType()
@@ -438,51 +414,75 @@ public class XMLDatabase extends AbstractDatabase {
                         String foreignKeyTableName = usage.getTableName();
                         String foreignKeyColumn = usage.getColumnName();
                         String uniqueKey = fk.getUniqueConstraintName();
-                        String uniqueKeyTableName = null;
+                        TableConstraint uk = tableConstraint(fk.getUniqueConstraintCatalog(), fk.getUniqueConstraintSchema(), fk.getUniqueConstraintName());
 
-                        for (TableConstraint uk : info().getTableConstraints()) {
-                            if (    StringUtils.equals(defaultIfNull(fk.getUniqueConstraintCatalog(), ""), defaultIfNull(uk.getConstraintCatalog(), ""))
-                                 && StringUtils.equals(defaultIfNull(fk.getUniqueConstraintSchema(), ""), defaultIfNull(uk.getConstraintSchema(), ""))
-                                 && StringUtils.equals(defaultIfNull(fk.getUniqueConstraintName(), ""), defaultIfNull(uk.getConstraintName(), ""))) {
-                                uniqueKeyTableName = uk.getTableName();
-                                break;
-                            }
+                        if (uk != null) {
+                            TableDefinition foreignKeyTable = getTable(foreignKeySchema, foreignKeyTableName);
+                            TableDefinition uniqueKeyTable = getTable(uniqueKeySchema, uk.getTableName());
+
+                            if (foreignKeyTable != null && uniqueKeyTable != null)
+                                relations.addForeignKey(
+                                    foreignKey,
+                                    foreignKeyTable,
+                                    foreignKeyTable.getColumn(foreignKeyColumn),
+                                    uniqueKey,
+                                    uniqueKeyTable
+                                );
                         }
-
-                        TableDefinition foreignKeyTable = getTable(foreignKeySchema, foreignKeyTableName);
-                        TableDefinition uniqueKeyTable = getTable(uniqueKeySchema, uniqueKeyTableName);
-
-                        if (foreignKeyTable != null && uniqueKeyTable != null)
-                            relations.addForeignKey(
-                                foreignKey,
-                                foreignKeyTable,
-                                foreignKeyTable.getColumn(foreignKeyColumn),
-                                uniqueKey,
-                                uniqueKeyTable
-                            );
                     }
                 }
             }
         }
     }
 
+    private TableConstraint tableConstraint(String constraintCatalog, String constraintSchema, String constraintName) {
+        for (TableConstraint uk : info().getTableConstraints())
+            if (    StringUtils.equals(defaultIfNull(constraintCatalog, ""), defaultIfNull(uk.getConstraintCatalog(), ""))
+                 && StringUtils.equals(defaultIfNull(constraintSchema, ""), defaultIfNull(uk.getConstraintSchema(), ""))
+                 && StringUtils.equals(defaultIfNull(constraintName, ""), defaultIfNull(uk.getConstraintName(), "")))
+                return uk;
+
+        return null;
+    }
+
     @Override
     protected void loadCheckConstraints(DefaultRelations r) {
+
+        constraintLoop:
+        for (CheckConstraint check : info().getCheckConstraints()) {
+            if (!getInputSchemata().contains(check.getConstraintSchema()))
+                continue constraintLoop;
+
+            SchemaDefinition schema = getSchema(check.getConstraintSchema());
+            if (schema == null)
+                continue constraintLoop;
+
+            TableConstraint tc = tableConstraint(check.getConstraintCatalog(), check.getConstraintSchema(), check.getConstraintName());
+            if (tc == null)
+                continue constraintLoop;
+
+            TableDefinition table = getTable(schema, tc.getTableName());
+            if (table == null)
+                continue constraintLoop;
+
+            r.addCheckConstraint(table, new DefaultCheckConstraintDefinition(schema, table, check.getConstraintName(), check.getCheckClause()));
+        }
     }
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
 
         for (Schema schema : info().getSchemata()) {
-            result.add(new SchemaDefinition(this, schema.getSchemaName(), schema.getComment()));
+            String schemaName = schema.getSchemaName();
+            result.add(new SchemaDefinition(this, StringUtils.defaultIfNull(schemaName, ""), schema.getComment()));
         }
 
         return result;
@@ -490,7 +490,7 @@ public class XMLDatabase extends AbstractDatabase {
 
     @Override
     protected List<SequenceDefinition> getSequences0() {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
 
         for (Sequence sequence : info().getSequences()) {
             if (getInputSchemata().contains(sequence.getSequenceSchema())) {
@@ -516,7 +516,7 @@ public class XMLDatabase extends AbstractDatabase {
 
     @Override
     protected List<TableDefinition> getTables0() {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
 
         for (Table table : info().getTables()) {
             if (getInputSchemata().contains(table.getTableSchema())) {
@@ -531,31 +531,31 @@ public class XMLDatabase extends AbstractDatabase {
 
     @Override
     protected List<EnumDefinition> getEnums0() {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<UDTDefinition> getUDTs0() {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<ArrayDefinition> getArrays0() {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<RoutineDefinition> getRoutines0() {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
 
         for (Routine routine : info().getRoutines()) {
             if (isBlank(routine.getSpecificPackage()) && isBlank(routine.getRoutinePackage())) {
@@ -574,9 +574,9 @@ public class XMLDatabase extends AbstractDatabase {
 
     @Override
     protected List<PackageDefinition> getPackages0() {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
 
-        Set<String> packages = new HashSet<String>();
+        Set<String> packages = new HashSet<>();
         for (Routine routine : info().getRoutines()) {
             String schemaName = defaultIfBlank(routine.getSpecificSchema(), routine.getRoutineSchema());
 

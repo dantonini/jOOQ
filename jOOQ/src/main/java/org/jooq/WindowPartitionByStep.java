@@ -38,14 +38,16 @@
 package org.jooq;
 
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
-import static org.jooq.SQLDialect.FIREBIRD_3_0;
+import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
-import static org.jooq.SQLDialect.MYSQL_8_0;
+// ...
+import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
@@ -79,28 +81,25 @@ public interface WindowPartitionByStep<T> extends WindowOrderByStep<T> {
     /**
      * Add a <code>PARTITION BY</code> clause to the window functions.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ CUBRID, FIREBIRD, H2, MARIADB, MYSQL, POSTGRES, SQLITE })
     WindowOrderByStep<T> partitionBy(Field<?>... fields);
 
     /**
      * Add a <code>PARTITION BY</code> clause to the window functions.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ CUBRID, FIREBIRD, H2, MARIADB, MYSQL, POSTGRES, SQLITE })
     WindowOrderByStep<T> partitionBy(Collection<? extends Field<?>> fields);
 
     /**
      * Add a <code>PARTITION BY 1</code> clause to the window functions, where
      * such a clause is required by the syntax of an RDBMS.
-     * <p>
-     * This clause is not supported as such in the CUBRID and Sybase dialects.
-     * If you use it, jOOQ will simply ignore it.
      *
      * @deprecated - 3.10 - [#6427] - This synthetic clause is no longer
      *             supported, use {@link #partitionBy(Field...)} instead, or
      *             omit the clause entirely.
      */
     @Deprecated
-    @Support({ CUBRID, FIREBIRD_3_0, H2, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ CUBRID, FIREBIRD, H2, MARIADB, MYSQL, POSTGRES, SQLITE })
     WindowOrderByStep<T> partitionByOne();
 
 }

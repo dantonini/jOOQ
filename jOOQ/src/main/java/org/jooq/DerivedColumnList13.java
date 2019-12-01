@@ -39,11 +39,13 @@ package org.jooq;
 
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 import static org.jooq.SQLDialect.MARIADB;
-import static org.jooq.SQLDialect.MYSQL_8_0;
+// ...
+import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
@@ -65,7 +67,7 @@ import static org.jooq.SQLDialect.SQLITE;
  * <code><pre>
  * // Assuming import static org.jooq.impl.DSL.*;
  *
- * Table<?> t = name("t").fields("v").as(select(one()));
+ * Table&lt;?&gt; t = name("t").fields("v").as(select(one()));
  * //           ^^^^^^^^^^^^^^^^^^^^^ -- DerivedColumnList
  *
  * using(configuration)
@@ -84,7 +86,7 @@ public interface DerivedColumnList13 extends QueryPart {
      * Specify a subselect to refer to by the <code>DerivedColumnList</code> to
      * form a common table expression.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     <R extends Record13<?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?>> CommonTableExpression<R> as(Select<R> select);
 
 }

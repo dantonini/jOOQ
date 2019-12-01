@@ -39,8 +39,8 @@ package org.jooq.impl;
 
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
 import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+// ...
 // ...
 import static org.jooq.SQLDialect.CUBRID;
 import static org.jooq.SQLDialect.POSTGRES;
@@ -57,9 +57,9 @@ import java.lang.reflect.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +70,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+// ...
 import java.util.concurrent.Future;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
@@ -127,9 +128,11 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
     /**
      * Generated UID
      */
-    private static final long                serialVersionUID      = -5588344253566055707L;
-    private static final JooqLogger          log                   = JooqLogger.getLogger(AbstractResultQuery.class);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_FOR_UPDATE = EnumSet.of(CUBRID);
+    private static final long                serialVersionUID                  = -5588344253566055707L;
+    private static final JooqLogger          log                               = JooqLogger.getLogger(AbstractResultQuery.class);
+
+    private static final Set<SQLDialect>     NO_SUPPORT_FOR_UPDATE             = SQLDialect.supportedBy(CUBRID);
+    private static final Set<SQLDialect>     REPORT_FETCH_SIZE_WITH_AUTOCOMMIT = SQLDialect.supportedBy(POSTGRES);
 
     private int                              maxRows;
     private int                              fetchSize;
@@ -141,6 +144,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
     private transient boolean                lazy;
     private transient boolean                many;
     private transient Cursor<R>              cursor;
+    private transient boolean                autoclosing           = true;
     private Result<R>                        result;
     private ResultsImpl                      results;
 
@@ -270,15 +274,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
             ctx.statement(ctx.connection().prepareStatement(ctx.sql()));
         }
 
-        // [#1263] [#4753] Allow for negative fetch sizes to support some non-standard
-        // MySQL feature, where Integer.MIN_VALUE is used
-        int f = SettingsTools.getFetchSize(fetchSize, ctx.settings());
-        if (f != 0) {
-            if (log.isDebugEnabled())
-                log.debug("Setting fetch size", f);
-
-            ctx.statement().setFetchSize(f);
-        }
+        Tools.setFetchSize(ctx, fetchSize);
 
         // [#1854] [#4753] Set the max number of rows for this result query
         int m = SettingsTools.getMaxRows(maxRows, ctx.settings());
@@ -293,7 +289,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
         // [#4511] [#4753] PostgreSQL doesn't like fetchSize with autoCommit == true
         int f = SettingsTools.getFetchSize(fetchSize, ctx.settings());
-        if (asList(POSTGRES).contains(ctx.family()) && f != 0 && ctx.connection().getAutoCommit())
+        if (REPORT_FETCH_SIZE_WITH_AUTOCOMMIT.contains(ctx.dialect()) && f != 0 && ctx.connection().getAutoCommit())
             log.info("Fetch Size", "A fetch size of " + f + " was set on a auto-commit PostgreSQL connection, which is not recommended. See http://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor");
 
         SQLException e = executeStatementAndGetFirstResultSet(ctx, rendered.skipUpdateCounts);
@@ -322,7 +318,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
             }
 
             Field<?>[] fields = getFields(ctx.resultSet().getMetaData());
-            cursor = new CursorImpl<R>(ctx, listener, fields, intern.internIndexes(fields), keepStatement(), keepResultSet(), getRecordType(), SettingsTools.getMaxRows(maxRows, ctx.settings()));
+            cursor = new CursorImpl<>(ctx, listener, fields, intern.internIndexes(fields), keepStatement(), keepResultSet(), getRecordType(), SettingsTools.getMaxRows(maxRows, ctx.settings()), autoclosing);
 
             if (!lazy) {
                 result = cursor.fetch();
@@ -371,6 +367,66 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
 
 
+
+
+
+
+
+
+
+
+
+    @Override
+    public final void subscribe(org.reactivestreams.Subscriber<? super R> subscriber) {
+        subscriber.onSubscribe(new org.reactivestreams.Subscription() {
+            Cursor<R> c;
+            ArrayDeque<R> buffer;
+
+            @Override
+            public void request(long n) {
+                int i = (int) Math.min(n, Integer.MAX_VALUE);
+
+                try {
+                    if (c == null)
+                        c = fetchLazyNonAutoClosing();
+
+                    if (buffer == null)
+                        buffer = new ArrayDeque<>();
+
+                    if (buffer.size() < i)
+                        buffer.addAll(c.fetchNext(i - buffer.size()));
+
+                    boolean complete = buffer.size() < i;
+                    while (!buffer.isEmpty()) {
+                        subscriber.onNext(buffer.pollFirst());
+                    }
+
+                    if (complete)
+                        doComplete();
+                }
+                catch (Throwable t) {
+                    subscriber.onError(t);
+                    doComplete();
+                }
+            }
+
+            private void doComplete() {
+                close();
+                subscriber.onComplete();
+            }
+
+            private void close() {
+                if (c != null)
+                    c.close();
+            }
+
+            @Override
+            public void cancel() {
+                close();
+            }
+        });
+    }
+
     @Override
     public final CompletionStage<Result<R>> fetchAsync() {
         return fetchAsync(Tools.configuration(this).executorProvider().provide());
@@ -383,7 +439,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
     @Override
     public final Stream<R> fetchStream() {
-        return fetchLazy().stream();
+        return Stream.of(1).flatMap(i -> fetchLazy().stream());
     }
 
     @Override
@@ -398,12 +454,12 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
     @Override
     public final Stream<R> stream() {
-        return fetchLazy().stream();
+        return fetchStream();
     }
 
     @Override
     public final <X, A> X collect(Collector<? super R, A, X> collector) {
-        try (Cursor<R> c = fetchLazy()) {
+        try (Cursor<R> c = fetchLazyNonAutoClosing()) {
             return c.collect(collector);
         }
     }
@@ -413,6 +469,24 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
     @Override
     public final Cursor<R> fetchLazy() {
         return fetchLazy(fetchSize);
+    }
+
+    /**
+     * When we manage the lifecycle of a returned {@link Cursor} internally in
+     * jOOQ, then the cursor must not be auto-closed.
+     */
+    final Cursor<R> fetchLazyNonAutoClosing() {
+        final boolean previousAutoClosing = autoclosing;
+
+        // [#3515] TODO: Avoid modifying a Query's per-execution state
+        autoclosing = false;
+
+        try {
+            return fetchLazy();
+        }
+        finally {
+            autoclosing = previousAutoClosing;
+        }
     }
 
     @Override
@@ -577,7 +651,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
     @Override
     public final R fetchOne() {
-        return Tools.fetchOne(fetchLazy(), hasLimit1());
+        return Tools.fetchOne(fetchLazyNonAutoClosing(), hasLimit1());
     }
 
     @Override
@@ -672,7 +746,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
     @Override
     public final R fetchSingle() {
-        return Tools.fetchSingle(fetchLazy(), hasLimit1());
+        return Tools.fetchSingle(fetchLazyNonAutoClosing(), hasLimit1());
     }
 
     @Override
@@ -858,7 +932,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
 
     @Override
     public final R fetchAny() {
-        Cursor<R> c = fetchLazy();
+        Cursor<R> c = fetchLazyNonAutoClosing();
 
         try {
             return c.fetchNext();
@@ -1496,14 +1570,14 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
     public final org.jooq.FutureResult<R> fetchLater() {
         ExecutorService executor = newSingleThreadExecutor();
         Future<Result<R>> future = executor.submit(new ResultQueryCallable());
-        return new FutureResultImpl<R>(future, executor);
+        return new FutureResultImpl<>(future, executor);
     }
 
     @Override
     @Deprecated
     public final org.jooq.FutureResult<R> fetchLater(ExecutorService executor) {
         Future<Result<R>> future = executor.submit(new ResultQueryCallable());
-        return new FutureResultImpl<R>(future);
+        return new FutureResultImpl<>(future);
     }
 
     @Override
@@ -1526,7 +1600,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
     private final boolean hasLimit1() {
         if (this instanceof SelectQueryImpl) {
             Limit l = ((SelectQueryImpl) this).getLimit();
-            return !l.withTies()                                          && l.limitOne();
+            return !l.withTies() && !l.percent() && l.limitOne();
         }
 
         return false;
@@ -1551,7 +1625,7 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
         return (ResultQuery<Record>) this;
     }
 
-    // [jooq-tools] START [coerce]
+
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -1685,6 +1759,6 @@ abstract class AbstractResultQuery<R extends Record> extends AbstractQuery imple
         return (ResultQuery) coerce(new Field[] { field1, field2, field3, field4, field5, field6, field7, field8, field9, field10, field11, field12, field13, field14, field15, field16, field17, field18, field19, field20, field21, field22 });
     }
 
-// [jooq-tools] END [coerce]
+
 
 }

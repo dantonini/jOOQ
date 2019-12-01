@@ -38,6 +38,7 @@
 package org.jooq;
 
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -47,8 +48,10 @@ import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
+import static org.jooq.SQLDialect.MARIADB;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
 // ...
 // ...
 
@@ -69,24 +72,60 @@ public interface Sequence<T extends Number> extends Named {
     Catalog getCatalog();
 
     /**
-     * Get the sequence schema
+     * Get the sequence schema.
      */
     Schema getSchema();
 
     /**
-     * Get the sequence data type
+     * Get the sequence data type.
      */
     DataType<T> getDataType();
 
     /**
+     * Get the start value for this sequence or <code>null</code>, if no such
+     * value is specified.
+     */
+    Field<T> getStartWith();
+
+    /**
+     * Get the increment for this sequence or <code>null</code>, if no such
+     * value is specified.
+     */
+    Field<T> getIncrementBy();
+
+    /**
+     * Get the minimum value for this sequence or <code>null</code>, if no such
+     * value is specified.
+     */
+    Field<T> getMinValue();
+
+    /**
+     * Get the maximum value for this sequence or <code>null</code>, if no such
+     * value is specified.
+     */
+    Field<T> getMaxValue();
+
+    /**
+     * Returns {@code true} if this sequence cycles to {@link #getMinValue()}
+     * when it reaches {@link #getMaxValue()}.
+     */
+    boolean getCycle();
+
+    /**
+     * Get the number of sequence values to cache for this sequence or
+     * <code>null</code>, if no such value is specified.
+     */
+    Field<T> getCache();
+
+    /**
      * Get the current value of this sequence
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     Field<T> currval();
 
     /**
      * Increment the sequence and get the next value
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     Field<T> nextval();
 }

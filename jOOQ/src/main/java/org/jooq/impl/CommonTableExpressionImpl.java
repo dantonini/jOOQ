@@ -48,6 +48,7 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Select;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * @author Lukas Eder
@@ -64,7 +65,7 @@ final class CommonTableExpressionImpl<R extends Record> extends AbstractTable<R>
     private final Fields<R>             fields;
 
     CommonTableExpressionImpl(DerivedColumnListImpl name, Select<R> select) {
-        super(name.name);
+        super(TableOptions.expression(), name.name);
 
         this.name = name;
         this.select = select;
@@ -78,12 +79,12 @@ final class CommonTableExpressionImpl<R extends Record> extends AbstractTable<R>
 
     @Override
     public final Table<R> as(Name alias) {
-        return new TableAlias<R>(this, alias);
+        return new TableAlias<>(this, alias);
     }
 
     @Override
     public final Table<R> as(Name alias, Name... fieldAliases) {
-        return new TableAlias<R>(this, alias, fieldAliases);
+        return new TableAlias<>(this, alias, fieldAliases);
     }
 
     @Override
@@ -132,7 +133,7 @@ final class CommonTableExpressionImpl<R extends Record> extends AbstractTable<R>
             );
         }
 
-        Fields<R> result = new Fields<R>(f);
+        Fields<R> result = new Fields<>(f);
         return result;
     }
 }

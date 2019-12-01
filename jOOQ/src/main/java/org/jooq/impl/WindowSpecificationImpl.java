@@ -40,12 +40,15 @@ package org.jooq.impl;
 import static java.lang.Boolean.TRUE;
 // ...
 import static org.jooq.SQLDialect.CUBRID;
+// ...
 import static org.jooq.SQLDialect.H2;
+// ...
 // ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
+// ...
 // ...
 // ...
 import static org.jooq.impl.DSL.field;
@@ -61,7 +64,6 @@ import static org.jooq.impl.Keywords.K_PARTITION_BY;
 import static org.jooq.impl.Keywords.K_PRECEDING;
 import static org.jooq.impl.Keywords.K_UNBOUNDED_FOLLOWING;
 import static org.jooq.impl.Keywords.K_UNBOUNDED_PRECEDING;
-import static org.jooq.impl.Tools.BooleanDataKey.DATA_RANKING_FUNCTION;
 import static org.jooq.impl.WindowSpecificationImpl.Exclude.CURRENT_ROW;
 import static org.jooq.impl.WindowSpecificationImpl.Exclude.GROUP;
 import static org.jooq.impl.WindowSpecificationImpl.Exclude.NO_OTHERS;
@@ -72,18 +74,20 @@ import static org.jooq.impl.WindowSpecificationImpl.FrameUnits.ROWS;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Set;
 
 import org.jooq.Context;
 import org.jooq.Field;
 import org.jooq.Keyword;
 import org.jooq.OrderField;
+// ...
 import org.jooq.SQLDialect;
 import org.jooq.WindowSpecificationExcludeStep;
 import org.jooq.WindowSpecificationFinalStep;
 import org.jooq.WindowSpecificationOrderByStep;
 import org.jooq.WindowSpecificationPartitionByStep;
 import org.jooq.WindowSpecificationRowsAndStep;
+import org.jooq.impl.Tools.BooleanDataKey;
 
 /**
  * @author Lukas Eder
@@ -100,18 +104,23 @@ final class WindowSpecificationImpl extends AbstractQueryPart implements
     /**
      * Generated UID
      */
-    private static final long                serialVersionUID             = 2996016924769376361L;
-    private static final EnumSet<SQLDialect> OMIT_PARTITION_BY_ONE        = EnumSet.of(CUBRID, MYSQL, SQLITE);
-    private static final EnumSet<SQLDialect> REQUIRES_ORDER_BY_IN_RANKING = EnumSet.of(H2);
+    private static final long             serialVersionUID                = 2996016924769376361L;
+    private static final Set<SQLDialect>  OMIT_PARTITION_BY_ONE           = SQLDialect.supportedBy(CUBRID, MYSQL, SQLITE);
+    private static final Set<SQLDialect>  REQUIRES_ORDER_BY_IN_RANKING    = SQLDialect.supportedBy(H2);
 
-    private final WindowDefinitionImpl       windowDefinition;
-    private final QueryPartList<Field<?>>    partitionBy;
-    private final SortFieldList              orderBy;
-    private Integer                          frameStart;
-    private Integer                          frameEnd;
-    private FrameUnits                       frameUnits;
-    private Exclude                          exclude;
-    private boolean                          partitionByOne;
+
+
+
+
+
+    private final WindowDefinitionImpl    windowDefinition;
+    private final QueryPartList<Field<?>> partitionBy;
+    private final SortFieldList           orderBy;
+    private Integer                       frameStart;
+    private Integer                       frameEnd;
+    private FrameUnits                    frameUnits;
+    private Exclude                       exclude;
+    private boolean                       partitionByOne;
 
     WindowSpecificationImpl() {
         this(null);
@@ -119,7 +128,7 @@ final class WindowSpecificationImpl extends AbstractQueryPart implements
 
     WindowSpecificationImpl(WindowDefinitionImpl windowDefinition) {
         this.windowDefinition = windowDefinition;
-        this.partitionBy = new QueryPartList<Field<?>>();
+        this.partitionBy = new QueryPartList<>();
         this.orderBy = new SortFieldList();
     }
 
@@ -162,10 +171,30 @@ final class WindowSpecificationImpl extends AbstractQueryPart implements
 
             glue = " ";
         }
-        else if (TRUE.equals(ctx.data(DATA_RANKING_FUNCTION)) && REQUIRES_ORDER_BY_IN_RANKING.contains(ctx.family())) {
+
+
+
+
+
+
+
+
+
+
+
+        else if (TRUE.equals(ctx.data(BooleanDataKey.DATA_RANKING_FUNCTION)) && REQUIRES_ORDER_BY_IN_RANKING.contains(ctx.family())) {
+            Field<Integer> constant;
+
+
+
+
+
+
+                constant = field(select(one()));
+
             ctx.sql(glue)
                .visit(K_ORDER_BY).sql(' ')
-               .visit(field(select(one())));
+               .visit(constant);
 
             glue = " ";
         }

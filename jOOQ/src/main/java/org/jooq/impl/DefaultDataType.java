@@ -67,6 +67,7 @@ import java.util.regex.Pattern;
 
 // ...
 import org.jooq.Binding;
+import org.jooq.CharacterSet;
 import org.jooq.Collation;
 import org.jooq.Configuration;
 import org.jooq.Converter;
@@ -86,6 +87,7 @@ import org.jooq.types.Interval;
 import org.jooq.types.UByte;
 import org.jooq.types.UInteger;
 import org.jooq.types.ULong;
+import org.jooq.types.UNumber;
 import org.jooq.types.UShort;
 
 /**
@@ -98,6 +100,7 @@ import org.jooq.types.UShort;
  * @author Lukas Eder
  */
 @SuppressWarnings({"unchecked"})
+@org.jooq.Internal
 public class DefaultDataType<T> implements DataType<T> {
 
     /**
@@ -183,13 +186,13 @@ public class DefaultDataType<T> implements DataType<T> {
     private final DataType<T>                            sqlDataType;
 
     /**
-     * The Java class corresponding to this data type's <code>&lt;U></code>
+     * The Java class corresponding to this data type's <code>&lt;U&gt;</code>
      * type, i.e. the user type in case a {@link Binding} applies.
      */
     private final Class<T>                               uType;
 
     /**
-     * The Java class corresponding to this data type's <code>&lt;T></code>
+     * The Java class corresponding to this data type's <code>&lt;T&gt;</code>
      * type, i.e. the database type in case a {@link Binding} applies.
      */
     private final Class<?>                               tType;
@@ -220,6 +223,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
     private final Nullability                            nullability;
     private final Collation                              collation;
+    private final CharacterSet                           characterSet;
     private final boolean                                identity;
     private final Field<T>                               defaultValue;
     private final int                                    precision;
@@ -232,12 +236,12 @@ public class DefaultDataType<T> implements DataType<T> {
         TYPES_BY_TYPE = new Map[SQLDialect.values().length];
 
         for (SQLDialect dialect : SQLDialect.values()) {
-            TYPES_BY_SQL_DATATYPE[dialect.ordinal()] = new LinkedHashMap<DataType<?>, DataType<?>>();
-            TYPES_BY_NAME[dialect.ordinal()] = new LinkedHashMap<String, DataType<?>>();
-            TYPES_BY_TYPE[dialect.ordinal()] = new LinkedHashMap<Class<?>, DataType<?>>();
+            TYPES_BY_SQL_DATATYPE[dialect.ordinal()] = new LinkedHashMap<>();
+            TYPES_BY_NAME[dialect.ordinal()] = new LinkedHashMap<>();
+            TYPES_BY_TYPE[dialect.ordinal()] = new LinkedHashMap<>();
         }
 
-        SQL_DATATYPES_BY_TYPE = new LinkedHashMap<Class<?>, DataType<?>>();
+        SQL_DATATYPES_BY_TYPE = new LinkedHashMap<>();
 
         // [#2506] Transitively load all dialect-specific data types
         try {
@@ -275,10 +279,10 @@ public class DefaultDataType<T> implements DataType<T> {
     }
 
     DefaultDataType(SQLDialect dialect, DataType<T> sqlDataType, Class<T> type, Binding<?, T> binding, String typeName, String castTypeName, int precision, int scale, int length, Nullability nullability, Field<T> defaultValue) {
-        this(dialect, sqlDataType, type, binding, typeName, castTypeName, precision, scale, length, nullability, null, false, defaultValue);
+        this(dialect, sqlDataType, type, binding, typeName, castTypeName, precision, scale, length, nullability, null, null, false, defaultValue);
     }
 
-    DefaultDataType(SQLDialect dialect, DataType<T> sqlDataType, Class<T> type, Binding<?, T> binding, String typeName, String castTypeName, int precision, int scale, int length, Nullability nullability, Collation collation, boolean identity, Field<T> defaultValue) {
+    DefaultDataType(SQLDialect dialect, DataType<T> sqlDataType, Class<T> type, Binding<?, T> binding, String typeName, String castTypeName, int precision, int scale, int length, Nullability nullability, Collation collation, CharacterSet characterSet, boolean identity, Field<T> defaultValue) {
 
         // Initialise final instance members
         // ---------------------------------
@@ -295,6 +299,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
         this.nullability = nullability;
         this.collation = collation;
+        this.characterSet = characterSet;
         this.identity = identity;
         this.defaultValue = defaultValue;
         this.precision = precision0(type, precision);
@@ -331,9 +336,35 @@ public class DefaultDataType<T> implements DataType<T> {
     }
 
     /**
+     * [#7811] Allow for subtypes to override the constructor
+     */
+    DefaultDataType<T> construct(
+        int newPrecision,
+        int newScale,
+        int newLength,
+        Nullability newNullability,
+        Collation newCollation,
+        CharacterSet newCharacterSet,
+        boolean newIdentity,
+        Field<T> newDefaultValue
+    ) {
+        return new DefaultDataType<>(this, newPrecision, newScale, newLength, newNullability, newCollation, newCharacterSet, newIdentity, newDefaultValue);
+    }
+
+    /**
      * [#3225] Performant constructor for creating derived types.
      */
-    private DefaultDataType(DefaultDataType<T> t, int precision, int scale, int length, Nullability nullability, Collation collation, boolean identity, Field<T> defaultValue) {
+    DefaultDataType(
+        DefaultDataType<T> t,
+        int precision,
+        int scale,
+        int length,
+        Nullability nullability,
+        Collation collation,
+        CharacterSet characterSet,
+        boolean identity,
+        Field<T> defaultValue
+    ) {
         this.dialect = t.dialect;
         this.sqlDataType = t.sqlDataType;
         this.uType = t.uType;
@@ -345,6 +376,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
         this.nullability = nullability;
         this.collation = collation;
+        this.characterSet = characterSet;
         this.identity = identity;
         this.defaultValue = defaultValue;
         this.precision = precision0(uType, precision);
@@ -370,7 +402,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
     @Override
     public final DataType<T> nullability(Nullability n) {
-        return new DefaultDataType<T>(this, precision, scale, length, n, collation, n.nullable() ? false : identity, defaultValue);
+        return construct(precision, scale, length, n, collation, characterSet, n.nullable() ? false : identity, defaultValue);
     }
 
     @Override
@@ -390,7 +422,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
     @Override
     public final DataType<T> collation(Collation c) {
-        return new DefaultDataType<T>(this, precision, scale, length, nullability, c, identity, defaultValue);
+        return construct(precision, scale, length, nullability, c, characterSet, identity, defaultValue);
     }
 
     @Override
@@ -399,8 +431,18 @@ public class DefaultDataType<T> implements DataType<T> {
     }
 
     @Override
+    public final DataType<T> characterSet(CharacterSet c) {
+        return construct(precision, scale, length, nullability, collation, c, identity, defaultValue);
+    }
+
+    @Override
+    public final CharacterSet characterSet() {
+        return characterSet;
+    }
+
+    @Override
     public final DataType<T> identity(boolean i) {
-        return new DefaultDataType<T>(this, precision, scale, length, i ? NOT_NULL : nullability, collation, i, i ? null : defaultValue);
+        return construct(precision, scale, length, i ? NOT_NULL : nullability, collation, characterSet, i, i ? null : defaultValue);
     }
 
     @Override
@@ -410,16 +452,31 @@ public class DefaultDataType<T> implements DataType<T> {
 
     @Override
     public final DataType<T> defaultValue(T d) {
-        return defaultValue(Tools.field(d, this));
+        return default_(d);
     }
 
     @Override
     public final DataType<T> defaultValue(Field<T> d) {
-        return new DefaultDataType<T>(this, precision, scale, length, nullability, collation, d != null ? false : identity, d);
+        return default_(d);
     }
 
     @Override
     public final Field<T> defaultValue() {
+        return default_();
+    }
+
+    @Override
+    public final DataType<T> default_(T d) {
+        return default_(Tools.field(d, this));
+    }
+
+    @Override
+    public final DataType<T> default_(Field<T> d) {
+        return construct(precision, scale, length, nullability, collation, characterSet, d != null ? false : identity, d);
+    }
+
+    @Override
+    public final Field<T> default_() {
         return defaultValue;
     }
 
@@ -448,7 +505,7 @@ public class DefaultDataType<T> implements DataType<T> {
         else if (isLob())
             return this;
         else
-            return new DefaultDataType<T>(this, p, s, length, nullability, collation, identity, defaultValue);
+            return construct(p, s, length, nullability, collation, characterSet, identity, defaultValue);
     }
 
     @Override
@@ -479,7 +536,7 @@ public class DefaultDataType<T> implements DataType<T> {
         if (isLob())
             return this;
         else
-            return new DefaultDataType<T>(this, precision, s, length, nullability, collation, identity, defaultValue);
+            return construct(precision, s, length, nullability, collation, characterSet, identity, defaultValue);
     }
 
     @Override
@@ -501,7 +558,7 @@ public class DefaultDataType<T> implements DataType<T> {
         if (isLob())
             return this;
         else
-            return new DefaultDataType<T>(this, precision, scale, l, nullability, collation, identity, defaultValue);
+            return construct(precision, scale, l, nullability, collation, characterSet, identity, defaultValue);
     }
 
     @Override
@@ -525,7 +582,7 @@ public class DefaultDataType<T> implements DataType<T> {
         // If this is a SQLDataType find the most suited dialect-specific
         // data type
         if (getDialect() == null) {
-            DataType<?> dataType = TYPES_BY_SQL_DATATYPE[configuration.dialect().family().ordinal()]
+            DataType<?> dataType = TYPES_BY_SQL_DATATYPE[configuration.family().ordinal()]
 
                 // Be sure to reset length, precision, and scale, as those values
                 // were not registered in the below cache
@@ -540,7 +597,7 @@ public class DefaultDataType<T> implements DataType<T> {
         }
 
         // If this is already the dialect's specific data type, return this
-        else if (getDialect().family() == configuration.dialect().family()) {
+        else if (getDialect().family() == configuration.family()) {
             return this;
         }
 
@@ -551,7 +608,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
         // If this is another dialect's specific data type, recurse
         else {
-            getSQLDataType().getDataType(configuration);
+            return getSQLDataType().getDataType(configuration);
         }
 
         return this;
@@ -653,6 +710,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
 
 
+
                 case POSTGRES:
                 default:
                     return Types.OTHER;
@@ -717,7 +775,7 @@ public class DefaultDataType<T> implements DataType<T> {
 
     @Override
     public final DataType<T[]> getArrayDataType() {
-        return new ArrayDataType<T>(this);
+        return new ArrayDataType<>(this);
     }
 
 
@@ -732,7 +790,7 @@ public class DefaultDataType<T> implements DataType<T> {
     @Override
     public final <E extends EnumType> DataType<E> asEnumDataType(Class<E> enumDataType) {
         String enumTypeName = Tools.enums(enumDataType)[0].getName();
-        return new DefaultDataType<E>(dialect, (DataType<E>) null, enumDataType, enumTypeName, enumTypeName, precision, scale, length, nullability, (Field) defaultValue);
+        return new DefaultDataType<>(dialect, (DataType<E>) null, enumDataType, enumTypeName, enumTypeName, precision, scale, length, nullability, (Field) defaultValue);
     }
 
     @Override
@@ -749,7 +807,7 @@ public class DefaultDataType<T> implements DataType<T> {
         if (newBinding == null)
             newBinding = (Binding<? super T, U>) DefaultBinding.binding(getType(), isLob());
 
-        return new ConvertedDataType<T, U>(this, newBinding);
+        return new ConvertedDataType<>(this, newBinding);
     }
 
     @Override
@@ -780,11 +838,11 @@ public class DefaultDataType<T> implements DataType<T> {
     }
 
     public static final DataType<Object> getDefaultDataType(String typeName) {
-        return new DefaultDataType<Object>(SQLDialect.DEFAULT, Object.class, typeName, typeName);
+        return new DefaultDataType<>(SQLDialect.DEFAULT, Object.class, typeName, typeName);
     }
 
     public static final DataType<Object> getDefaultDataType(SQLDialect dialect, String typeName) {
-        return new DefaultDataType<Object>(dialect, Object.class, typeName, typeName);
+        return new DefaultDataType<>(dialect, Object.class, typeName, typeName);
     }
 
     public static final DataType<?> getDataType(SQLDialect dialect, String typeName) {
@@ -803,12 +861,19 @@ public class DefaultDataType<T> implements DataType<T> {
                 result = TYPES_BY_NAME[SQLDialect.DEFAULT.ordinal()].get(normalised);
 
                 // [#4065] PostgreSQL reports array types as _typename, e.g. _varchar
-                if (result == null && (                                                      family == POSTGRES) && normalised.charAt(0) == '_')
+                if (result == null && ( family == POSTGRES) && normalised.charAt(0) == '_')
                     result = getDataType(dialect, normalised.substring(1)).getArrayDataType();
 
                 // [#6466] HSQLDB reports array types as XYZARRAY
-                if (result == null && family == HSQLDB && upper.endsWith(" ARRAY"))
+                else if (result == null && family == HSQLDB && upper.endsWith(" ARRAY"))
                     result = getDataType(dialect, typeName.substring(0, typeName.length() - 6)).getArrayDataType();
+
+
+
+
+
+
+
 
                 // [#366] Don't log a warning here. The warning is logged when
                 // catching the exception in jOOQ-codegen
@@ -896,6 +961,16 @@ public class DefaultDataType<T> implements DataType<T> {
     @Override
     public final boolean isNumeric() {
         return Number.class.isAssignableFrom(tType) && !isInterval();
+    }
+
+    @Override
+    public final boolean isInteger() {
+        return UNumber.class.isAssignableFrom(tType)
+            || Byte.class == tType
+            || Short.class == tType
+            || Integer.class == tType
+            || Long.class == tType
+        ;
     }
 
     @Override

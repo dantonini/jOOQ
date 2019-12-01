@@ -41,6 +41,7 @@ import static org.jooq.impl.DSL.level;
 import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.Names.N_GENERATE_SERIES;
 
 import org.jooq.Clause;
 import org.jooq.Configuration;
@@ -50,6 +51,7 @@ import org.jooq.Name;
 import org.jooq.QueryPart;
 import org.jooq.Record1;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * @author Lukas Eder
@@ -70,7 +72,7 @@ final class GenerateSeries extends AbstractTable<Record1<Integer>> {
     }
 
     GenerateSeries(Field<Integer> from, Field<Integer> to, Field<Integer> step) {
-        super("generate_series");
+        super(TableOptions.expression(), N_GENERATE_SERIES);
 
         this.from = from;
         this.to = to;
@@ -113,6 +115,7 @@ final class GenerateSeries extends AbstractTable<Record1<Integer>> {
 
 
 
+
             case POSTGRES:
             default:
                 if (step == null)
@@ -130,16 +133,16 @@ final class GenerateSeries extends AbstractTable<Record1<Integer>> {
 
     @Override
     public final Table<Record1<Integer>> as(Name alias) {
-        return new TableAlias<Record1<Integer>>(this, alias);
+        return new TableAlias<>(this, alias);
     }
 
     @Override
     public final Table<Record1<Integer>> as(Name alias, Name... fieldAliases) {
-        return new TableAlias<Record1<Integer>>(this, alias, fieldAliases);
+        return new TableAlias<>(this, alias, fieldAliases);
     }
 
     @Override
     final Fields<Record1<Integer>> fields0() {
-        return new Fields<Record1<Integer>>(DSL.field(name("generate_series"), Integer.class));
+        return new Fields<>(DSL.field(name("generate_series"), Integer.class));
     }
 }

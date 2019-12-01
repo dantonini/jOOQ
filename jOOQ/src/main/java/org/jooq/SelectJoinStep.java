@@ -41,6 +41,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -51,11 +52,12 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_9_3;
+// ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
 // ...
@@ -80,9 +82,9 @@ import org.jooq.impl.DSL;
  *     FROM T_AUTHOR
  *     JOIN T_BOOK ON T_AUTHOR.ID = T_BOOK.AUTHOR_ID
  *    WHERE T_BOOK.LANGUAGE = 'DE'
- *      AND T_BOOK.PUBLISHED > '2008-01-01'
+ *      AND T_BOOK.PUBLISHED &gt; '2008-01-01'
  * GROUP BY T_AUTHOR.FIRST_NAME, T_AUTHOR.LAST_NAME
- *   HAVING COUNT(*) > 5
+ *   HAVING COUNT(*) &gt; 5
  * ORDER BY T_AUTHOR.LAST_NAME ASC NULLS FIRST
  *    LIMIT 2
  *   OFFSET 1
@@ -356,7 +358,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      *
      * @see Table#crossJoin(TableLike)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectJoinStep<R> crossJoin(TableLike<?> table);
 
     /**
@@ -380,7 +382,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossJoin(SQL)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     SelectJoinStep<R> crossJoin(SQL sql);
 
@@ -405,7 +407,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossJoin(String)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     SelectJoinStep<R> crossJoin(String sql);
 
@@ -431,7 +433,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossJoin(String, Object...)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     SelectJoinStep<R> crossJoin(String sql, Object... bindings);
 
@@ -457,7 +459,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossJoin(String, QueryPart...)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     SelectJoinStep<R> crossJoin(String sql, QueryPart... parts);
 
@@ -476,7 +478,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see DSL#table(Name)
      * @see Table#crossJoin(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectJoinStep<R> crossJoin(Name name);
 
     /**
@@ -1583,6 +1585,13 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      *     SELECT 1 FROM B WHERE A.ID = B.ID
      * )
      * </pre></code>
+     * <p>
+     * Notice that according to
+     * <a href="https://en.wikipedia.org/wiki/Relational_algebra">Relational
+     * algebra's</a> understanding of left semi join, the right hand side of the
+     * left semi join operator is not projected, i.e. it cannot be accessed from
+     * <code>WHERE</code> or <code>SELECT</code> or any other clause than
+     * <code>ON</code>.
      *
      * @see Table#leftSemiJoin(TableLike)
      */
@@ -1606,6 +1615,13 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      *     SELECT 1 FROM B WHERE A.ID = B.ID
      * )
      * </pre></code>
+     * <p>
+     * Notice that according to
+     * <a href="https://en.wikipedia.org/wiki/Relational_algebra">Relational
+     * algebra's</a> understanding of left semi join, the right hand side of the
+     * left semi join operator is not projected, i.e. it cannot be accessed from
+     * <code>WHERE</code> or <code>SELECT</code> or any other clause than
+     * <code>ON</code>.
      *
      * @see Table#leftAntiJoin(TableLike)
      */
@@ -1621,7 +1637,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      *
      * @see Table#crossApply(TableLike)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     SelectJoinStep<R> crossApply(TableLike<?> table);
 
     /**
@@ -1636,7 +1652,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossApply(SQL)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> crossApply(SQL sql);
 
@@ -1652,7 +1668,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossApply(String)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> crossApply(String sql);
 
@@ -1669,7 +1685,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossApply(String, Object...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> crossApply(String sql, Object... bindings);
 
@@ -1686,7 +1702,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#crossApply(String, QueryPart...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> crossApply(String sql, QueryPart... parts);
 
@@ -1696,7 +1712,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see DSL#table(Name)
      * @see Table#crossApply(Name)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     SelectJoinStep<R> crossApply(Name name);
 
     /**
@@ -1704,7 +1720,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      *
      * @see Table#outerApply(TableLike)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     SelectJoinStep<R> outerApply(TableLike<?> table);
 
     /**
@@ -1719,7 +1735,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#outerApply(SQL)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> outerApply(SQL sql);
 
@@ -1735,7 +1751,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#outerApply(String)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> outerApply(String sql);
 
@@ -1752,7 +1768,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#outerApply(String, Object...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> outerApply(String sql, Object... bindings);
 
@@ -1769,7 +1785,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see Table#outerApply(String, QueryPart...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     SelectJoinStep<R> outerApply(String sql, QueryPart... parts);
 
@@ -1779,7 +1795,7 @@ public interface SelectJoinStep<R extends Record> extends SelectWhereStep<R> {
      * @see DSL#table(Name)
      * @see Table#outerApply(Name)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     SelectJoinStep<R> outerApply(Name name);
 
     /**

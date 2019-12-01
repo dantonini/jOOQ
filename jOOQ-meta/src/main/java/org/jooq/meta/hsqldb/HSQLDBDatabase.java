@@ -40,6 +40,7 @@ package org.jooq.meta.hsqldb;
 
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.noCondition;
 import static org.jooq.impl.DSL.nvl;
 import static org.jooq.meta.hsqldb.information_schema.Tables.CHECK_CONSTRAINTS;
 import static org.jooq.meta.hsqldb.information_schema.Tables.ELEMENT_TYPES;
@@ -49,7 +50,7 @@ import static org.jooq.meta.hsqldb.information_schema.Tables.ROUTINES;
 import static org.jooq.meta.hsqldb.information_schema.Tables.SCHEMATA;
 import static org.jooq.meta.hsqldb.information_schema.Tables.SEQUENCES;
 import static org.jooq.meta.hsqldb.information_schema.Tables.SYSTEM_INDEXINFO;
-import static org.jooq.meta.hsqldb.information_schema.Tables.TABLES;
+import static org.jooq.meta.hsqldb.information_schema.Tables.SYSTEM_TABLES;
 import static org.jooq.meta.hsqldb.information_schema.Tables.TABLE_CONSTRAINTS;
 
 import java.sql.SQLException;
@@ -104,7 +105,7 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<IndexDefinition> getIndexes0() throws SQLException {
-        List<IndexDefinition> result = new ArrayList<IndexDefinition>();
+        List<IndexDefinition> result = new ArrayList<>();
 
         // Same implementation as in H2Database and MySQLDatabase
         Map<Record, Result<Record>> indexes = create()
@@ -159,7 +160,7 @@ public class HSQLDBDatabase extends AbstractDatabase {
                     continue indexLoop;
 
             result.add(new AbstractIndexDefinition(tableSchema, indexName, table, unique) {
-                List<IndexColumnDefinition> indexColumns = new ArrayList<IndexColumnDefinition>();
+                List<IndexColumnDefinition> indexColumns = new ArrayList<>();
 
                 {
                     for (Record column : cols) {
@@ -300,6 +301,9 @@ public class HSQLDBDatabase extends AbstractDatabase {
                 .join(cc)
                 .using(tc.CONSTRAINT_CATALOG, tc.CONSTRAINT_SCHEMA, tc.CONSTRAINT_NAME)
                 .where(tc.TABLE_SCHEMA.in(getInputSchemata()))
+                .and(getIncludeSystemCheckConstraints()
+                    ? noCondition()
+                    : tc.CONSTRAINT_NAME.notLike("SYS!_CT!_%", '!'))
                 .fetch()) {
 
             SchemaDefinition schema = getSchema(record.get(tc.TABLE_SCHEMA));
@@ -318,14 +322,14 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() throws SQLException {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
 
         for (String name : create()
                 .select(SCHEMATA.SCHEMA_NAME)
@@ -340,7 +344,7 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<SequenceDefinition> getSequences0() throws SQLException {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
 
         for (Record record : create()
                 .select(
@@ -371,22 +375,22 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<TableDefinition> getTables0() throws SQLException {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
 
         for (Record record : create()
                 .select(
-                    TABLES.TABLE_SCHEMA,
-                    TABLES.TABLE_NAME)
-                .from(TABLES)
-                .where(TABLES.TABLE_SCHEMA.in(getInputSchemata()))
+                    SYSTEM_TABLES.TABLE_SCHEM,
+                    SYSTEM_TABLES.TABLE_NAME,
+                    SYSTEM_TABLES.REMARKS)
+                .from(SYSTEM_TABLES)
+                .where(SYSTEM_TABLES.TABLE_SCHEM.in(getInputSchemata()))
                 .orderBy(
-                    TABLES.TABLE_SCHEMA,
-                    TABLES.TABLE_NAME)
-                .fetch()) {
+                    SYSTEM_TABLES.TABLE_SCHEM,
+                    SYSTEM_TABLES.TABLE_NAME)) {
 
-            SchemaDefinition schema = getSchema(record.get(TABLES.TABLE_SCHEMA));
-            String name = record.get(TABLES.TABLE_NAME);
-            String comment = "";
+            SchemaDefinition schema = getSchema(record.get(SYSTEM_TABLES.TABLE_SCHEM));
+            String name = record.get(SYSTEM_TABLES.TABLE_NAME);
+            String comment = record.get(SYSTEM_TABLES.REMARKS);
 
             result.add(new HSQLDBTableDefinition(schema, name, comment));
         }
@@ -396,31 +400,31 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<EnumDefinition> getEnums0() throws SQLException {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<UDTDefinition> getUDTs0() throws SQLException {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<ArrayDefinition> getArrays0() throws SQLException {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<RoutineDefinition> getRoutines0() throws SQLException {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
 
         for (Record record : create()
                 .select(
@@ -465,7 +469,7 @@ public class HSQLDBDatabase extends AbstractDatabase {
 
     @Override
     protected List<PackageDefinition> getPackages0() throws SQLException {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
         return result;
     }
 }

@@ -39,6 +39,7 @@ package org.jooq;
 
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -46,6 +47,7 @@ import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
@@ -70,9 +72,9 @@ import static org.jooq.SQLDialect.SQLITE;
  *     FROM T_AUTHOR
  *     JOIN T_BOOK ON T_AUTHOR.ID = T_BOOK.AUTHOR_ID
  *    WHERE T_BOOK.LANGUAGE = 'DE'
- *      AND T_BOOK.PUBLISHED > '2008-01-01'
+ *      AND T_BOOK.PUBLISHED &gt; '2008-01-01'
  * GROUP BY T_AUTHOR.FIRST_NAME, T_AUTHOR.LAST_NAME
- *   HAVING COUNT(*) > 5
+ *   HAVING COUNT(*) &gt; 5
  * ORDER BY T_AUTHOR.LAST_NAME ASC NULLS FIRST
  *    LIMIT 2
  *   OFFSET 1
@@ -149,7 +151,7 @@ public interface SelectSeekLimitStep<R extends Record> extends SelectForUpdateSt
      * <code>ROW_NUMBER()</code> window function and nested <code>SELECT</code>
      * statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectForUpdateStep<R> limit(Param<? extends Number> numberOfRows);
 
 }

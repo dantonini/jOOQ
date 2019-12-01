@@ -37,16 +37,30 @@
  */
 package org.jooq.impl;
 
+// ...
+// ...
+// ...
+import static org.jooq.SQLDialect.MARIADB;
+// ...
+import static org.jooq.SQLDialect.MYSQL;
+import static org.jooq.SQLDialect.POSTGRES;
+// ...
+// ...
+// ...
+// ...
+import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.Tools.EMPTY_SORTFIELD;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.jooq.Condition;
 import org.jooq.Context;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.OrderField;
+import org.jooq.SQLDialect;
 import org.jooq.SortField;
 import org.jooq.Table;
 
@@ -58,19 +72,20 @@ class IndexImpl extends AbstractNamed implements Index {
     /**
      * Generated UID
      */
-    private static final long    serialVersionUID = -5253463940194393996L;
+    private static final long                serialVersionUID               = -5253463940194393996L;
+    private static final Set<SQLDialect>     NO_SUPPORT_INDEX_QUALIFICATION = SQLDialect.supportedBy(MARIADB, MYSQL, POSTGRES);
 
-    private final Table<?>       table;
-    private final SortField<?>[] fields;
-    private final Condition      where;
-    private final boolean        unique;
+    private final Table<?>                   table;
+    private final SortField<?>[]             fields;
+    private final Condition                  where;
+    private final boolean                    unique;
 
     IndexImpl(Name name) {
         this(name, null, EMPTY_SORTFIELD, null, false);
     }
 
     IndexImpl(Name name, Table<?> table, OrderField<?>[] fields, Condition where, boolean unique) {
-        super(qualify(table, name), CommentImpl.NO_COMMENT);
+        super(name.empty() ? name : qualify(table, name), CommentImpl.NO_COMMENT);
 
         this.table = table;
         this.fields = Tools.sortFields(fields);
@@ -78,9 +93,17 @@ class IndexImpl extends AbstractNamed implements Index {
         this.unique = unique;
     }
 
+    final SortField<?>[]    $fields()      { return fields; }
+    final boolean           $unique()      { return unique; }
+
     @Override
     public final void accept(Context<?> ctx) {
-        ctx.visit(getQualifiedName());
+        if (NO_SUPPORT_INDEX_QUALIFICATION.contains(ctx.family()))
+            ctx.visit(getUnqualifiedName());
+        else if (getTable() == null)
+            ctx.visit(getQualifiedName());
+        else
+            ctx.visit(name(getTable().getQualifiedName().qualifier(), getUnqualifiedName()));
     }
 
     @Override

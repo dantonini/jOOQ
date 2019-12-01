@@ -70,8 +70,8 @@ import static org.jooq.impl.Tools.DataKey.DATA_BLOCK_NESTING;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jooq.Block;
 import org.jooq.Configuration;
@@ -88,14 +88,14 @@ import org.jooq.Statement;
 /**
  * @author Lukas Eder
  */
-final class BlockImpl extends AbstractQuery implements Block {
+final class BlockImpl extends AbstractRowCountQuery implements Block {
 
     /**
      * Generated UID
      */
     private static final long                     serialVersionUID                  = 6881305779639901498L;
-    private static final EnumSet<SQLDialect>      REQUIRES_EXECUTE_IMMEDIATE_ON_DDL = EnumSet.of(FIREBIRD);
-    private static final EnumSet<SQLDialect>      SUPPORTS_NULL_STATEMENT           = EnumSet.of(POSTGRES);
+    private static final Set<SQLDialect>          REQUIRES_EXECUTE_IMMEDIATE_ON_DDL = SQLDialect.supportedBy(FIREBIRD);
+    private static final Set<SQLDialect>          SUPPORTS_NULL_STATEMENT           = SQLDialect.supportedBy(POSTGRES);
 
 
 
@@ -235,7 +235,7 @@ final class BlockImpl extends AbstractQuery implements Block {
 
         ;
 
-        acceptDeclarations(ctx, new ArrayList<Statement>(statements), wrapInBeginEnd);
+        acceptDeclarations(ctx, new ArrayList<>(statements), wrapInBeginEnd);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -382,36 +382,36 @@ final class BlockImpl extends AbstractQuery implements Block {
 
 
 
-                if (ctx.family() == H2 && s instanceof Query && !(s instanceof Block)) {
-                    ArrayList<Variable<?>> list = new ArrayList<Variable<?>>();
 
-                    ctx.data(STATEMENT_VARIABLES, list);
-                    ctx.sql("try (PreparedStatement s = c.prepareStatement(")
-                       .formatIndentStart()
-                       .formatNewLine()
-                       .sql('"')
-                       .sql(ctx.render(s).replace("\"", "\\\"").replace("\n", "\\n\" +\n\""))
-                       .sql('"')
-                       .formatIndentEnd()
-                       .formatNewLine()
-                       .sql(")) {")
-                       .formatIndentStart()
-                       .formatSeparator();
 
-                    for (int j = 0; j < list.size(); j++)
-                        ctx.sql("s.setObject(" + (j + 1) + ", ")
-                           .sql(list.get(j).getName())
-                           .sql(");")
-                           .formatSeparator();
 
-                    ctx.sql("s.execute();")
-                       .formatIndentEnd()
-                       .formatSeparator()
-                       .sql('}');
 
-                    ctx.data().remove(STATEMENT_VARIABLES);
-                }
-                else
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     ctx.visit(s);
 
 

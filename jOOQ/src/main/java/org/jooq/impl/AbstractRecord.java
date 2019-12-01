@@ -40,7 +40,9 @@ package org.jooq.impl;
 
 import static java.util.Arrays.asList;
 import static org.jooq.conf.SettingsTools.updatablePrimaryKeys;
+import static org.jooq.impl.Tools.embeddedFields;
 import static org.jooq.impl.Tools.indexOrFail;
+import static org.jooq.impl.Tools.isEmbeddable;
 import static org.jooq.impl.Tools.resetChangedOnNotNull;
 import static org.jooq.impl.Tools.settings;
 import static org.jooq.impl.Tools.ThreadGuard.Guard.RECORD_TOSTRING;
@@ -62,6 +64,7 @@ import org.jooq.CSVFormat;
 import org.jooq.ChartFormat;
 import org.jooq.Converter;
 import org.jooq.DataType;
+import org.jooq.EmbeddableRecord;
 import org.jooq.Field;
 import org.jooq.JSONFormat;
 import org.jooq.Name;
@@ -156,7 +159,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
         for (int i = 0; i < size; i++) {
             if (values[i] instanceof Attachable) {
                 if (result == null)
-                    result = new ArrayList<Attachable>();
+                    result = new ArrayList<>();
 
                 result.add((Attachable) values[i]);
             }
@@ -240,7 +243,16 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final <T> T get(Field<T> field) {
-        return (T) get(indexOrFail(fieldsRow(), field));
+        if (field instanceof EmbeddableTableField) {
+            Field<?>[] f = embeddedFields(field);
+
+            return (T) Tools
+                .newRecord(fetched, ((EmbeddableTableField<?, ?>) field).recordType)
+                .operate(new TransferRecordState<Record>(f));
+        }
+        else {
+            return (T) get(indexOrFail(fieldsRow(), field));
+        }
     }
 
     @Override
@@ -310,15 +322,24 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     protected final void set(int index, Object value) {
-        set(index, (Field) field(index), value);
+        set(index, field(index), value);
     }
 
     @Override
     public final <T> void set(Field<T> field, T value) {
-        set(indexOrFail(fields, field), field, value);
+        if (isEmbeddable(field) && value instanceof EmbeddableRecord) {
+            Field<?>[] f = embeddedFields(field);
+            Object[] v = ((EmbeddableRecord) value).intoArray();
+
+            for (int i = 0; i < f.length; i++)
+                set(indexOrFail(fields, f[i]), f[i], v[i]);
+        }
+        else {
+            set(indexOrFail(fields, field), field, value);
+        }
     }
 
-    final <T> void set(int index, Field<T> field, T value) {
+    final void set(int index, Field<?> field, Object value) {
         // Relevant issues documenting this method's behaviour:
         // [#945] Avoid bugs resulting from setting the same value twice
         // [#948] To allow for controlling the number of hard-parses
@@ -572,7 +593,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final Map<String, Object> intoMap() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        Map<String, Object> map = new LinkedHashMap<>();
 
         int size = fields.size();
         for (int i = 0; i < size; i++) {
@@ -591,7 +612,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
         return Tools.newRecord(fetched, Record.class, f, configuration()).operate(new TransferRecordState<Record>(f));
     }
 
-    // [jooq-tools] START [into-fields]
+
 
     @Override
     public final <T1> Record1<T1> into(Field<T1> field1) {
@@ -703,7 +724,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
         return (Record22) into(new Field[] { field1, field2, field3, field4, field5, field6, field7, field8, field9, field10, field11, field12, field13, field14, field15, field16, field17, field18, field19, field20, field21, field22 });
     }
 
-// [jooq-tools] END [into-fields]
+
 
     @Override
     public final <E> E into(Class<? extends E> type) {
@@ -799,7 +820,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final ResultSet intoResultSet() {
-        ResultImpl<Record> result = new ResultImpl<Record>(configuration(), fields.fields.fields);
+        ResultImpl<Record> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(this);
         return result.intoResultSet();
     }
@@ -935,14 +956,14 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void format(Writer writer, TXTFormat format) {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         result.format(writer, format);
     }
 
     @Override
     public final void formatCSV(Writer writer, CSVFormat format)  {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         result.formatCSV(writer, format);
     }
@@ -990,14 +1011,14 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void formatHTML(Writer writer) {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         result.formatHTML(writer);
     }
 
     @Override
     public final void formatChart(Writer writer, ChartFormat format) {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         result.formatChart(writer, format);
     }
@@ -1009,21 +1030,21 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void formatInsert(Writer writer, Table<?> table, Field<?>... f) {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         result.formatInsert(writer, table, f);
     }
 
     @Override
     public final Document intoXML(XMLFormat format) {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         return result.intoXML(format);
     }
 
     @Override
     public final <H extends ContentHandler> H intoXML(H handler, XMLFormat format) throws SAXException {
-        Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+        Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
         result.add(AbstractRecord.this);
         return result.intoXML(handler, format);
     }
@@ -1038,7 +1059,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
         return ThreadGuard.run(RECORD_TOSTRING, new GuardedOperation<String>() {
             @Override
             public String unguarded() {
-                Result<AbstractRecord> result = new ResultImpl<AbstractRecord>(configuration(), fields.fields.fields);
+                Result<AbstractRecord> result = new ResultImpl<>(configuration(), fields.fields.fields);
                 result.add(AbstractRecord.this);
                 return result.toString();
             }

@@ -72,6 +72,7 @@ abstract class AbstractGenerator implements Generator {
     boolean                            generateSequences                  = true;
     boolean                            generateUDTs                       = true;
     boolean                            generateTables                     = true;
+    boolean                            generateEmbeddables                = true;
     boolean                            generateRecords                    = true;
     boolean                            generateRecordsImplementingRecordN = true;
     boolean                            generatePojos                      = false;
@@ -119,7 +120,7 @@ abstract class AbstractGenerator implements Generator {
     boolean                            generateJavaBeansGettersAndSetters = false;
     boolean                            generateVarargsSetters             = true;
     String                             generateFullyQualifiedTypes        = "";
-    boolean                            generateJavaTimeTypes              = false;
+    boolean                            generateJavaTimeTypes              = true;
     boolean                            generateTableValuedFunctions       = false;
     boolean                            generateEmptyCatalogs              = false;
     boolean                            generateEmptySchemas               = false;
@@ -354,6 +355,16 @@ abstract class AbstractGenerator implements Generator {
     @Override
     public void setGenerateTables(boolean generateTables) {
         this.generateTables = generateTables;
+    }
+
+    @Override
+    public boolean generateEmbeddables() {
+        return generateEmbeddables;
+    }
+
+    @Override
+    public void setGenerateEmbeddables(boolean generateEmbeddables) {
+        this.generateEmbeddables = generateEmbeddables;
     }
 
     @Override
@@ -902,7 +913,9 @@ abstract class AbstractGenerator implements Generator {
 
     @Override
     public void setGenerateNewline(String newline) {
-        this.generateNewline = newline;
+        // [#6234] The character provided in the configuration may either be the
+        //         ASCII character itself, or an escaped version of it, such as "\\n"
+        this.generateNewline = newline == null ? newline : newline.replace("\\r", "\r").replace("\\n", "\n");
     }
 
     @Override

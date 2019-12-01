@@ -41,46 +41,60 @@ import static org.jooq.impl.DSL.choose;
 import static org.jooq.impl.DSL.decode;
 import static org.jooq.impl.DSL.falseCondition;
 import static org.jooq.impl.DSL.inline;
+import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.noCondition;
 import static org.jooq.impl.DSL.select;
+import static org.jooq.meta.firebird.rdb.Tables.RDB$CHECK_CONSTRAINTS;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$GENERATORS;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$INDEX_SEGMENTS;
+import static org.jooq.meta.firebird.rdb.Tables.RDB$INDICES;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$PROCEDURES;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$REF_CONSTRAINTS;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$RELATIONS;
 import static org.jooq.meta.firebird.rdb.Tables.RDB$RELATION_CONSTRAINTS;
+import static org.jooq.meta.firebird.rdb.Tables.RDB$TRIGGERS;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
-import org.jooq.Record2;
 import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
+import org.jooq.SortOrder;
 import org.jooq.impl.DSL;
 import org.jooq.meta.AbstractDatabase;
+import org.jooq.meta.AbstractIndexDefinition;
 import org.jooq.meta.ArrayDefinition;
 import org.jooq.meta.CatalogDefinition;
 import org.jooq.meta.DataTypeDefinition;
+import org.jooq.meta.DefaultCheckConstraintDefinition;
 import org.jooq.meta.DefaultDataTypeDefinition;
+import org.jooq.meta.DefaultIndexColumnDefinition;
 import org.jooq.meta.DefaultRelations;
 import org.jooq.meta.DefaultSequenceDefinition;
 import org.jooq.meta.DomainDefinition;
 import org.jooq.meta.EnumDefinition;
+import org.jooq.meta.IndexColumnDefinition;
+import org.jooq.meta.IndexDefinition;
 import org.jooq.meta.PackageDefinition;
 import org.jooq.meta.RoutineDefinition;
 import org.jooq.meta.SchemaDefinition;
 import org.jooq.meta.SequenceDefinition;
 import org.jooq.meta.TableDefinition;
 import org.jooq.meta.UDTDefinition;
+import org.jooq.meta.firebird.rdb.tables.Rdb$checkConstraints;
 import org.jooq.meta.firebird.rdb.tables.Rdb$fields;
 import org.jooq.meta.firebird.rdb.tables.Rdb$indexSegments;
+import org.jooq.meta.firebird.rdb.tables.Rdb$indices;
 import org.jooq.meta.firebird.rdb.tables.Rdb$refConstraints;
 import org.jooq.meta.firebird.rdb.tables.Rdb$relationConstraints;
+import org.jooq.meta.firebird.rdb.tables.Rdb$triggers;
 import org.jooq.meta.jaxb.SchemaMappingType;
 import org.jooq.util.firebird.FirebirdDataType;
 
@@ -96,7 +110,7 @@ public class FirebirdDatabase extends AbstractDatabase {
         schema.setInputSchema("");
         schema.setOutputSchema("");
 
-        List<SchemaMappingType> schemata = new ArrayList<SchemaMappingType>();
+        List<SchemaMappingType> schemata = new ArrayList<>();
         schemata.add(schema);
 
         setConfiguredSchemata(schemata);
@@ -192,27 +206,140 @@ public class FirebirdDatabase extends AbstractDatabase {
     }
 
     @Override
-    protected void loadCheckConstraints(DefaultRelations r) throws SQLException {
-        // Currently not supported
+    protected void loadCheckConstraints(DefaultRelations relations) throws SQLException {
+        Rdb$relationConstraints r = RDB$RELATION_CONSTRAINTS.as("r");
+        Rdb$checkConstraints c = RDB$CHECK_CONSTRAINTS.as("c");
+        Rdb$triggers t = RDB$TRIGGERS.as("t");
+
+        // [#7639] RDB$TRIGGERS is not in 3NF. The RDB$TRIGGER_SOURCE is repeated
+        //         for RDB$TRIGGER_TYPE 1 (before insert) and 3 (before update)
+        for (Record record : create()
+            .select(
+                r.RDB$RELATION_NAME.trim().as(r.RDB$RELATION_NAME),
+                r.RDB$CONSTRAINT_NAME.trim().as(r.RDB$CONSTRAINT_NAME),
+                max(t.RDB$TRIGGER_SOURCE.trim()).as(t.RDB$TRIGGER_SOURCE)
+            )
+            .from(r)
+            .join(c).on(r.RDB$CONSTRAINT_NAME.eq(c.RDB$CONSTRAINT_NAME))
+            .join(t).on(c.RDB$TRIGGER_NAME.eq(t.RDB$TRIGGER_NAME))
+            .where(r.RDB$CONSTRAINT_TYPE.eq(inline("CHECK")))
+            .groupBy(
+                r.RDB$RELATION_NAME,
+                r.RDB$CONSTRAINT_NAME
+            )
+            .orderBy(
+                r.RDB$RELATION_NAME,
+                r.RDB$CONSTRAINT_NAME
+            )
+        ) {
+            SchemaDefinition schema = getSchemata().get(0);
+            TableDefinition table = getTable(schema, record.get(r.RDB$RELATION_NAME));
+
+            if (table != null) {
+                relations.addCheckConstraint(table, new DefaultCheckConstraintDefinition(
+                    schema,
+                    table,
+                    record.get(r.RDB$CONSTRAINT_NAME),
+                    record.get(t.RDB$TRIGGER_SOURCE)
+                ));
+            }
+        }
+    }
+
+    @Override
+    protected List<IndexDefinition> getIndexes0() throws SQLException {
+        final List<IndexDefinition> result = new ArrayList<>();
+
+        final Rdb$relationConstraints c = RDB$RELATION_CONSTRAINTS.as("c");
+        final Rdb$indices i = RDB$INDICES.as("i");
+        final Rdb$indexSegments s = RDB$INDEX_SEGMENTS.as("s");
+
+        Map<Record, Result<Record>> indexes = create()
+            .select(
+                i.RDB$RELATION_NAME.trim().as(i.RDB$RELATION_NAME),
+                i.RDB$INDEX_NAME.trim().as(i.RDB$INDEX_NAME),
+                i.RDB$UNIQUE_FLAG,
+                s.RDB$FIELD_NAME.trim().as(s.RDB$FIELD_NAME),
+                s.RDB$FIELD_POSITION
+                )
+            .from(i)
+            .join(s).on(i.RDB$INDEX_NAME.eq(s.RDB$INDEX_NAME))
+            .where(i.RDB$INDEX_NAME.notIn(select(c.RDB$CONSTRAINT_NAME).from(c)))
+            .orderBy(
+                i.RDB$RELATION_NAME,
+                i.RDB$INDEX_NAME,
+                s.RDB$FIELD_POSITION)
+            .fetchGroups(
+                new Field[] {
+                    i.RDB$RELATION_NAME,
+                    i.RDB$INDEX_NAME,
+                    i.RDB$UNIQUE_FLAG
+                },
+                new Field[] {
+                    s.RDB$FIELD_NAME,
+                    s.RDB$FIELD_POSITION
+                });
+
+        indexLoop:
+        for (Entry<Record, Result<Record>> entry : indexes.entrySet()) {
+            final Record index = entry.getKey();
+            final Result<Record> columns = entry.getValue();
+            final SchemaDefinition schema = getSchemata().get(0);
+
+            final String indexName = index.get(i.RDB$INDEX_NAME);
+            final String tableName = index.get(i.RDB$RELATION_NAME);
+            final TableDefinition table = getTable(schema, tableName);
+            if (table == null)
+                continue indexLoop;
+
+            final boolean unique = index.get(i.RDB$UNIQUE_FLAG, boolean.class);
+
+            // [#6310] [#6620] Function-based indexes are not yet supported
+            for (Record column : columns)
+                if (table.getColumn(column.get(s.RDB$FIELD_NAME)) == null)
+                    continue indexLoop;
+
+            result.add(new AbstractIndexDefinition(schema, indexName, table, unique) {
+                List<IndexColumnDefinition> indexColumns = new ArrayList<>();
+
+                {
+                    for (Record column : columns) {
+                        indexColumns.add(new DefaultIndexColumnDefinition(
+                            this,
+                            table.getColumn(column.get(s.RDB$FIELD_NAME)),
+                            SortOrder.ASC,
+                            column.get(s.RDB$FIELD_POSITION, int.class)
+                        ));
+                    }
+                }
+
+                @Override
+                protected List<IndexColumnDefinition> getIndexColumns0() {
+                    return indexColumns;
+                }
+            });
+        }
+
+        return result;
     }
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() throws SQLException {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
         result.add(new SchemaDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SequenceDefinition> getSequences0() throws SQLException {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
 
         for (String sequenceName : create()
                 .select(RDB$GENERATORS.RDB$GENERATOR_NAME.trim())
@@ -233,17 +360,19 @@ public class FirebirdDatabase extends AbstractDatabase {
 
     @Override
     protected List<TableDefinition> getTables0() throws SQLException {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
 
-        for (Record2<String, Boolean> record : create()
+        for (Record3<String, Boolean, String> record : create()
                 .select(
                     RDB$RELATIONS.RDB$RELATION_NAME.trim(),
-                    inline(false).as("table_valued_function"))
+                    inline(false).as("table_valued_function"),
+                    RDB$RELATIONS.RDB$DESCRIPTION.trim())
                 .from(RDB$RELATIONS)
                 .unionAll(
                      select(
                          RDB$PROCEDURES.RDB$PROCEDURE_NAME.trim(),
-                         inline(true).as("table_valued_function"))
+                         inline(true).as("table_valued_function"),
+                         inline(""))
                     .from(RDB$PROCEDURES)
 
                     // "selectable" procedures
@@ -254,12 +383,10 @@ public class FirebirdDatabase extends AbstractDatabase {
                 )
                 .orderBy(1)) {
 
-            if (record.value2()) {
+            if (record.value2())
                 result.add(new FirebirdTableValuedFunction(getSchemata().get(0), record.value1(), ""));
-            }
-            else {
-                result.add(new FirebirdTableDefinition(getSchemata().get(0), record.value1(), ""));
-            }
+            else
+                result.add(new FirebirdTableDefinition(getSchemata().get(0), record.value1(), record.value3()));
         }
 
         return result;
@@ -267,7 +394,7 @@ public class FirebirdDatabase extends AbstractDatabase {
 
     @Override
     protected List<RoutineDefinition> getRoutines0() throws SQLException {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
 
         for (String procedureName : create()
                 .select(RDB$PROCEDURES.RDB$PROCEDURE_NAME.trim())
@@ -286,31 +413,31 @@ public class FirebirdDatabase extends AbstractDatabase {
 
     @Override
     protected List<PackageDefinition> getPackages0() throws SQLException {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<EnumDefinition> getEnums0() throws SQLException {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<UDTDefinition> getUDTs0() throws SQLException {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<ArrayDefinition> getArrays0() throws SQLException {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 

@@ -37,7 +37,6 @@
  */
 package org.jooq.impl;
 
-import java.io.Writer;
 
 
 
@@ -486,4 +485,4 @@ import java.io.Writer;
 
 
 
-            
+

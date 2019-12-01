@@ -42,6 +42,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -52,12 +53,14 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 // ...
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_9_3;
+// ...
+// ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
 // ...
@@ -71,6 +74,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.jooq.TableOptions.TableType;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 
@@ -121,6 +125,16 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * Get the table schema.
      */
     Schema getSchema();
+
+    /**
+     * Get the table type.
+     */
+    TableType getType();
+
+    /**
+     * Get the table options.
+     */
+    TableOptions getOptions();
 
     /**
      * The comment given to the table.
@@ -282,6 +296,11 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      */
     <O extends Record> List<ForeignKey<R, O>> getReferencesTo(Table<O> other);
 
+    /**
+     * Get a list of <code>CHECK</code> constraints of this table.
+     */
+    List<Check<R>> getChecks();
+
 
 
 
@@ -433,7 +452,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as("t1", f -> "prefix_" + f.getName());
+     * MY_TABLE.as("t1", f -&gt;"prefix_" + f.getName());
      * </pre></code>
      *
      * @param alias The alias name
@@ -451,7 +470,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as("t1", (f, i) -> "column" + i);
+     * MY_TABLE.as("t1", (f, i) -&gt;"column" + i);
      * </pre></code>
      *
      * @param alias The alias name
@@ -546,7 +565,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as("t1", f -> "prefix_" + f.getName());
+     * MY_TABLE.as("t1", f -&gt;"prefix_" + f.getName());
      * </pre></code>
      *
      * @param alias The alias name
@@ -564,7 +583,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as("t1", (f, i) -> "column" + i);
+     * MY_TABLE.as("t1", (f, i) -&gt;"column" + i);
      * </pre></code>
      *
      * @param alias The alias name
@@ -604,7 +623,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as(MY_OTHER_TABLE, f -> MY_OTHER_TABLE.field(f));
+     * MY_TABLE.as(MY_OTHER_TABLE, f -&gt;MY_OTHER_TABLE.field(f));
      * </pre></code>
      *
      * @param otherTable The other table whose name is used as alias name
@@ -622,7 +641,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * columns with a common prefix:
      * <p>
      * <code><pre>
-     * MY_TABLE.as("t1", (f, i) -> "column" + i);
+     * MY_TABLE.as("t1", (f, i) -&gt;"column" + i);
      * </pre></code>
      *
      * @param otherTable The other table whose name is used as alias name
@@ -1531,7 +1550,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * A join B on 1 = 1
      * </pre></code>
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     Table<Record> crossJoin(TableLike<?> table);
 
     /**
@@ -1552,7 +1571,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(SQL)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     Table<Record> crossJoin(SQL sql);
 
@@ -1574,7 +1593,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(String)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     Table<Record> crossJoin(String sql);
 
@@ -1597,7 +1616,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, Object...)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     Table<Record> crossJoin(String sql, Object... bindings);
 
@@ -1620,7 +1639,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, QueryPart...)
      * @see SQL
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     @PlainSQL
     Table<Record> crossJoin(String sql, QueryPart... parts);
 
@@ -1636,7 +1655,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *
      * @see DSL#table(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     Table<Record> crossJoin(Name name);
 
     /**
@@ -2023,7 +2042,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
     /**
      * <code>CROSS APPLY</code> a table to this table.
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     Table<Record> crossApply(TableLike<?> table);
 
     /**
@@ -2037,7 +2056,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(SQL)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> crossApply(SQL sql);
 
@@ -2052,7 +2071,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(String)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> crossApply(String sql);
 
@@ -2068,7 +2087,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, Object...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> crossApply(String sql, Object... bindings);
 
@@ -2084,7 +2103,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, QueryPart...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> crossApply(String sql, QueryPart... parts);
 
@@ -2093,13 +2112,13 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *
      * @see DSL#table(Name)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     Table<Record> crossApply(Name name);
 
     /**
      * <code>OUTER APPLY</code> a table to this table.
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     Table<Record> outerApply(TableLike<?> table);
 
     /**
@@ -2113,7 +2132,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(SQL)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> outerApply(SQL sql);
 
@@ -2128,7 +2147,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(String)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> outerApply(String sql);
 
@@ -2144,7 +2163,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, Object...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> outerApply(String sql, Object... bindings);
 
@@ -2160,7 +2179,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, QueryPart...)
      * @see SQL
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     @PlainSQL
     Table<Record> outerApply(String sql, QueryPart... parts);
 
@@ -2169,13 +2188,13 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *
      * @see DSL#table(Name)
      */
-    @Support({ POSTGRES_9_3 })
+    @Support({ POSTGRES })
     Table<Record> outerApply(Name name);
 
     /**
      * <code>STRAIGHT_JOIN</code> a table to this table.
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     TableOnStep<Record> straightJoin(TableLike<?> table);
 
     /**
@@ -2189,7 +2208,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(SQL)
      * @see SQL
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     @PlainSQL
     TableOnStep<Record> straightJoin(SQL sql);
 
@@ -2204,7 +2223,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#table(String)
      * @see SQL
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     @PlainSQL
     TableOnStep<Record> straightJoin(String sql);
 
@@ -2220,7 +2239,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, Object...)
      * @see SQL
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     @PlainSQL
     TableOnStep<Record> straightJoin(String sql, Object... bindings);
 
@@ -2236,7 +2255,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      * @see DSL#sql(String, QueryPart...)
      * @see SQL
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     @PlainSQL
     TableOnStep<Record> straightJoin(String sql, QueryPart... parts);
 
@@ -2245,7 +2264,7 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *
      * @see DSL#table(Name)
      */
-    @Support({ MYSQL })
+    @Support({ MARIADB, MYSQL })
     @PlainSQL
     TableOnStep<Record> straightJoin(Name name);
 
@@ -2685,6 +2704,13 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *     SELECT 1 FROM B WHERE A.ID = B.ID
      * )
      * </pre></code>
+     * <p>
+     * Notice that according to
+     * <a href="https://en.wikipedia.org/wiki/Relational_algebra">Relational
+     * algebra's</a> understanding of left semi join, the right hand side of the
+     * left semi join operator is not projected, i.e. it cannot be accessed from
+     * <code>WHERE</code> or <code>SELECT</code> or any other clause than
+     * <code>ON</code>.
      */
     @Support
     TableOnStep<R> leftSemiJoin(TableLike<?> table);
@@ -2706,6 +2732,13 @@ public interface Table<R extends Record> extends TableLike<R>, Named {
      *     SELECT 1 FROM B WHERE A.ID = B.ID
      * )
      * </pre></code>
+     * <p>
+     * Notice that according to
+     * <a href="https://en.wikipedia.org/wiki/Relational_algebra">Relational
+     * algebra's</a> understanding of left anti join, the right hand side of the
+     * left anti join operator is not projected, i.e. it cannot be accessed from
+     * <code>WHERE</code> or <code>SELECT</code> or any other clause than
+     * <code>ON</code>.
      */
     @Support
     TableOnStep<R> leftAntiJoin(TableLike<?> table);

@@ -12,6 +12,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
+import org.jooq.Row1;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -30,7 +31,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class BookStore extends TableImpl<BookStoreRecord> {
 
-    private static final long serialVersionUID = -626066612;
+    private static final long serialVersionUID = 873069360;
 
     /**
      * The reference instance of <code>PUBLIC.BOOK_STORE</code>
@@ -83,49 +84,31 @@ public class BookStore extends TableImpl<BookStoreRecord> {
         super(child, key, BOOK_STORE);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Index> getIndexes() {
         return Arrays.<Index>asList(Indexes.PRIMARY_KEY_F);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public UniqueKey<BookStoreRecord> getPrimaryKey() {
         return Keys.UK_T_BOOK_STORE_NAME;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<UniqueKey<BookStoreRecord>> getKeys() {
         return Arrays.<UniqueKey<BookStoreRecord>>asList(Keys.UK_T_BOOK_STORE_NAME);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BookStore as(String alias) {
         return new BookStore(DSL.name(alias), this);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BookStore as(Name alias) {
         return new BookStore(alias, this);
@@ -145,5 +128,14 @@ public class BookStore extends TableImpl<BookStoreRecord> {
     @Override
     public BookStore rename(Name name) {
         return new BookStore(name, null);
+    }
+
+    // -------------------------------------------------------------------------
+    // Row1 type methods
+    // -------------------------------------------------------------------------
+
+    @Override
+    public Row1<String> fieldsRow() {
+        return (Row1) super.fieldsRow();
     }
 }

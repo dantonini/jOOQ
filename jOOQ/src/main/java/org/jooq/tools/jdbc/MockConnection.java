@@ -67,7 +67,7 @@ import java.util.Properties;
  * <code><pre>
  * MockDataProvider provider = new MockDataProvider() {
  *     public MockResult[] execute(MockExecuteContext context) throws SQLException {
- *         Result&lt;MyTableRecord> result = executor.newResult(MY_TABLE);
+ *         Result&lt;MyTableRecord&gt; result = executor.newResult(MY_TABLE);
  *         result.add(executor.newRecord(MY_TABLE));
  *
  *         return new MockResult[] {
@@ -354,21 +354,29 @@ public class MockConnection extends JDBC41Connection implements Connection {
     }
 
     // -------------------------------------------------------------------------
+    // XXX: Unwrapping
+    // -------------------------------------------------------------------------
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+        if (isWrapperFor(iface))
+            return (T) this;
+        else
+            throw new SQLException("MockConnection does not implement " + iface);
+    }
+
+    @Override
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface.isInstance(this);
+    }
+
+    // -------------------------------------------------------------------------
     // XXX: Unsupported operations
     // -------------------------------------------------------------------------
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Unsupported Operation");
-    }
-
-    @Override
-    public <T> T unwrap(Class<T> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Unsupported Operation");
-    }
-
-    @Override
-    public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException("Unsupported Operation");
     }
 

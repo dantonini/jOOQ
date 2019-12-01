@@ -37,16 +37,23 @@
  */
 package org.jooq.impl;
 
-import static org.jooq.impl.DSL.function;
+import static org.jooq.impl.Keywords.F_CONVERT;
+import static org.jooq.impl.Keywords.F_CURRENT_DATE;
+import static org.jooq.impl.Keywords.F_CURRENT_TIMESTAMP;
+import static org.jooq.impl.Keywords.F_SYSDATE;
+import static org.jooq.impl.Keywords.F_TRUNC;
+import static org.jooq.impl.Keywords.K_CURRENT;
+import static org.jooq.impl.Keywords.K_DATE;
+import static org.jooq.impl.Keywords.K_YEAR_TO_DAY;
+import static org.jooq.impl.Names.N_CURRENT_DATE;
 
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.DataType;
-import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class CurrentDate<T> extends AbstractFunction<T> {
+final class CurrentDate<T> extends AbstractField<T> {
 
     /**
      * Generated UID
@@ -54,12 +61,18 @@ final class CurrentDate<T> extends AbstractFunction<T> {
     private static final long serialVersionUID = -7273879239726265322L;
 
     CurrentDate(DataType<T> type) {
-        super("current_date", type);
+        super(N_CURRENT_DATE, type);
     }
 
     @Override
-    final Field<T> getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
+
+
+
+
+
 
 
 
@@ -88,12 +101,15 @@ final class CurrentDate<T> extends AbstractFunction<T> {
 
             case DERBY:
             case FIREBIRD:
+            case H2:
             case HSQLDB:
             case POSTGRES:
             case SQLITE:
-                return DSL.field("{current_date}", getDataType());
+                ctx.visit(F_CURRENT_DATE);
+                break;
+            default:
+                ctx.visit(F_CURRENT_DATE).sql("()");
+                break;
         }
-
-        return function("current_date", getDataType());
     }
 }

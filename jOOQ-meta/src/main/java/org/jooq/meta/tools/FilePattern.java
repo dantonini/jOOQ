@@ -38,12 +38,13 @@
 package org.jooq.meta.tools;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.regex.Pattern;
 
+import org.jooq.Internal;
+import org.jooq.Source;
 import org.jooq.tools.JooqLogger;
 
 /**
@@ -55,6 +56,7 @@ import org.jooq.tools.JooqLogger;
  *
  * @author Lukas Eder
  */
+@Internal
 public final class FilePattern {
 
     private static final JooqLogger log = JooqLogger.getLogger(FilePattern.class);
@@ -69,6 +71,8 @@ public final class FilePattern {
             };
         else if ("none".equals(sort))
             return null;
+        else if ("flyway".equals(sort))
+            return FlywayFileComparator.INSTANCE;
         else
             return FileComparator.INSTANCE;
     }
@@ -94,52 +98,47 @@ public final class FilePattern {
         Comparator<File> fileComparator,
         Loader loader
     ) throws Exception {
-        InputStream in = null;
         boolean loaded = false;
+        URL url = FilePattern.class.getResource(pattern);
 
-        try {
-            in = FilePattern.class.getResourceAsStream(pattern);
+        if (url != null) {
+            log.info("Reading from classpath: " + pattern);
+            loader.load(Source.of(new File(url.toURI()), encoding));
+            loaded = true;
+        }
+        else {
+            File file = new File(pattern);
 
-            if (in != null) {
-                log.info("Reading from classpath: " + pattern);
-                loader.load(encoding, in);
+            if (file.exists()) {
+                load(encoding, file, fileComparator, null, loader);
                 loaded = true;
             }
             else {
-                File file = new File(pattern);
 
-                if (file.exists()) {
-                    load(encoding, file, fileComparator, null, loader);
-                    loaded = true;
-                }
-                else if (pattern.contains("*") || pattern.contains("?")) {
+                // [#8336] Relative paths aren't necessarily relative to the
+                //         working directory, but maybe to some subdirectory
+                if (pattern.contains("*") || pattern.contains("?"))
                     file = new File(pattern.replaceAll("[*?].*", "")).getCanonicalFile();
+                else
+                    file = new File(".").getCanonicalFile();
 
-                    Pattern regex = Pattern.compile("^.*?"
-                       + pattern
-                        .replace("\\", "/")
-                        .replace(".", "\\.")
-                        .replace("?", ".")
-                        .replace("**", ".+?")
-                        .replace("*", "[^/]*")
-                       + "$"
-                    );
+                Pattern regex = Pattern.compile("^.*?"
+                   + pattern
+                    .replace("\\", "/")
+                    .replace(".", "\\.")
+                    .replace("?", ".")
+                    .replace("**", ".+?")
+                    .replace("*", "[^/]*")
+                   + "$"
+                );
 
-                    load(encoding, file, fileComparator, regex, loader);
-                    loaded = true;
-                }
+                load(encoding, file, fileComparator, regex, loader);
+                loaded = true;
             }
+        }
 
-            if (!loaded)
-                log.error("Could not find source(s) : " + pattern);
-        }
-        finally {
-            try {
-                if (in != null)
-                    in.close();
-            }
-            catch (Exception ignore) {}
-        }
+        if (!loaded)
+            log.error("Could not find source(s) : " + pattern);
     }
 
     private static final void load(
@@ -152,7 +151,7 @@ public final class FilePattern {
         if (file.isFile()) {
             if (pattern == null || pattern.matcher(file.getCanonicalPath().replace("\\", "/")).matches()) {
                 log.info("Reading from: " + file + " [*]");
-                loader.load(encoding, new FileInputStream(file));
+                loader.load(Source.of(file, encoding));
             }
         }
         else if (file.isDirectory()) {
@@ -176,6 +175,6 @@ public final class FilePattern {
     }
 
     public interface Loader {
-        void load(String encoding, InputStream in) throws Exception;
+        void load(Source source) throws Exception;
     }
 }

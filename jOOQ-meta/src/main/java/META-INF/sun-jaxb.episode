@@ -3,7 +3,7 @@
 
 
 
-    <bindings xmlns:tns="http://www.jooq.org/xsd/jooq-codegen-3.11.0.xsd" if-exists="true" scd="x-schema::tns">
+    <bindings xmlns:tns="http://www.jooq.org/xsd/jooq-codegen-3.13.0.xsd" if-exists="true" scd="x-schema::tns">
 
         <schemaBindings map="false">
 
@@ -173,6 +173,12 @@
 
         </bindings>
 
+        <bindings if-exists="true" scd="~tns:Embeddables">
+
+            <class ref="org.jooq.meta.jaxb.Embeddables"/>
+
+        </bindings>
+
         <bindings if-exists="true" scd="~tns:ForcedTypes">
 
             <class ref="org.jooq.meta.jaxb.ForcedTypes"/>
@@ -188,6 +194,24 @@
         <bindings if-exists="true" scd="~tns:EnumType">
 
             <class ref="org.jooq.meta.jaxb.EnumType"/>
+
+        </bindings>
+
+        <bindings if-exists="true" scd="~tns:Embeddable">
+
+            <class ref="org.jooq.meta.jaxb.Embeddable"/>
+
+        </bindings>
+
+        <bindings if-exists="true" scd="~tns:EmbeddableFields">
+
+            <class ref="org.jooq.meta.jaxb.EmbeddableFields"/>
+
+        </bindings>
+
+        <bindings if-exists="true" scd="~tns:EmbeddableField">
+
+            <class ref="org.jooq.meta.jaxb.EmbeddableField"/>
 
         </bindings>
 
@@ -215,9 +239,21 @@
 
         </bindings>
 
+        <bindings if-exists="true" scd="~tns:OnError">
+
+            <typesafeEnumClass ref="org.jooq.meta.jaxb.OnError"/>
+
+        </bindings>
+
         <bindings if-exists="true" scd="~tns:MatcherTransformType">
 
             <typesafeEnumClass ref="org.jooq.meta.jaxb.MatcherTransformType"/>
+
+        </bindings>
+
+        <bindings if-exists="true" scd="~tns:ForcedTypeObjectType">
+
+            <typesafeEnumClass ref="org.jooq.meta.jaxb.ForcedTypeObjectType"/>
 
         </bindings>
 

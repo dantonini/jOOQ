@@ -52,6 +52,7 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.param;
 import static org.jooq.impl.DSL.sql;
 import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.using;
@@ -66,20 +67,26 @@ import static org.jooq.impl.Keywords.K_END;
 import static org.jooq.impl.Keywords.K_FALSE;
 import static org.jooq.impl.Keywords.K_FOR;
 import static org.jooq.impl.Keywords.K_FROM;
+import static org.jooq.impl.Keywords.K_FUNCTION;
 import static org.jooq.impl.Keywords.K_IS;
+import static org.jooq.impl.Keywords.K_NOT;
 import static org.jooq.impl.Keywords.K_NULL;
 import static org.jooq.impl.Keywords.K_OPEN;
 import static org.jooq.impl.Keywords.K_PASSING;
 import static org.jooq.impl.Keywords.K_RECORD;
+import static org.jooq.impl.Keywords.K_RETURN;
 import static org.jooq.impl.Keywords.K_SELECT;
 import static org.jooq.impl.Keywords.K_THEN;
 import static org.jooq.impl.Keywords.K_TRUE;
 import static org.jooq.impl.Keywords.K_TYPE;
 import static org.jooq.impl.Keywords.K_WHEN;
 import static org.jooq.impl.Keywords.K_XMLTABLE;
+import static org.jooq.impl.SQLDataType.INTEGER;
+import static org.jooq.impl.SQLDataType.NUMERIC;
 import static org.jooq.impl.Tools.EMPTY_FIELD;
 import static org.jooq.impl.Tools.executeStatementAndGetFirstResultSet;
 import static org.jooq.impl.Tools.settings;
+import static org.jooq.impl.Tools.DataKey.DATA_TOP_LEVEL_CTE;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -121,10 +128,12 @@ import org.jooq.Results;
 import org.jooq.Routine;
 import org.jooq.SQLDialect;
 import org.jooq.Schema;
+import org.jooq.Statement;
 import org.jooq.UDT;
 import org.jooq.UDTField;
 import org.jooq.UDTRecord;
 import org.jooq.XMLFormat;
+import org.jooq.conf.SettingsTools;
 import org.jooq.exception.ControlFlowSignal;
 import org.jooq.exception.MappingException;
 import org.jooq.impl.ResultsImpl.ResultOrRowsImpl;
@@ -138,6 +147,7 @@ import org.jooq.tools.reflect.Reflect;
  *
  * @author Lukas Eder
  */
+@org.jooq.Internal
 public abstract class AbstractRoutine<T> extends AbstractNamed implements Routine<T> {
 
     /**
@@ -239,23 +249,23 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
     protected <X, Y> AbstractRoutine(String name, Schema schema, Package pkg, DataType<X> type, Converter<Y, T> converter, Binding<X, Y> binding) {
         super(qualify(pkg != null ? pkg : schema, DSL.name(name)), CommentImpl.NO_COMMENT);
 
-        this.resultIndexes = new HashMap<Parameter<?>, Integer>();
+        this.resultIndexes = new HashMap<>();
 
         this.schema = schema;
 
 
 
-        this.allParameters = new ArrayList<Parameter<?>>();
-        this.inParameters = new ArrayList<Parameter<?>>();
-        this.outParameters = new ArrayList<Parameter<?>>();
+        this.allParameters = new ArrayList<>();
+        this.inParameters = new ArrayList<>();
+        this.outParameters = new ArrayList<>();
 
 
 
         this.results = new ResultsImpl(null);
-        this.inValues = new HashMap<Parameter<?>, Field<?>>();
-        this.inValuesDefaulted = new HashSet<Parameter<?>>();
-        this.inValuesNonDefaulted = new HashSet<Parameter<?>>();
-        this.outValues = new HashMap<Parameter<?>, Object>();
+        this.inValues = new HashMap<>();
+        this.inValuesDefaulted = new HashSet<>();
+        this.inValuesNonDefaulted = new HashSet<>();
+        this.outValues = new HashMap<>();
         this.type = converter == null && binding == null
             ? (DataType<T>) type
             : type.asConvertedDataType(DefaultBinding.newBinding((Converter) converter, type, binding));
@@ -343,7 +353,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
         // [#4254] In PostgreSQL, there are only functions, no procedures. Some
         // functions cannot be called using a CallableStatement, e.g. those with
         // DEFAULT parameters
-        if (                                                      family == POSTGRES) {
+        if ( family == POSTGRES) {
             return executeSelectFromPOSTGRES();
         }
 
@@ -441,7 +451,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
     private final int executeSelectFromPOSTGRES() {
         DSLContext create = create(configuration);
 
-        List<Field<?>> fields = new ArrayList<Field<?>>(1 + outParameters.size());
+        List<Field<?>> fields = new ArrayList<>(1 + outParameters.size());
         if (returnParameter != null)
             fields.add(DSL.field(DSL.name(getName()), returnParameter.getDataType()));
         for (Parameter<?> p : outParameters)
@@ -479,8 +489,14 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
 
             listener.prepareStart(ctx);
             ctx.statement(connection.prepareCall(ctx.sql()));
+            Tools.setFetchSize(ctx, 0);
             // [#1856] TODO: Add Statement flags like timeout here
             listener.prepareEnd(ctx);
+
+            // [#9295] use query timeout from settings
+            int t = SettingsTools.getQueryTimeout(0, ctx.settings());
+            if (t != 0)
+                ctx.statement().setQueryTimeout(t);
 
             listener.bindStart(ctx);
             using(configuration).bindContext(ctx.statement()).visit(this);
@@ -682,7 +698,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
 
         String separator = "";
         List<Parameter<?>> parameters = getParameters();
-        Map<Integer, Parameter<?>> indexes = new LinkedHashMap<Integer, Parameter<?>>();
+        Map<Integer, Parameter<?>> indexes = new LinkedHashMap<>();
         for (int i = 0; i < parameters.size(); i++) {
             Parameter<?> parameter = parameters.get(i);
 
@@ -1141,7 +1157,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
         ctx.visit(value);
     }
 
-    private final void toSQLQualifiedName(RenderContext ctx) {
+    private final void toSQLQualifiedName(Context<?> ctx) {
         if (ctx.qualify()) {
             Schema mapped = Tools.getMappedSchema(ctx.configuration(), getSchema());
 
@@ -1191,7 +1207,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
 
 
         {
-            DefaultBindingGetStatementContext<U> out = new DefaultBindingGetStatementContext<U>(
+            DefaultBindingGetStatementContext<U> out = new DefaultBindingGetStatementContext<>(
                 ctx.configuration(),
                 ctx.data(),
                 (CallableStatement) ctx.statement(),
@@ -1222,7 +1238,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
 
 
 
-        parameter.getBinding().register(new DefaultBindingRegisterContext<U>(c, data, statement, resultIndexes.get(parameter)));
+        parameter.getBinding().register(new DefaultBindingRegisterContext<>(c, data, statement, resultIndexes.get(parameter)));
     }
 
     // ------------------------------------------------------------------------
@@ -1623,7 +1639,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
             ? (DataType<U>) type
             : type.asConvertedDataType(actualBinding);
 
-        return new ParameterImpl<U>(name, actualType, actualBinding, isDefaulted, isUnnamed);
+        return new ParameterImpl<>(name, actualType, actualBinding, isDefaulted, isUnnamed);
     }
 
     /**
@@ -1650,14 +1666,127 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
                   : AbstractRoutine.this.type);
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public void accept(Context<?> ctx) {
-            RenderContext local = create(ctx).renderContext();
-            toSQLQualifiedName(local);
-
             SQLDialect family = ctx.family();
-            List<Field<?>> fields = new ArrayList<Field<?>>(getInParameters().size());
+
+            String name;
+            DataType<?> returnType;
+            List<Field<?>> fields = new ArrayList<>(getInParameters().size());
+
+
+
+
+
+
+            returnType = getDataType();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            {
+                RenderContext local = create(ctx).renderContext();
+                toSQLQualifiedName(local);
+                name = local.render();
+            }
+
             for (Parameter<?> parameter : getInParameters()) {
 
                 // [#1183] [#3533] Skip defaulted parameters
@@ -1665,7 +1794,7 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
                     continue;
 
                 // Disambiguate overloaded function signatures
-                if (                                                      family == POSTGRES)
+                if ( family == POSTGRES)
 
                     // [#4920] In case there are any unnamed parameters, we mustn't
                     if (hasUnnamedParameters())
@@ -1678,12 +1807,25 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
                             fields.add(DSL.field("{0} := {1}", name(parameter.getName()), new Cast(getInValues().get(parameter), parameter.getDataType())));
                         else
                             fields.add(DSL.field("{0} := {1}", name(parameter.getName()), getInValues().get(parameter)));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 else
                     fields.add(getInValues().get(parameter));
             }
 
-            Field<T> result = function(local.render(), getDataType(), fields.toArray(EMPTY_FIELD));
-
+            Field<?> result = function(name, returnType, fields.toArray(EMPTY_FIELD));
 
             // [#3592] Decrease SQL -> PL/SQL context switches with Oracle Scalar Subquery Caching
             if (TRUE.equals(settings(ctx.configuration()).isRenderScalarSubqueriesForStoredFunctions()))
@@ -1691,5 +1833,34 @@ public abstract class AbstractRoutine<T> extends AbstractNamed implements Routin
 
             ctx.visit(result);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }

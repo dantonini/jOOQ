@@ -39,6 +39,7 @@ package org.jooq;
 
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -49,9 +50,11 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
 // ...
@@ -74,9 +77,9 @@ import static org.jooq.SQLDialect.SQLITE;
  *     FROM T_AUTHOR
  *     JOIN T_BOOK ON T_AUTHOR.ID = T_BOOK.AUTHOR_ID
  *    WHERE T_BOOK.LANGUAGE = 'DE'
- *      AND T_BOOK.PUBLISHED > '2008-01-01'
+ *      AND T_BOOK.PUBLISHED &gt; '2008-01-01'
  * GROUP BY T_AUTHOR.FIRST_NAME, T_AUTHOR.LAST_NAME
- *   HAVING COUNT(*) > 5
+ *   HAVING COUNT(*) &gt; 5
  * ORDER BY T_AUTHOR.LAST_NAME ASC NULLS FIRST
  *    LIMIT 2
  *   OFFSET 1
@@ -162,7 +165,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * This is the same as calling {@link #limit(int, int)} with offset = 0, or
      * calling <code>.limit(numberOfRows).offset(0)</code>
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentStep<R> limit(Param<? extends Number> numberOfRows);
 
     /**
@@ -176,7 +179,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * emulated with a <code>ROW_NUMBER()</code> window function and nested
      * <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectWithTiesAfterOffsetStep<R> limit(int offset, int numberOfRows);
 
     /**
@@ -190,7 +193,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * emulated with a <code>ROW_NUMBER()</code> window function and nested
      * <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectWithTiesAfterOffsetStep<R> limit(Number offset, Number numberOfRows);
 
     /**
@@ -205,7 +208,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * this may be emulated with a <code>ROW_NUMBER()</code> window function
      * and nested <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentAfterOffsetStep<R> limit(int offset, Param<Integer> numberOfRows);
 
     /**
@@ -220,7 +223,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * this may be emulated with a <code>ROW_NUMBER()</code> window function
      * and nested <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentAfterOffsetStep<R> limit(Number offset, Param<? extends Number> numberOfRows);
 
     /**
@@ -235,7 +238,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * this may be emulated with a <code>ROW_NUMBER()</code> window function
      * and nested <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentAfterOffsetStep<R> limit(Param<Integer> offset, int numberOfRows);
 
     /**
@@ -250,7 +253,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * this may be emulated with a <code>ROW_NUMBER()</code> window function
      * and nested <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentAfterOffsetStep<R> limit(Param<? extends Number> offset, Number numberOfRows);
 
     /**
@@ -265,7 +268,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * this may be emulated with a <code>ROW_NUMBER()</code> window function
      * and nested <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitPercentAfterOffsetStep<R> limit(Param<? extends Number> offset, Param<? extends Number> numberOfRows);
 
     /**
@@ -276,7 +279,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * emulated with a <code>ROW_NUMBER()</code> window function and nested
      * <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitAfterOffsetStep<R> offset(int offset);
 
     /**
@@ -287,7 +290,7 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * emulated with a <code>ROW_NUMBER()</code> window function and nested
      * <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitAfterOffsetStep<R> offset(Number offset);
 
     /**
@@ -298,6 +301,6 @@ public interface SelectLimitStep<R extends Record> extends SelectForUpdateStep<R
      * emulated with a <code>ROW_NUMBER()</code> window function and nested
      * <code>SELECT</code> statements.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     SelectLimitAfterOffsetStep<R> offset(Param<? extends Number> offset);
 }

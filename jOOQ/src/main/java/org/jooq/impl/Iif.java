@@ -37,15 +37,17 @@
  */
 package org.jooq.impl;
 
+import static org.jooq.impl.Keywords.F_IIF;
+import static org.jooq.impl.Names.N_IIF;
+
 import org.jooq.Condition;
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.Field;
-import org.jooq.QueryPart;
 
 /**
  * @author Lukas Eder
  */
-final class Iif<T> extends AbstractFunction<T> {
+final class Iif<T> extends AbstractField<T> {
 
     /**
      * Generated UID
@@ -57,16 +59,18 @@ final class Iif<T> extends AbstractFunction<T> {
     private final Field<T>    ifFalse;
 
     Iif(Condition condition, Field<T> ifTrue, Field<T> ifFalse) {
-        super("iif", ifTrue.getDataType(), ifTrue, ifFalse);
+        super(N_IIF, ifTrue.getDataType());
 
         this.condition = condition;
         this.ifTrue = ifTrue;
         this.ifFalse = ifFalse;
     }
 
+
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.dialect().family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
@@ -74,7 +78,8 @@ final class Iif<T> extends AbstractFunction<T> {
 
 
             default:
-                return DSL.choose().when(condition, ifTrue).otherwise(ifFalse);
+                ctx.visit(DSL.choose().when(condition, ifTrue).otherwise(ifFalse));
+                break;
         }
     }
 }

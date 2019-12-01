@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.conf;
 
 import java.io.Serializable;
@@ -17,6 +10,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlType;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -34,7 +29,7 @@ import javax.xml.bind.annotation.XmlType;
 })
 public class RenderMapping
     extends SettingsBase
-    implements Serializable, Cloneable
+    implements Serializable, Cloneable, XMLAppendable
 {
 
     private final static long serialVersionUID = 31200L;
@@ -48,21 +43,15 @@ public class RenderMapping
      * <p>
      * This schema will be omitted in rendered SQL.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getDefaultSchema() {
         return defaultSchema;
     }
 
     /**
-     * Sets the value of the defaultSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The default schema as defined in {@link org.jooq.Schema#getName()}.
+     * <p>
+     * This schema will be omitted in rendered SQL.
      *
      */
     public void setDefaultSchema(String value) {
@@ -80,6 +69,12 @@ public class RenderMapping
         this.schemata = schemata;
     }
 
+    /**
+     * The default schema as defined in {@link org.jooq.Schema#getName()}.
+     * <p>
+     * This schema will be omitted in rendered SQL.
+     *
+     */
     public RenderMapping withDefaultSchema(String value) {
         setDefaultSchema(value);
         return this;
@@ -107,23 +102,16 @@ public class RenderMapping
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("defaultSchema", defaultSchema);
+        builder.append("schemata", "schema", schemata);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (defaultSchema!= null) {
-            sb.append("<defaultSchema>");
-            sb.append(defaultSchema);
-            sb.append("</defaultSchema>");
-        }
-        if (schemata!= null) {
-            sb.append("<schemata>");
-            for (int i = 0; (i<schemata.size()); i ++) {
-                sb.append("<schema>");
-                sb.append(schemata.get(i));
-                sb.append("</schema>");
-            }
-            sb.append("</schemata>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

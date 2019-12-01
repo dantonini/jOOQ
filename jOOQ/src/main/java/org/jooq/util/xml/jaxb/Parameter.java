@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.util.xml.jaxb;
 
 import java.io.Serializable;
@@ -16,6 +9,8 @@ import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -59,10 +54,10 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class Parameter implements Serializable
+public class Parameter implements Serializable, XMLAppendable
 {
 
-    private final static long serialVersionUID = 31200L;
+    private final static long serialVersionUID = 31300L;
     @XmlElement(name = "specific_catalog")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String specificCatalog;
@@ -107,378 +102,130 @@ public class Parameter implements Serializable
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String comment;
 
-    /**
-     * Gets the value of the specificCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getSpecificCatalog() {
         return specificCatalog;
     }
 
-    /**
-     * Sets the value of the specificCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setSpecificCatalog(String value) {
         this.specificCatalog = value;
     }
 
-    /**
-     * Gets the value of the specificSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getSpecificSchema() {
         return specificSchema;
     }
 
-    /**
-     * Sets the value of the specificSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setSpecificSchema(String value) {
         this.specificSchema = value;
     }
 
-    /**
-     * Gets the value of the specificPackage property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getSpecificPackage() {
         return specificPackage;
     }
 
-    /**
-     * Sets the value of the specificPackage property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setSpecificPackage(String value) {
         this.specificPackage = value;
     }
 
-    /**
-     * Gets the value of the specificName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getSpecificName() {
         return specificName;
     }
 
-    /**
-     * Sets the value of the specificName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setSpecificName(String value) {
         this.specificName = value;
     }
 
-    /**
-     * Gets the value of the ordinalPosition property.
-     *
-     */
     public int getOrdinalPosition() {
         return ordinalPosition;
     }
 
-    /**
-     * Sets the value of the ordinalPosition property.
-     *
-     */
     public void setOrdinalPosition(int value) {
         this.ordinalPosition = value;
     }
 
-    /**
-     * Gets the value of the parameterMode property.
-     *
-     * @return
-     *     possible object is
-     *     {@link ParameterMode }
-     *
-     */
     public ParameterMode getParameterMode() {
         return parameterMode;
     }
 
-    /**
-     * Sets the value of the parameterMode property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link ParameterMode }
-     *
-     */
     public void setParameterMode(ParameterMode value) {
         this.parameterMode = value;
     }
 
-    /**
-     * Gets the value of the parameterName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getParameterName() {
         return parameterName;
     }
 
-    /**
-     * Sets the value of the parameterName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setParameterName(String value) {
         this.parameterName = value;
     }
 
-    /**
-     * Gets the value of the dataType property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getDataType() {
         return dataType;
     }
 
-    /**
-     * Sets the value of the dataType property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setDataType(String value) {
         this.dataType = value;
     }
 
-    /**
-     * Gets the value of the characterMaximumLength property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getCharacterMaximumLength() {
         return characterMaximumLength;
     }
 
-    /**
-     * Sets the value of the characterMaximumLength property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setCharacterMaximumLength(Integer value) {
         this.characterMaximumLength = value;
     }
 
-    /**
-     * Gets the value of the numericPrecision property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getNumericPrecision() {
         return numericPrecision;
     }
 
-    /**
-     * Sets the value of the numericPrecision property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setNumericPrecision(Integer value) {
         this.numericPrecision = value;
     }
 
-    /**
-     * Gets the value of the numericScale property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getNumericScale() {
         return numericScale;
     }
 
-    /**
-     * Sets the value of the numericScale property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setNumericScale(Integer value) {
         this.numericScale = value;
     }
 
-    /**
-     * Gets the value of the udtCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtCatalog() {
         return udtCatalog;
     }
 
-    /**
-     * Sets the value of the udtCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtCatalog(String value) {
         this.udtCatalog = value;
     }
 
-    /**
-     * Gets the value of the udtSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtSchema() {
         return udtSchema;
     }
 
-    /**
-     * Sets the value of the udtSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtSchema(String value) {
         this.udtSchema = value;
     }
 
-    /**
-     * Gets the value of the udtName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtName() {
         return udtName;
     }
 
-    /**
-     * Sets the value of the udtName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtName(String value) {
         this.udtName = value;
     }
 
-    /**
-     * Gets the value of the parameterDefault property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getParameterDefault() {
         return parameterDefault;
     }
 
-    /**
-     * Sets the value of the parameterDefault property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setParameterDefault(String value) {
         this.parameterDefault = value;
     }
 
-    /**
-     * Gets the value of the comment property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getComment() {
         return comment;
     }
 
-    /**
-     * Sets the value of the comment property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setComment(String value) {
         this.comment = value;
     }
@@ -564,87 +311,30 @@ public class Parameter implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("specific_catalog", specificCatalog);
+        builder.append("specific_schema", specificSchema);
+        builder.append("specific_package", specificPackage);
+        builder.append("specific_name", specificName);
+        builder.append("ordinal_position", ordinalPosition);
+        builder.append("parameter_mode", parameterMode);
+        builder.append("parameter_name", parameterName);
+        builder.append("data_type", dataType);
+        builder.append("character_maximum_length", characterMaximumLength);
+        builder.append("numeric_precision", numericPrecision);
+        builder.append("numeric_scale", numericScale);
+        builder.append("udt_catalog", udtCatalog);
+        builder.append("udt_schema", udtSchema);
+        builder.append("udt_name", udtName);
+        builder.append("parameter_default", parameterDefault);
+        builder.append("comment", comment);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (specificCatalog!= null) {
-            sb.append("<specific_catalog>");
-            sb.append(specificCatalog);
-            sb.append("</specific_catalog>");
-        }
-        if (specificSchema!= null) {
-            sb.append("<specific_schema>");
-            sb.append(specificSchema);
-            sb.append("</specific_schema>");
-        }
-        if (specificPackage!= null) {
-            sb.append("<specific_package>");
-            sb.append(specificPackage);
-            sb.append("</specific_package>");
-        }
-        if (specificName!= null) {
-            sb.append("<specific_name>");
-            sb.append(specificName);
-            sb.append("</specific_name>");
-        }
-        sb.append("<ordinal_position>");
-        sb.append(ordinalPosition);
-        sb.append("</ordinal_position>");
-        if (parameterMode!= null) {
-            sb.append("<parameter_mode>");
-            sb.append(parameterMode);
-            sb.append("</parameter_mode>");
-        }
-        if (parameterName!= null) {
-            sb.append("<parameter_name>");
-            sb.append(parameterName);
-            sb.append("</parameter_name>");
-        }
-        if (dataType!= null) {
-            sb.append("<data_type>");
-            sb.append(dataType);
-            sb.append("</data_type>");
-        }
-        if (characterMaximumLength!= null) {
-            sb.append("<character_maximum_length>");
-            sb.append(characterMaximumLength);
-            sb.append("</character_maximum_length>");
-        }
-        if (numericPrecision!= null) {
-            sb.append("<numeric_precision>");
-            sb.append(numericPrecision);
-            sb.append("</numeric_precision>");
-        }
-        if (numericScale!= null) {
-            sb.append("<numeric_scale>");
-            sb.append(numericScale);
-            sb.append("</numeric_scale>");
-        }
-        if (udtCatalog!= null) {
-            sb.append("<udt_catalog>");
-            sb.append(udtCatalog);
-            sb.append("</udt_catalog>");
-        }
-        if (udtSchema!= null) {
-            sb.append("<udt_schema>");
-            sb.append(udtSchema);
-            sb.append("</udt_schema>");
-        }
-        if (udtName!= null) {
-            sb.append("<udt_name>");
-            sb.append(udtName);
-            sb.append("</udt_name>");
-        }
-        if (parameterDefault!= null) {
-            sb.append("<parameter_default>");
-            sb.append(parameterDefault);
-            sb.append("</parameter_default>");
-        }
-        if (comment!= null) {
-            sb.append("<comment>");
-            sb.append(comment);
-            sb.append("</comment>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

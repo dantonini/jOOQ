@@ -38,7 +38,11 @@
 package org.jooq.impl;
 
 import static org.jooq.Clause.TABLE_VALUES;
+// ...
+import static org.jooq.impl.Keywords.K_MULTISET;
+import static org.jooq.impl.Keywords.K_TABLE;
 import static org.jooq.impl.Keywords.K_VALUES;
+import static org.jooq.impl.Names.N_VALUES;
 
 import org.jooq.Context;
 import org.jooq.Name;
@@ -46,6 +50,7 @@ import org.jooq.Record;
 import org.jooq.Row;
 import org.jooq.Select;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * An implementation for the <code>VALUES(...)</code> table constructor
@@ -62,7 +67,7 @@ final class Values<R extends Record> extends AbstractTable<R> {
     private final Row[]       rows;
 
     Values(Row[] rows) {
-        super("values");
+        super(TableOptions.expression(), N_VALUES);
 
         this.rows = assertNotEmpty(rows);
     }
@@ -82,12 +87,12 @@ final class Values<R extends Record> extends AbstractTable<R> {
 
     @Override
     public final Table<R> as(Name alias) {
-        return new TableAlias<R>(this, alias, true);
+        return new TableAlias<>(this, alias, true);
     }
 
     @Override
     public final Table<R> as(Name alias, Name... fieldAliases) {
-        return new TableAlias<R>(this, alias, fieldAliases, true);
+        return new TableAlias<>(this, alias, fieldAliases, true);
     }
 
     @Override
@@ -147,9 +152,17 @@ final class Values<R extends Record> extends AbstractTable<R> {
 
 
 
+
+
             default: {
-                ctx.start(TABLE_VALUES)
-                   .visit(K_VALUES);
+                ctx.start(TABLE_VALUES);
+
+
+
+
+
+
+                ctx.visit(K_VALUES);
 
                 if (rows.length > 1)
                     ctx.formatIndentStart()
@@ -167,6 +180,10 @@ final class Values<R extends Record> extends AbstractTable<R> {
                     ctx.formatIndentEnd()
                        .formatNewLine();
 
+
+
+
+
                 ctx.end(TABLE_VALUES);
                 break;
             }
@@ -175,6 +192,6 @@ final class Values<R extends Record> extends AbstractTable<R> {
 
     @Override
     final Fields<R> fields0() {
-        return new Fields<R>(rows[0].fields());
+        return new Fields<>(rows[0].fields());
     }
 }

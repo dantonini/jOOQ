@@ -42,17 +42,16 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_10;
-import static org.jooq.SQLDialect.POSTGRES_11;
-import static org.jooq.SQLDialect.POSTGRES_9_4;
-import static org.jooq.SQLDialect.POSTGRES_9_5;
+// ...
 import static org.jooq.SQLDialect.SQLITE;
 // ...
 import static org.jooq.impl.DSL.choose;
@@ -64,6 +63,11 @@ import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.percentileCont;
 import static org.jooq.impl.DSL.when;
 import static org.jooq.impl.DSL.zero;
+import static org.jooq.impl.Keywords.F_CONCAT;
+import static org.jooq.impl.Keywords.F_SUBSTR;
+import static org.jooq.impl.Keywords.F_XMLAGG;
+import static org.jooq.impl.Keywords.F_XMLSERIALIZE;
+import static org.jooq.impl.Keywords.F_XMLTEXT;
 import static org.jooq.impl.Keywords.K_AS;
 import static org.jooq.impl.Keywords.K_DENSE_RANK;
 import static org.jooq.impl.Keywords.K_DISTINCT;
@@ -88,13 +92,13 @@ import static org.jooq.impl.Term.MEDIAN;
 import static org.jooq.impl.Term.MODE;
 import static org.jooq.impl.Term.PRODUCT;
 import static org.jooq.impl.Term.ROW_NUMBER;
-import static org.jooq.impl.Tools.BooleanDataKey.DATA_RANKING_FUNCTION;
+import static org.jooq.impl.Tools.castIfNeeded;
 import static org.jooq.impl.Tools.DataKey.DATA_WINDOW_DEFINITIONS;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Set;
 
 import org.jooq.AggregateFilterStep;
 import org.jooq.AggregateFunction;
@@ -122,6 +126,7 @@ import org.jooq.WindowPartitionByStep;
 import org.jooq.WindowRowsAndStep;
 import org.jooq.WindowRowsStep;
 import org.jooq.WindowSpecification;
+import org.jooq.impl.Tools.BooleanDataKey;
 // ...
 
 /**
@@ -145,74 +150,75 @@ class Function<T> extends AbstractField<T> implements
     {
 
 
-    private static final long                serialVersionUID                   = 347252741712134044L;
-    private static final EnumSet<SQLDialect> SUPPORT_ARRAY_AGG                  = EnumSet.of(HSQLDB, POSTGRES);
-    private static final EnumSet<SQLDialect> SUPPORT_GROUP_CONCAT               = EnumSet.of(CUBRID, H2, HSQLDB, MARIADB, MYSQL, SQLITE);
-    private static final EnumSet<SQLDialect> SUPPORT_STRING_AGG                 = EnumSet.of(POSTGRES);
-    private static final EnumSet<SQLDialect> SUPPORT_NO_PARENS_WINDOW_REFERENCE = EnumSet.of(MYSQL, POSTGRES);
-    private static final EnumSet<SQLDialect> SUPPORT_FILTER                     = EnumSet.of(H2, HSQLDB, POSTGRES_9_4, POSTGRES_9_5, POSTGRES_10, POSTGRES_11);
+    private static final long              serialVersionUID                   = 347252741712134044L;
+    private static final Set<SQLDialect>   SUPPORT_ARRAY_AGG                  = SQLDialect.supportedBy(HSQLDB, POSTGRES);
+    private static final Set<SQLDialect>   SUPPORT_GROUP_CONCAT               = SQLDialect.supportedBy(CUBRID, H2, HSQLDB, MARIADB, MYSQL, SQLITE);
+    private static final Set<SQLDialect>   SUPPORT_STRING_AGG                 = SQLDialect.supportedBy(POSTGRES);
+    private static final Set<SQLDialect>   SUPPORT_NO_PARENS_WINDOW_REFERENCE = SQLDialect.supportedBy(MYSQL, POSTGRES);
+    private static final Set<SQLDialect>   SUPPORT_FILTER                     = SQLDialect.supportedBy(H2, HSQLDB, POSTGRES);
+    private static final Set<SQLDialect>   SUPPORT_DISTINCT_RVE               = SQLDialect.supportedBy(H2, POSTGRES);
 
-    static final Field<Integer>              ASTERISK                           = DSL.field("*", Integer.class);
+    static final Field<Integer>            ASTERISK                           = DSL.field("*", Integer.class);
 
     // Mutually exclusive attributes: super.getName(), this.name, this.term
-    private final Name                       name;
-    private final Term                       term;
+    private final Name                     name;
+    private final Term                     term;
 
     // Other attributes
-    private final QueryPartList<QueryPart>   arguments;
-    private final boolean                    distinct;
-    private SortFieldList                    withinGroupOrderBy;
-    private SortFieldList                    keepDenseRankOrderBy;
-    private Condition                        filter;
-    private WindowSpecificationImpl          windowSpecification;
-    private WindowDefinitionImpl             windowDefinition;
-    private Name                             windowName;
+    private final QueryPartList<Field<?>>  arguments;
+    private final boolean                  distinct;
+    private SortFieldList                  withinGroupOrderBy;
+    private SortFieldList                  keepDenseRankOrderBy;
+    private Condition                      filter;
+    private WindowSpecificationImpl        windowSpecification;
+    private WindowDefinitionImpl           windowDefinition;
+    private Name                           windowName;
 
-    private boolean                          first;
-    private Boolean                          ignoreNulls;
-    private Boolean                          fromLast;
+    private boolean                        first;
+    private Boolean                        ignoreNulls;
+    private Boolean                        fromLast;
 
     // -------------------------------------------------------------------------
     // XXX Constructors
     // -------------------------------------------------------------------------
 
-    Function(String name, DataType<T> type, QueryPart... arguments) {
+    Function(String name, DataType<T> type, Field<?>... arguments) {
         this(name, false, type, arguments);
     }
 
-    Function(Term term, DataType<T> type, QueryPart... arguments) {
+    Function(Term term, DataType<T> type, Field<?>... arguments) {
         this(term, false, type, arguments);
     }
 
-    Function(Name name, DataType<T> type, QueryPart... arguments) {
+    Function(Name name, DataType<T> type, Field<?>... arguments) {
         this(name, false, type, arguments);
     }
 
-    Function(String name, boolean distinct, DataType<T> type, QueryPart... arguments) {
+    Function(String name, boolean distinct, DataType<T> type, Field<?>... arguments) {
         super(DSL.name(name), type);
 
         this.term = null;
         this.name = null;
         this.distinct = distinct;
-        this.arguments = new QueryPartList<QueryPart>(arguments);
+        this.arguments = new QueryPartList<>(arguments);
     }
 
-    Function(Term term, boolean distinct, DataType<T> type, QueryPart... arguments) {
+    Function(Term term, boolean distinct, DataType<T> type, Field<?>... arguments) {
         super(term.toName(), type);
 
         this.term = term;
         this.name = null;
         this.distinct = distinct;
-        this.arguments = new QueryPartList<QueryPart>(arguments);
+        this.arguments = new QueryPartList<>(arguments);
     }
 
-    Function(Name name, boolean distinct, DataType<T> type, QueryPart... arguments) {
+    Function(Name name, boolean distinct, DataType<T> type, Field<?>... arguments) {
         super(name, type);
 
         this.term = null;
         this.name = name;
         this.distinct = distinct;
-        this.arguments = new QueryPartList<QueryPart>(arguments);
+        this.arguments = new QueryPartList<>(arguments);
     }
 
     // -------------------------------------------------------------------------
@@ -239,10 +245,10 @@ class Function<T> extends AbstractField<T> implements
 
 
 
-        else if (term == MODE && (                                                            ctx.family() == H2 || ctx.family() == POSTGRES)) {
+        else if (term == MODE && ( ctx.family() == H2 || ctx.family() == POSTGRES)) {
             ctx.visit(mode().withinGroupOrderBy(DSL.field("{0}", arguments.get(0))));
         }
-        else if (term == MEDIAN && (                                                            ctx.family() == POSTGRES)) {
+        else if (term == MEDIAN && ( ctx.family() == POSTGRES)) {
             Field<?>[] fields = new Field[arguments.size()];
             for (int i = 0; i < fields.length; i++)
                 fields[i] = DSL.field("{0}", arguments.get(i));
@@ -251,8 +257,8 @@ class Function<T> extends AbstractField<T> implements
         }
         else if (term == PRODUCT) {
             @SuppressWarnings({ "unchecked", "rawtypes" })
-            Field<Integer> f = (Field) DSL.field("{0}", arguments.get(0));
-            Field<Integer> negatives = DSL.when(f.lt(zero()), inline(-1));
+            final Field<Integer> f = (Field) DSL.field("{0}", arguments.get(0).getDataType(), arguments.get(0));
+            final Field<Integer> negatives = DSL.when(f.lt(zero()), inline(-1));
 
             @SuppressWarnings("serial")
             Field<BigDecimal> negativesSum = new CustomField<BigDecimal>("sum", NUMERIC) {
@@ -365,7 +371,7 @@ class Function<T> extends AbstractField<T> implements
             ctx.visit(K_DISTINCT).sql(' ');
 
         // The explicit cast is needed in Postgres
-        ctx.visit(((Field<?>) arguments.get(0)).cast(String.class));
+        ctx.visit(castIfNeeded((Field<?>) arguments.get(0), String.class));
 
         if (arguments.size() > 1)
             ctx.sql(", ").visit(arguments.get(1));
@@ -380,12 +386,12 @@ class Function<T> extends AbstractField<T> implements
     }
 
     /**
-     * [#1273] <code>LIST_AGG</code> emulation for MySQL and CUBRID
+     * [#1273] <code>LIST_AGG</code> emulation for MySQL
      */
     final void toSQLGroupConcat(Context<?> ctx) {
         toSQLFunctionName(ctx);
         ctx.sql('(');
-        toSQLArguments1(ctx, new QueryPartList<QueryPart>(Arrays.asList(arguments.get(0))));
+        toSQLArguments1(ctx, new QueryPartList<>(Arrays.asList(arguments.get(0))));
 
         if (!Tools.isEmpty(withinGroupOrderBy))
             ctx.sql(' ').visit(K_ORDER_BY).sql(' ')
@@ -424,10 +430,21 @@ class Function<T> extends AbstractField<T> implements
             return;
 
         Boolean ranking = false;
-        Boolean previous = null;
+        Boolean previousRanking = null;
+
+
+
+
+
 
         if (term != null) {
             switch (term) {
+
+
+
+
+
+
                 case CUME_DIST:
                 case DENSE_RANK:
                 case FIRST_VALUE:
@@ -438,7 +455,6 @@ class Function<T> extends AbstractField<T> implements
                 case NTILE:
                 case PERCENT_RANK:
                 case RANK:
-                case ROW_NUMBER:
                     ranking = true;
                     break;
             }
@@ -448,14 +464,24 @@ class Function<T> extends AbstractField<T> implements
            .visit(K_OVER)
            .sql(' ');
 
-        previous = (Boolean) ctx.data(DATA_RANKING_FUNCTION, ranking);
+        previousRanking = (Boolean) ctx.data(BooleanDataKey.DATA_RANKING_FUNCTION, ranking);
+
+
+
 
         ctx.visit(window);
 
-        if (TRUE.equals(previous))
-            ctx.data(DATA_RANKING_FUNCTION, previous);
+        if (TRUE.equals(previousRanking))
+            ctx.data(BooleanDataKey.DATA_RANKING_FUNCTION, previousRanking);
         else
-            ctx.data().remove(DATA_RANKING_FUNCTION);
+            ctx.data().remove(BooleanDataKey.DATA_RANKING_FUNCTION);
+
+
+
+
+
+
+
     }
 
     @SuppressWarnings("unchecked")
@@ -473,7 +499,7 @@ class Function<T> extends AbstractField<T> implements
 
         // [#531] Inline window specifications if the WINDOW clause is not supported
         if (windowName != null) {
-            if (SUPPORT_WINDOW_CLAUSE.contains(ctx.family()))
+            if (ctx.dialect().supports(SUPPORT_WINDOW_CLAUSE))
                 return windowName;
 
             QueryPartList<WindowDefinition> windows = (QueryPartList<WindowDefinition>) ctx.data(DATA_WINDOW_DEFINITIONS);
@@ -540,15 +566,13 @@ class Function<T> extends AbstractField<T> implements
         toSQLArguments1(ctx, arguments);
     }
 
-    final void toSQLArguments1(Context<?> ctx, QueryPartList<QueryPart> args) {
+    final void toSQLArguments1(Context<?> ctx, QueryPartList<Field<?>> args) {
         if (distinct) {
-            ctx.visit(K_DISTINCT);
+            ctx.visit(K_DISTINCT).sql(' ');
 
-            // [#2883] PostgreSQL can use the DISTINCT keyword with formal row value expressions.
-            if ((                                                            ctx.family() == POSTGRES) && args.size() > 1)
+            // [#2883][#9109] PostgreSQL and H2 can use the DISTINCT keyword with formal row value expressions.
+            if (args.size() > 1 && SUPPORT_DISTINCT_RVE.contains(ctx.family()))
                 ctx.sql('(');
-            else
-                ctx.sql(' ');
         }
 
         if (!args.isEmpty()) {
@@ -556,9 +580,9 @@ class Function<T> extends AbstractField<T> implements
                 ctx.visit(args);
             }
             else {
-                QueryPartList<Field<?>> expressions = new QueryPartList<Field<?>>();
+                QueryPartList<Field<?>> expressions = new QueryPartList<>();
 
-                for (QueryPart argument : args)
+                for (Field<?> argument : args)
                     expressions.add(DSL.when(filter, argument == ASTERISK ? one() : argument));
 
                 ctx.visit(expressions);
@@ -566,53 +590,39 @@ class Function<T> extends AbstractField<T> implements
         }
 
         if (distinct)
-            if ((                                                            ctx.family() == POSTGRES) && args.size() > 1)
+            if (args.size() > 1 && SUPPORT_DISTINCT_RVE.contains(ctx.family()))
                 ctx.sql(')');
-
-        if (ctx.family() != H2) {
-            if (TRUE.equals(fromLast))
-                ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_LAST);
-            else if (FALSE.equals(fromLast))
-                ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_FIRST);
-
-            if (TRUE.equals(ignoreNulls)) {
-                switch (ctx.family()) {
-
-
-
-
-
-                    default:
-                        ctx.sql(' ').visit(K_IGNORE_NULLS);
-                        break;
-                }
-            }
-            else if (FALSE.equals(ignoreNulls)) {
-                switch (ctx.family()) {
-
-
-
-
-
-                    default:
-                        ctx.sql(' ').visit(K_RESPECT_NULLS);
-                        break;
-                }
-            }
-        }
     }
 
     final void toSQLArguments2(Context<?> ctx) {
-        if (ctx.family() == H2) {
-            if (TRUE.equals(fromLast))
-                ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_LAST);
-            else if (FALSE.equals(fromLast))
-                ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_FIRST);
+        if (TRUE.equals(fromLast))
+            ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_LAST);
+        else if (FALSE.equals(fromLast))
+            ctx.sql(' ').visit(K_FROM).sql(' ').visit(K_FIRST);
 
-            if (TRUE.equals(ignoreNulls))
-                ctx.sql(' ').visit(K_IGNORE_NULLS);
-            else if (FALSE.equals(ignoreNulls))
-                ctx.sql(' ').visit(K_RESPECT_NULLS);
+        if (TRUE.equals(ignoreNulls)) {
+            switch (ctx.family()) {
+
+
+
+
+
+                default:
+                    ctx.sql(' ').visit(K_IGNORE_NULLS);
+                    break;
+            }
+        }
+        else if (FALSE.equals(ignoreNulls)) {
+            switch (ctx.family()) {
+
+
+
+
+
+                default:
+                    ctx.sql(' ').visit(K_RESPECT_NULLS);
+                    break;
+            }
         }
     }
 
@@ -620,7 +630,7 @@ class Function<T> extends AbstractField<T> implements
         if (name != null)
             ctx.visit(name);
         else if (term != null)
-            ctx.sql(term.translate(ctx.configuration().dialect()));
+            ctx.sql(term.translate(ctx.dialect()));
         else
             ctx.sql(getName());
     }
@@ -629,7 +639,7 @@ class Function<T> extends AbstractField<T> implements
     // XXX aggregate and window function fluent API methods
     // -------------------------------------------------------------------------
 
-    final QueryPartList<QueryPart> getArguments() {
+    final QueryPartList<Field<?>> getArguments() {
         return arguments;
     }
 

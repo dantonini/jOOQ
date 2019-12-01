@@ -46,8 +46,10 @@ import static org.jooq.Clause.INSERT_ON_DUPLICATE_KEY_UPDATE_ASSIGNMENT;
 import static org.jooq.Clause.INSERT_RETURNING;
 import static org.jooq.Clause.INSERT_SELECT;
 // ...
+// ...
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 // ...
@@ -69,7 +71,6 @@ import static org.jooq.impl.Keywords.K_INTO;
 import static org.jooq.impl.Keywords.K_ON_CONFLICT;
 import static org.jooq.impl.Keywords.K_ON_CONSTRAINT;
 import static org.jooq.impl.Keywords.K_ON_DUPLICATE_KEY_UPDATE;
-import static org.jooq.impl.Keywords.K_OR;
 import static org.jooq.impl.Keywords.K_SET;
 import static org.jooq.impl.Keywords.K_VALUES;
 import static org.jooq.impl.Keywords.K_WHERE;
@@ -79,14 +80,15 @@ import static org.jooq.impl.Tools.fieldNameStrings;
 import static org.jooq.impl.Tools.fieldNames;
 import static org.jooq.impl.Tools.BooleanDataKey.DATA_CONSTRAINT_REFERENCE;
 import static org.jooq.impl.Tools.BooleanDataKey.DATA_INSERT_SELECT_WITHOUT_INSERT_COLUMN_LIST;
+import static org.jooq.impl.Tools.DataKey.DATA_ON_DUPLICATE_KEY_WHERE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jooq.Clause;
 import org.jooq.Condition;
@@ -110,6 +112,7 @@ import org.jooq.Select;
 import org.jooq.Table;
 import org.jooq.UniqueKey;
 import org.jooq.exception.SQLDialectNotSupportedException;
+import org.jooq.impl.Tools.DataExtendedKey;
 import org.jooq.tools.StringUtils;
 
 /**
@@ -117,20 +120,20 @@ import org.jooq.tools.StringUtils;
  */
 final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements InsertQuery<R> {
 
-    private static final long                serialVersionUID      = 4466005417945353842L;
-    private static final Clause[]            CLAUSES               = { INSERT };
-    private static final EnumSet<SQLDialect> SUPPORT_INSERT_IGNORE = EnumSet.of(MARIADB, MYSQL);
+    private static final long            serialVersionUID      = 4466005417945353842L;
+    private static final Clause[]        CLAUSES               = { INSERT };
+    private static final Set<SQLDialect> SUPPORT_INSERT_IGNORE = SQLDialect.supportedBy(MARIADB, MYSQL);
 
-    private final FieldMapForUpdate          updateMap;
-    private final FieldMapsForInsert         insertMaps;
-    private Select<?>                        select;
-    private boolean                          defaultValues;
-    private boolean                          onDuplicateKeyUpdate;
-    private boolean                          onDuplicateKeyIgnore;
-    private Constraint                       onConstraint;
-    private UniqueKey<R>                     onConstraintUniqueKey;
-    private QueryPartList<Field<?>>          onConflict;
-    private final ConditionProviderImpl      condition;
+    private final FieldMapForUpdate      updateMap;
+    private final FieldMapsForInsert     insertMaps;
+    private Select<?>                    select;
+    private boolean                      defaultValues;
+    private boolean                      onDuplicateKeyUpdate;
+    private boolean                      onDuplicateKeyIgnore;
+    private Constraint                   onConstraint;
+    private UniqueKey<R>                 onConstraintUniqueKey;
+    private QueryPartList<Field<?>>      onConflict;
+    private final ConditionProviderImpl  condition;
 
     InsertQueryImpl(Configuration configuration, WithImpl with, Table<R> into) {
         super(configuration, with, into);
@@ -171,11 +174,29 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
     @Override
     public final void onConflict(Collection<? extends Field<?>> fields) {
-        this.onConflict = new QueryPartList<Field<?>>(fields);
+        this.onConflict = new QueryPartList<>(fields);
     }
 
     @Override
     public final void onConflictOnConstraint(Constraint constraint) {
+        onConflictOnConstraint0(constraint);
+    }
+
+    @Override
+    public void onConflictOnConstraint(UniqueKey<R> constraint) {
+        if (StringUtils.isEmpty(constraint.getName()))
+            throw new IllegalArgumentException("UniqueKey's name is not specified");
+
+        this.onConstraintUniqueKey = constraint;
+        onConflictOnConstraint0(constraint(name(constraint.getName())));
+    }
+
+    @Override
+    public final void onConflictOnConstraint(Name constraint) {
+        onConflictOnConstraint0(constraint(constraint));
+    }
+
+    private void onConflictOnConstraint0(Constraint constraint) {
         this.onConstraint = constraint;
 
         if (onConstraintUniqueKey == null) {
@@ -186,20 +207,6 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
                 }
             }
         }
-    }
-
-    @Override
-    public void onConflictOnConstraint(UniqueKey<R> constraint) {
-        if (StringUtils.isEmpty(constraint.getName()))
-            throw new IllegalArgumentException("UniqueKey's name is not specified");
-
-        this.onConstraintUniqueKey = constraint;
-        onConflictOnConstraint(name(constraint.getName()));
-    }
-
-    @Override
-    public final void onConflictOnConstraint(Name constraint) {
-        onConflictOnConstraint(constraint(constraint));
     }
 
     @Override
@@ -287,8 +294,8 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
+
                 case CUBRID:
-                case H2:
                 case MARIADB:
                 case MYSQL: {
 
@@ -305,9 +312,18 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
                        .visit(K_ON_DUPLICATE_KEY_UPDATE)
                        .formatIndentStart()
                        .formatSeparator()
-                       .qualify(newQualify)
-                       .visit(updateMap)
-                       .qualify(oldQualify)
+                       .qualify(newQualify);
+
+                    // [#8479] Emulate WHERE clause using CASE
+                    if (condition.hasWhere())
+                        ctx.data(DATA_ON_DUPLICATE_KEY_WHERE, condition.getWhere());
+
+                    ctx.visit(updateMap);
+
+                    if (condition.hasWhere())
+                        ctx.data().remove(DATA_ON_DUPLICATE_KEY_WHERE);
+
+                    ctx.qualify(oldQualify)
                        .formatIndentEnd()
                        .end(INSERT_ON_DUPLICATE_KEY_UPDATE);
 
@@ -317,7 +333,9 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
-                case POSTGRES: {
+
+                case POSTGRES:
+                case SQLITE: {
                     toSQLInsert(ctx);
                     ctx.formatSeparator()
                        .start(INSERT_ON_DUPLICATE_KEY_UPDATE)
@@ -350,7 +368,7 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
                             ctx.sql("[unknown primary key]");
                         else
                             ctx.qualify(false)
-                               .visit(new Fields<Record>(table().getPrimaryKey().getFields()))
+                               .visit(new Fields<>(table().getPrimaryKey().getFields()))
                                .qualify(qualify);
 
                         ctx.sql(')');
@@ -385,6 +403,15 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
+
+
+
+
+
+
+                case DERBY:
+                case FIREBIRD:
+                case H2:
                 case HSQLDB: {
                     ctx.visit(toMerge(ctx.configuration()));
                     break;
@@ -404,11 +431,16 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
-                case MARIADB:
-                case MYSQL_5_7:
-                case MYSQL_8_0:
+
+
+
+
+
+
+
+
                 case MYSQL:
-                case SQLITE: {
+                case MARIADB: {
                     toSQLInsert(ctx);
                     ctx.start(INSERT_ON_DUPLICATE_KEY_UPDATE)
                        .end(INSERT_ON_DUPLICATE_KEY_UPDATE);
@@ -418,10 +450,14 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
-                case POSTGRES_9_5:
-                case POSTGRES_10:
-                case POSTGRES_11:
-                case POSTGRES: {
+
+
+
+
+
+
+                case POSTGRES:
+                case SQLITE: {
                     toSQLInsert(ctx);
                     ctx.formatSeparator()
                        .start(INSERT_ON_DUPLICATE_KEY_UPDATE)
@@ -494,6 +530,7 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
 
 
+                case DERBY:
                 case HSQLDB: {
                     ctx.visit(toMerge(ctx.configuration()));
                     break;
@@ -531,13 +568,12 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
            .visit(K_INSERT)
            .sql(' ');
 
-        // [#1295] [#4376] MySQL and SQLite have native syntaxes for
-        //                 INSERT [ OR ] IGNORE
+        // [#1295] MySQL dialects have native syntax for INSERT IGNORE
+        // [#4376] [#8433] for SQLite render using ON CONFLICT DO NOTHING
+        //                 rather than INSERT OR IGNORE
         if (onDuplicateKeyIgnore)
             if (SUPPORT_INSERT_IGNORE.contains(ctx.family()))
                 ctx.visit(K_IGNORE).sql(' ');
-            else if (SQLDialect.SQLITE == ctx.family())
-                ctx.visit(K_OR).sql(' ').visit(K_IGNORE).sql(' ');
 
         ctx.visit(K_INTO)
            .sql(' ')
@@ -547,6 +583,10 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
         insertMaps.toSQLReferenceKeys(ctx);
         ctx.end(INSERT_INSERT_INTO);
+
+
+
+
 
         if (select != null) {
 
@@ -576,6 +616,7 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         }
         else if (defaultValues) {
             switch (ctx.family()) {
+
 
 
 
@@ -663,7 +704,7 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         // [#6462] MySQL ON DUPLICATE KEY UPDATE clause
         //         All conflicting keys are considered
         List<UniqueKey<R>> keys = table().getKeys();
-        List<List<? extends Field<?>>> result = new ArrayList<List<? extends Field<?>>>(keys.size());
+        List<List<? extends Field<?>>> result = new ArrayList<>(keys.size());
         for (UniqueKey<R> key : keys)
             result.add(key.getFields());
 
@@ -841,13 +882,18 @@ final class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         return insertMaps.isExecutable() || defaultValues || select != null;
     }
 
-    @Override
-    final int estimatedRowCount() {
-        if (defaultValues)
-            return 1;
-        else if (select != null)
-            return Integer.MAX_VALUE;
-        else
-            return insertMaps.rows;
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

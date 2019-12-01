@@ -58,7 +58,7 @@ final class WithTable<R extends Record> extends AbstractTable<R> {
     private final String           hint;
 
     WithTable(AbstractTable<R> delegate, String hint) {
-        super(delegate.getName(), delegate.getSchema());
+        super(delegate.getOptions(), delegate.getQualifiedName(), delegate.getSchema());
 
         this.delegate = delegate;
         this.hint = hint;
@@ -84,12 +84,12 @@ final class WithTable<R extends Record> extends AbstractTable<R> {
 
     @Override
     public final Table<R> as(Name alias) {
-        return new WithTable<R>(new TableAlias<R>(delegate, alias), hint);
+        return new WithTable<>(new TableAlias<>(delegate, alias), hint);
     }
 
     @Override
     public final Table<R> as(Name alias, Name... fieldAliases) {
-        return new WithTable<R>(new TableAlias<R>(delegate, alias, fieldAliases), hint);
+        return new WithTable<>(new TableAlias<>(delegate, alias, fieldAliases), hint);
     }
 
     @Override

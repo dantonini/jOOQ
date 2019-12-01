@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.meta.jaxb;
 
 import java.io.Serializable;
@@ -19,6 +12,8 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -34,7 +29,7 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class CatalogMappingType implements Serializable
+public class CatalogMappingType implements Serializable, XMLAppendable
 {
 
     private final static long serialVersionUID = 31200L;
@@ -52,21 +47,13 @@ public class CatalogMappingType implements Serializable
     /**
      * See also {@link Database#getInputCatalog()}
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getInputCatalog() {
         return inputCatalog;
     }
 
     /**
-     * Sets the value of the inputCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * See also {@link Database#getInputCatalog()}
      *
      */
     public void setInputCatalog(String value) {
@@ -76,21 +63,13 @@ public class CatalogMappingType implements Serializable
     /**
      * See also {@link Database#getOutputCatalog()}
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getOutputCatalog() {
         return outputCatalog;
     }
 
     /**
-     * Sets the value of the outputCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * See also {@link Database#getOutputCatalog()}
      *
      */
     public void setOutputCatalog(String value) {
@@ -132,11 +111,19 @@ public class CatalogMappingType implements Serializable
         this.schemata = schemata;
     }
 
+    /**
+     * See also {@link Database#getInputCatalog()}
+     *
+     */
     public CatalogMappingType withInputCatalog(String value) {
         setInputCatalog(value);
         return this;
     }
 
+    /**
+     * See also {@link Database#getOutputCatalog()}
+     *
+     */
     public CatalogMappingType withOutputCatalog(String value) {
         setOutputCatalog(value);
         return this;
@@ -169,33 +156,18 @@ public class CatalogMappingType implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("inputCatalog", inputCatalog);
+        builder.append("outputCatalog", outputCatalog);
+        builder.append("outputCatalogToDefault", outputCatalogToDefault);
+        builder.append("schemata", "schema", schemata);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (inputCatalog!= null) {
-            sb.append("<inputCatalog>");
-            sb.append(inputCatalog);
-            sb.append("</inputCatalog>");
-        }
-        if (outputCatalog!= null) {
-            sb.append("<outputCatalog>");
-            sb.append(outputCatalog);
-            sb.append("</outputCatalog>");
-        }
-        if (outputCatalogToDefault!= null) {
-            sb.append("<outputCatalogToDefault>");
-            sb.append(outputCatalogToDefault);
-            sb.append("</outputCatalogToDefault>");
-        }
-        if (schemata!= null) {
-            sb.append("<schemata>");
-            for (int i = 0; (i<schemata.size()); i ++) {
-                sb.append("<schema>");
-                sb.append(schemata.get(i));
-                sb.append("</schema>");
-            }
-            sb.append("</schemata>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

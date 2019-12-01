@@ -38,12 +38,15 @@
 
 package org.jooq.impl;
 
+import static org.jooq.impl.Names.N_SELECT;
+
 import org.jooq.Clause;
 import org.jooq.Context;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Select;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * @author Lukas Eder
@@ -55,7 +58,7 @@ final class DerivedTable<R extends Record> extends AbstractTable<R> {
     private final Select<R>   query;
 
     DerivedTable(Select<R> query) {
-        super("select");
+        super(TableOptions.expression(), N_SELECT);
 
         this.query = query;
     }
@@ -66,17 +69,17 @@ final class DerivedTable<R extends Record> extends AbstractTable<R> {
 
     @Override
     public final Table<R> as(Name alias) {
-        return new TableAlias<R>(this, alias, true);
+        return new TableAlias<>(this, alias, true);
     }
 
     @Override
     public final Table<R> as(Name alias, Name... fieldAliases) {
-        return new TableAlias<R>(this, alias, fieldAliases, true);
+        return new TableAlias<>(this, alias, fieldAliases, true);
     }
 
     @Override
     final Fields<R> fields0() {
-        return new Fields<R>(query.getSelect());
+        return new Fields<>(query.getSelect());
     }
 
     @Override

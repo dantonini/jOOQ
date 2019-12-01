@@ -50,6 +50,7 @@ import java.util.ListIterator;
 
 import org.jooq.Context;
 import org.jooq.QueryPart;
+import org.jooq.Statement;
 
 /**
  * @author Lukas Eder
@@ -79,7 +80,7 @@ class QueryPartList<T extends QueryPart> extends AbstractQueryPart implements Li
     QueryPartList(Collection<? extends T> wrappedList, boolean qualify) {
         super();
 
-        this.wrappedList = new ArrayList<T>();
+        this.wrappedList = new ArrayList<>();
         this.qualify = qualify;
 
         // [#4664] Don't allocate the backing array if not necessary!
@@ -116,8 +117,12 @@ class QueryPartList<T extends QueryPart> extends AbstractQueryPart implements Li
                 if (i > 0 || indent)
                     ctx.formatNewLine();
 
-                ctx.visit(get(i));
-                separator = ", ";
+                T part = get(i);
+                ctx.visit(part);
+
+                // [#3607] Procedures and functions are not separated by comma
+                if (!(part instanceof Statement))
+                    separator = ", ";
             }
 
             if (indent)
@@ -213,7 +218,7 @@ class QueryPartList<T extends QueryPart> extends AbstractQueryPart implements Li
         }
 
         if (containsNulls) {
-            List<T> list = new ArrayList<T>(c);
+            List<T> list = new ArrayList<>(c);
             Iterator<T> it = list.iterator();
 
             while (it.hasNext())

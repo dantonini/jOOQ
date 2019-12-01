@@ -40,6 +40,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -49,9 +50,11 @@ import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
 // ...
 // ...
 // ...
@@ -72,8 +75,8 @@ import java.util.Collection;
  * are equivalent in SQL:
  * <p>
  * <code><pre>
- * (A, B) > (X, Y)
- * (A > X) OR (A = X AND B > Y)
+ * (A, B) &gt; (X, Y)
+ * (A &gt; X) OR (A = X AND B &gt; Y)
  * </pre></code>
  * <p>
  * <strong>Example:</strong>
@@ -212,7 +215,7 @@ public interface Row1<T1> extends Row {
      * @see #greaterThan(Select)
      * @see #greaterOrEqual(Select)
      */
-    @Support
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition compare(Comparator comparator, QuantifiedSelect<? extends Record1<T1>> select);
 
     // ------------------------------------------------------------------------
@@ -275,7 +278,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition equal(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -331,7 +334,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition eq(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -340,7 +343,7 @@ public interface Row1<T1> extends Row {
      * <p>
      * Row non-equality comparison predicates can be emulated in those
      * databases that do not support such predicates natively:
-     * <code>(A, B) &lt;> (1, 2)</code> is equivalent to
+     * <code>(A, B) &lt;&gt; (1, 2)</code> is equivalent to
      * <code>NOT(A = 1 AND B = 2)</code>
      */
     @Support
@@ -390,7 +393,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition notEqual(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -446,7 +449,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition ne(QuantifiedSelect<? extends Record1<T1>> select);
 
     // ------------------------------------------------------------------------
@@ -569,7 +572,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition lessThan(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -625,7 +628,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition lt(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -684,7 +687,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition lessOrEqual(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -740,7 +743,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition le(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -749,8 +752,8 @@ public interface Row1<T1> extends Row {
      * <p>
      * Row order comparison predicates can be emulated in those
      * databases that do not support such predicates natively:
-     * <code>(A, B, C) > (1, 2, 3)</code> is equivalent to
-     * <code>A > 1 OR (A = 1 AND B > 2) OR (A = 1 AND B = 2 AND C > 3)</code>
+     * <code>(A, B, C) &gt; (1, 2, 3)</code> is equivalent to
+     * <code>A &gt; 1 OR (A = 1 AND B &gt; 2) OR (A = 1 AND B = 2 AND C &gt; 3)</code>
      */
     @Support
     Condition greaterThan(Row1<T1> row);
@@ -799,7 +802,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition greaterThan(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -855,7 +858,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition gt(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -864,8 +867,8 @@ public interface Row1<T1> extends Row {
      * <p>
      * Row order comparison predicates can be emulated in those
      * databases that do not support such predicates natively:
-     * <code>(A, B) >= (1, 2)</code> is equivalent to
-     * <code>A > 1 OR (A = 1 AND B > 2) OR (A = 1 AND B = 2)</code>
+     * <code>(A, B) &gt;= (1, 2)</code> is equivalent to
+     * <code>A &gt; 1 OR (A = 1 AND B &gt; 2) OR (A = 1 AND B = 2)</code>
      */
     @Support
     Condition greaterOrEqual(Row1<T1> row);
@@ -914,7 +917,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition greaterOrEqual(QuantifiedSelect<? extends Record1<T1>> select);
 
     /**
@@ -970,7 +973,7 @@ public interface Row1<T1> extends Row {
      * @see DSL#any(Select)
      * @see DSL#any(Object...)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
     Condition ge(QuantifiedSelect<? extends Record1<T1>> select);
 
     // ------------------------------------------------------------------------
@@ -1019,7 +1022,7 @@ public interface Row1<T1> extends Row {
      * This is the same as calling <code>between(minValue).and(maxValue)</code>
      * <p>
      * The expression <code>A BETWEEN B AND C</code> is equivalent to the
-     * expression <code>A >= B AND A &lt;= C</code> for those SQL dialects that do
+     * expression <code>A &gt;= B AND A &lt;= C</code> for those SQL dialects that do
      * not properly support the <code>BETWEEN</code> predicate for row value
      * expressions
      */
@@ -1081,7 +1084,7 @@ public interface Row1<T1> extends Row {
      * This is the same as calling <code>betweenSymmetric(minValue).and(maxValue)</code>
      * <p>
      * The expression <code>A BETWEEN SYMMETRIC B AND C</code> is equivalent to
-     * the expression <code>(A >= B AND A &lt;= C) OR (A >= C AND A &lt;= B)</code>
+     * the expression <code>(A &gt;= B AND A &lt;= C) OR (A &gt;= C AND A &lt;= B)</code>
      * for those SQL dialects that do not properly support the
      * <code>BETWEEN</code> predicate for row value expressions
      */
@@ -1143,7 +1146,7 @@ public interface Row1<T1> extends Row {
      * This is the same as calling <code>notBetween(minValue).and(maxValue)</code>
      * <p>
      * The expression <code>A NOT BETWEEN B AND C</code> is equivalent to the
-     * expression <code>A &lt; B OR A > C</code> for those SQL dialects that do
+     * expression <code>A &lt; B OR A &gt; C</code> for those SQL dialects that do
      * not properly support the <code>BETWEEN</code> predicate for row value
      * expressions
      */
@@ -1205,7 +1208,7 @@ public interface Row1<T1> extends Row {
      * This is the same as calling <code>notBetweenSymmetric(minValue).and(maxValue)</code>
      * <p>
      * The expression <code>A NOT BETWEEN SYMMETRIC B AND C</code> is equivalent
-     * to the expression <code>(A &lt; B OR A > C) AND (A &lt; C OR A > B)</code> for
+     * to the expression <code>(A &lt; B OR A &gt; C) AND (A &lt; C OR A &gt; B)</code> for
      * those SQL dialects that do not properly support the <code>BETWEEN</code>
      * predicate for row value expressions
      */

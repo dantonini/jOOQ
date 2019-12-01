@@ -41,22 +41,25 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
 import static org.jooq.SQLDialect.FIREBIRD;
-import static org.jooq.SQLDialect.FIREBIRD_3_0;
+// ...
 import static org.jooq.SQLDialect.H2;
 // ...
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
+// ...
 import static org.jooq.SQLDialect.MYSQL;
-import static org.jooq.SQLDialect.MYSQL_8_0;
+// ...
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_9_5;
+// ...
 // ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
@@ -246,89 +249,144 @@ public interface DSLContext extends Scope , AutoCloseable  {
     DataSource diagnosticsDataSource();
 
     /**
+     * Initialise a {@link Version}.
+     */
+    Version version(String id);
+
+    /**
+     * Create a migration to a new version.
+     */
+    Migration migration(Version to);
+
+    /**
      * Access the database meta data.
      * <p>
-     * This method returns a wrapper type that gives access to your JDBC
-     * connection's database meta data.
+     * This method returns meta information provided by
+     * {@link Configuration#metaProvider()}, which defaults to a wrapper type
+     * that gives access to your JDBC connection's {@link DatabaseMetaData} as
+     * obtained from your {@link ConnectionProvider}.
+     *
+     * @see #meta(DatabaseMetaData)
      */
     Meta meta();
 
     /**
-     * Access the database meta data from JDBC {@link DatabaseMetaData}.
+     * Access the database meta data from an explicit JDBC
+     * {@link DatabaseMetaData}.
      */
     Meta meta(DatabaseMetaData meta);
 
     /**
-     * Access the database meta data from catalog information.
+     * Access the database meta data from explicit catalog information.
+     * <p>
+     * This will not connect to your database to get live meta information,
+     * unlike {@link #meta()} and {@link #meta(DatabaseMetaData)}.
      */
     Meta meta(Catalog... catalogs);
 
     /**
-     * Access the database meta data from schema information.
+     * Access the database meta data from explicit schema information.
+     * <p>
+     * This will not connect to your database to get live meta information,
+     * unlike {@link #meta()} and {@link #meta(DatabaseMetaData)}.
      */
     Meta meta(Schema... schemas);
 
     /**
-     * Access the database meta data from table information.
+     * Access the database meta data from explicit table information.
+     * <p>
+     * This will not connect to your database to get live meta information,
+     * unlike {@link #meta()} and {@link #meta(DatabaseMetaData)}.
      */
     Meta meta(Table<?>... tables);
 
     /**
-     * Access the database meta data from an JAXB-annotated meta model.
+     * Access the database meta data from an explicit JAXB-annotated meta model.
+     * <p>
+     * This will not connect to your database to get live meta information,
+     * unlike {@link #meta()} and {@link #meta(DatabaseMetaData)}.
      */
     Meta meta(InformationSchema schema);
 
     /**
-     * Export a catalog to the {@link InformationSchema} format.
+     * Create meta data from a set of sources.
      * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * This is convenience for wrapping all argument {@link String}s in
+     * {@link Source}. The same set of content types are supported as in
+     * {@link #meta(Source...)}.
+     */
+    Meta meta(String... sources);
+
+    /**
+     * Create meta data from a set of sources.
+     * <p>
+     * This method creates a {@link Meta} representation from a set of source
+     * content, which can be any of:
+     * <ul>
+     * <li>A set of DDL scripts, which will be parsed using
+     * {@link #parser()}.</li>
+     * <li>A set of XML files, which will be unmarshalled into
+     * {@link InformationSchema} objects.</li>
+     * </ul>
+     * <p>
+     * This will not connect to your database to get live meta information,
+     * unlike {@link #meta()} and {@link #meta(DatabaseMetaData)}.
+     */
+    Meta meta(Source... sources);
+
+    /**
+     * Create meta data from a set of DDL queries.
+     * <p>
+     * This works the same way as {@link #meta(Source...)}, without the need of
+     * parsing the DDL scripts.
+     */
+    Meta meta(Query... queries);
+
+    /**
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Catalog...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Catalog catalog);
 
     /**
-     * Export a set of catalogs to the {@link InformationSchema} format.
-     * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Catalog...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Catalog... catalogs);
 
     /**
-     * Export a schema to the {@link InformationSchema} format.
-     * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Schema...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Schema schema);
 
     /**
-     * Export a set of schemas to the {@link InformationSchema} format.
-     * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Schema...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Schema... schemas);
 
     /**
-     * Export a table to the {@link InformationSchema} format.
-     * <p>
-     * Exporting a single table will not include any foreign key definitions in
-     * the exported data.
-     * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Table<?> table);
 
     /**
-     * Export a set of tables to the {@link InformationSchema} format.
-     * <p>
-     * Only those foreign keys whose referenced table is also included in the
-     * export will be exported.
-     * <p>
-     * This allows for serialising schema meta information as XML using JAXB.
-     * See also {@link Constants#XSD_META} for details.
+     * Convenience method for {@link Meta#informationSchema()}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#informationSchema()
      */
     InformationSchema informationSchema(Table<?>... table);
 
@@ -340,7 +398,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Run an <code>EXPLAIN</code> statement in the database to estimate the
      * cardinality of the query.
      */
-    @Support({ H2, HSQLDB, MYSQL, POSTGRES })
+    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     Explain explain(Query query);
 
     // -------------------------------------------------------------------------
@@ -578,6 +636,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *             completely internal with jOOQ 4.0
      */
     @Deprecated
+    @Internal
     RenderContext renderContext();
 
     /**
@@ -681,6 +740,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *             completely internal with jOOQ 4.0
      */
     @Deprecated
+    @Internal
     BindContext bindContext(PreparedStatement stmt);
 
     /**
@@ -801,7 +861,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     @Support
     @PlainSQL
-    Query query(SQL sql);
+    RowCountQuery query(SQL sql);
 
     /**
      * Create a new query holding plain SQL. There must not be any binding
@@ -823,7 +883,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     @Support
     @PlainSQL
-    Query query(String sql);
+    RowCountQuery query(String sql);
 
     /**
      * Create a new query holding plain SQL. There must be as many bind
@@ -847,7 +907,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     @Support
     @PlainSQL
-    Query query(String sql, Object... bindings);
+    RowCountQuery query(String sql, Object... bindings);
 
     /**
      * Create a new query holding plain SQL.
@@ -879,7 +939,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     @Support
     @PlainSQL
-    Query query(String sql, QueryPart... parts);
+    RowCountQuery query(String sql, QueryPart... parts);
 
     /**
      * Execute a new query holding plain SQL.
@@ -887,7 +947,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -914,7 +974,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -944,7 +1004,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1012,7 +1072,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1044,7 +1104,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1079,7 +1139,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1152,7 +1212,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1182,7 +1242,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1215,7 +1275,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1281,7 +1341,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1308,7 +1368,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1338,7 +1398,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1406,7 +1466,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1440,7 +1500,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1477,7 +1537,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1657,7 +1717,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1684,7 +1744,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1714,7 +1774,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1777,7 +1837,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1805,7 +1865,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1836,7 +1896,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1902,7 +1962,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1929,7 +1989,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -1959,7 +2019,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2023,7 +2083,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2052,7 +2112,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2084,7 +2144,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2152,7 +2212,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2181,7 +2241,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2213,7 +2273,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2281,7 +2341,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2309,7 +2369,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2340,7 +2400,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2515,7 +2575,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2561,7 +2621,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -2608,7 +2668,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * Example (Postgres):
      * <p>
      * <code><pre>
-     * String sql = "FETCH ALL IN \"<unnamed cursor 1>\"";</pre></code> Example
+     * String sql = "FETCH ALL IN \"&lt;unnamed cursor 1&gt;\"";</pre></code> Example
      * (SQLite):
      * <p>
      * <code><pre>
@@ -3533,15 +3593,15 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * <ul>
      * <li>The input is expected to be well-formed XML. XHTML conformance is not
      * required - i.e. unknown elements / attributes, or elements / attributes
-     * not specified here, such as <code>&lt;caption></code>,
-     * <code>&lt;thead></code>, <code>&lt;tbody></code> are simply ignored.</li>
-     * <li>The surrounding <code>&lt;table></code> element is optional, but it
+     * not specified here, such as <code>&lt;caption&gt;</code>,
+     * <code>&lt;thead&gt;</code>, <code>&lt;tbody&gt;</code> are simply ignored.</li>
+     * <li>The surrounding <code>&lt;table&gt;</code> element is optional, but it
      * may appear only once</li>
-     * <li>A single row containing table headings <code>&lt;th></code> is
+     * <li>A single row containing table headings <code>&lt;th&gt;</code> is
      * allowed. Further rows containing table headings are ignored. Table
      * headings define field names. In the absence of table headings, field
      * names are generated.</li>
-     * <li>The first row <code>&lt;tr></code> specifies the number of columns in
+     * <li>The first row <code>&lt;tr&gt;</code> specifies the number of columns in
      * the table (regardless if it contains table headings or not). Subsequent
      * rows containing less columns will be padded. Subsequent rows containing
      * more columns will be truncated.</li>
@@ -3550,11 +3610,11 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * </ul>
      * <p>
      * Ideal input looks like this: <code><pre>
-     * &lt;table>
-     * &lt;tr>&lt;th>COL1&lt;/th>&lt;th>COL2&lt;/th>&lt;/tr>
-     * &lt;tr>&lt;td>1&lt;/td>&lt;td>a&lt;/td>&lt;/tr>
-     * &lt;tr>&lt;td>2&lt;/td>&lt;td>b&lt;/td>&lt;/tr>
-     * &lt;/table>
+     * &lt;table&gt;
+     * &lt;tr&gt;&lt;th&gt;COL1&lt;/th&gt;&lt;th&gt;COL2&lt;/th&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;a&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;2&lt;/td&gt;&lt;td&gt;b&lt;/td&gt;&lt;/tr&gt;
+     * &lt;/table&gt;
      * </code>
      * </pre>
      *
@@ -3710,6 +3770,31 @@ public interface DSLContext extends Scope , AutoCloseable  {
     Result<Record> fetchFromJSON(String string);
 
     /**
+     * Fetch all data from an XML string.
+     * <p>
+     * This is the inverse of calling {@link Result#formatXML()}. Use the
+     * various conversion methods to retrieve other data types from the
+     * <code>Result</code>:
+     * <ul>
+     * <li> {@link Result#getValues(Field, Class)}</li>
+     * <li> {@link Result#getValues(int, Class)}</li>
+     * <li> {@link Result#getValues(String, Class)}</li>
+     * <li> {@link Result#getValues(Field, Converter)}</li>
+     * <li> {@link Result#getValues(int, Converter)}</li>
+     * <li> {@link Result#getValues(String, Converter)}</li>
+     * </ul>
+     * <p>
+     * Missing values result in <code>null</code>. Empty values result in empty
+     * <code>Strings</code>
+     *
+     * @param string The XML string
+     * @return The transformed result. This will never be <code>null</code>.
+     * @throws DataAccessException If anything went wrong parsing the XML file
+     */
+    @Support
+    Result<Record> fetchFromXML(String string);
+
+    /**
      * Fetch all data from a list of strings.
      * <p>
      * This is used by methods such as
@@ -3784,7 +3869,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(String alias);
 
     /**
@@ -3800,7 +3885,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(String alias, String... fieldAliases);
 
     /**
@@ -3816,7 +3901,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(Name)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(Name alias);
 
     /**
@@ -3832,7 +3917,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(Name, Name...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(Name alias, Name... fieldAliases);
 
 
@@ -3852,7 +3937,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * that all column names are produced by a function that receives the CTE's
      * {@link Select} columns as input.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(String alias, Function<? super Field<?>, ? extends String> fieldNameFunction);
 
     /**
@@ -3871,11 +3956,11 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * that all column names are produced by a function that receives the CTE's
      * {@link Select} columns and their column indexes as input.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep with(String alias, BiFunction<? super Field<?>, ? super Integer, ? extends String> fieldNameFunction);
 
 
-    // [jooq-tools] START [with]
+
 
     /**
      * Create a <code>WITH</code> clause to supply subsequent
@@ -3890,7 +3975,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep1 with(String alias, String fieldAlias1);
 
     /**
@@ -3906,7 +3991,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep2 with(String alias, String fieldAlias1, String fieldAlias2);
 
     /**
@@ -3922,7 +4007,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep3 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3);
 
     /**
@@ -3938,7 +4023,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep4 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4);
 
     /**
@@ -3954,7 +4039,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep5 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5);
 
     /**
@@ -3970,7 +4055,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep6 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6);
 
     /**
@@ -3986,7 +4071,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep7 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7);
 
     /**
@@ -4002,7 +4087,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep8 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8);
 
     /**
@@ -4018,7 +4103,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep9 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9);
 
     /**
@@ -4034,7 +4119,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep10 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10);
 
     /**
@@ -4050,7 +4135,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep11 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11);
 
     /**
@@ -4066,7 +4151,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep12 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12);
 
     /**
@@ -4082,7 +4167,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep13 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13);
 
     /**
@@ -4098,7 +4183,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep14 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14);
 
     /**
@@ -4114,7 +4199,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep15 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15);
 
     /**
@@ -4130,7 +4215,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep16 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16);
 
     /**
@@ -4146,7 +4231,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep17 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17);
 
     /**
@@ -4162,7 +4247,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep18 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18);
 
     /**
@@ -4178,7 +4263,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep19 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19);
 
     /**
@@ -4194,7 +4279,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep20 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20);
 
     /**
@@ -4210,7 +4295,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep21 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20, String fieldAlias21);
 
     /**
@@ -4226,7 +4311,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep22 with(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20, String fieldAlias21, String fieldAlias22);
 
     /**
@@ -4242,7 +4327,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep1 with(Name alias, Name fieldAlias1);
 
     /**
@@ -4258,7 +4343,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep2 with(Name alias, Name fieldAlias1, Name fieldAlias2);
 
     /**
@@ -4274,7 +4359,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep3 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3);
 
     /**
@@ -4290,7 +4375,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep4 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4);
 
     /**
@@ -4306,7 +4391,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep5 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5);
 
     /**
@@ -4322,7 +4407,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep6 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6);
 
     /**
@@ -4338,7 +4423,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep7 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7);
 
     /**
@@ -4354,7 +4439,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep8 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8);
 
     /**
@@ -4370,7 +4455,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep9 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9);
 
     /**
@@ -4386,7 +4471,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep10 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10);
 
     /**
@@ -4402,7 +4487,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep11 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11);
 
     /**
@@ -4418,7 +4503,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep12 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12);
 
     /**
@@ -4434,7 +4519,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep13 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13);
 
     /**
@@ -4450,7 +4535,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep14 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14);
 
     /**
@@ -4466,7 +4551,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep15 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15);
 
     /**
@@ -4482,7 +4567,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep16 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16);
 
     /**
@@ -4498,7 +4583,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep17 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17);
 
     /**
@@ -4514,7 +4599,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep18 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18);
 
     /**
@@ -4530,7 +4615,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep19 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19);
 
     /**
@@ -4546,7 +4631,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep20 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20);
 
     /**
@@ -4562,7 +4647,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep21 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20, Name fieldAlias21);
 
     /**
@@ -4578,10 +4663,10 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep22 with(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20, Name fieldAlias21, Name fieldAlias22);
 
-// [jooq-tools] END [with]
+
 
     /**
      * Create a <code>WITH</code> clause to supply subsequent
@@ -4604,7 +4689,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(CommonTableExpression...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithStep with(CommonTableExpression<?>... tables);
 
     /**
@@ -4620,7 +4705,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(String alias);
 
     /**
@@ -4636,7 +4721,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(String alias, String... fieldAliases);
 
     /**
@@ -4652,7 +4737,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(Name)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(Name alias);
 
     /**
@@ -4668,7 +4753,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(Name, Name...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(Name alias, Name... fieldAliases);
 
 
@@ -4689,7 +4774,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * that all column names are produced by a function that receives the CTE's
      * {@link Select} columns as input.
      */
-    @Support({ FIREBIRD, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(String alias, Function<? super Field<?>, ? extends String> fieldNameFunction);
 
     /**
@@ -4709,11 +4794,11 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * that all column names are produced by a function that receives the CTE's
      * {@link Select} columns and their column indexes as input.
      */
-    @Support({ FIREBIRD, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep withRecursive(String alias, BiFunction<? super Field<?>, ? super Integer, ? extends String> fieldNameFunction);
 
 
-    // [jooq-tools] START [with-recursive]
+
 
     /**
      * Create a <code>WITH</code> clause to supply subsequent
@@ -4728,7 +4813,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep1 withRecursive(String alias, String fieldAlias1);
 
     /**
@@ -4744,7 +4829,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep2 withRecursive(String alias, String fieldAlias1, String fieldAlias2);
 
     /**
@@ -4760,7 +4845,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep3 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3);
 
     /**
@@ -4776,7 +4861,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep4 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4);
 
     /**
@@ -4792,7 +4877,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep5 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5);
 
     /**
@@ -4808,7 +4893,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep6 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6);
 
     /**
@@ -4824,7 +4909,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep7 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7);
 
     /**
@@ -4840,7 +4925,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep8 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8);
 
     /**
@@ -4856,7 +4941,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep9 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9);
 
     /**
@@ -4872,7 +4957,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep10 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10);
 
     /**
@@ -4888,7 +4973,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep11 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11);
 
     /**
@@ -4904,7 +4989,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep12 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12);
 
     /**
@@ -4920,7 +5005,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep13 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13);
 
     /**
@@ -4936,7 +5021,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep14 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14);
 
     /**
@@ -4952,7 +5037,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep15 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15);
 
     /**
@@ -4968,7 +5053,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep16 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16);
 
     /**
@@ -4984,7 +5069,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep17 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17);
 
     /**
@@ -5000,7 +5085,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep18 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18);
 
     /**
@@ -5016,7 +5101,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep19 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19);
 
     /**
@@ -5032,7 +5117,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep20 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20);
 
     /**
@@ -5048,7 +5133,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep21 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20, String fieldAlias21);
 
     /**
@@ -5064,7 +5149,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep22 withRecursive(String alias, String fieldAlias1, String fieldAlias2, String fieldAlias3, String fieldAlias4, String fieldAlias5, String fieldAlias6, String fieldAlias7, String fieldAlias8, String fieldAlias9, String fieldAlias10, String fieldAlias11, String fieldAlias12, String fieldAlias13, String fieldAlias14, String fieldAlias15, String fieldAlias16, String fieldAlias17, String fieldAlias18, String fieldAlias19, String fieldAlias20, String fieldAlias21, String fieldAlias22);
 
     /**
@@ -5080,7 +5165,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep1 withRecursive(Name alias, Name fieldAlias1);
 
     /**
@@ -5096,7 +5181,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep2 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2);
 
     /**
@@ -5112,7 +5197,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep3 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3);
 
     /**
@@ -5128,7 +5213,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep4 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4);
 
     /**
@@ -5144,7 +5229,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep5 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5);
 
     /**
@@ -5160,7 +5245,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep6 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6);
 
     /**
@@ -5176,7 +5261,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep7 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7);
 
     /**
@@ -5192,7 +5277,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep8 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8);
 
     /**
@@ -5208,7 +5293,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep9 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9);
 
     /**
@@ -5224,7 +5309,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep10 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10);
 
     /**
@@ -5240,7 +5325,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep11 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11);
 
     /**
@@ -5256,7 +5341,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep12 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12);
 
     /**
@@ -5272,7 +5357,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep13 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13);
 
     /**
@@ -5288,7 +5373,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep14 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14);
 
     /**
@@ -5304,7 +5389,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep15 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15);
 
     /**
@@ -5320,7 +5405,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep16 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16);
 
     /**
@@ -5336,7 +5421,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep17 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17);
 
     /**
@@ -5352,7 +5437,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep18 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18);
 
     /**
@@ -5368,7 +5453,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep19 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19);
 
     /**
@@ -5384,7 +5469,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep20 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20);
 
     /**
@@ -5400,7 +5485,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep21 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20, Name fieldAlias21);
 
     /**
@@ -5416,10 +5501,10 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(String, String...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithAsStep22 withRecursive(Name alias, Name fieldAlias1, Name fieldAlias2, Name fieldAlias3, Name fieldAlias4, Name fieldAlias5, Name fieldAlias6, Name fieldAlias7, Name fieldAlias8, Name fieldAlias9, Name fieldAlias10, Name fieldAlias11, Name fieldAlias12, Name fieldAlias13, Name fieldAlias14, Name fieldAlias15, Name fieldAlias16, Name fieldAlias17, Name fieldAlias18, Name fieldAlias19, Name fieldAlias20, Name fieldAlias21, Name fieldAlias22);
 
-// [jooq-tools] END [with-recursive]
+
 
     /**
      * Create a <code>WITH</code> clause to supply subsequent
@@ -5442,24 +5527,37 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * and {@link #withRecursive(CommonTableExpression...)} for strictly
      * recursive CTE.
      */
-    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL_8_0, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     WithStep withRecursive(CommonTableExpression<?>... tables);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting the known columns from a
+     * table.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * This will project the known columns from the argument table querying
+     * {@link Table#fields()}. If no known columns are available (e.g. because
+     * the table has been created using {@link DSL#table(String)}), then
+     * <code>SELECT *</code> is projected.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT table.col1, table.col2 FROM table
      * </pre></code>
      */
     @Support
     <R extends Record> SelectWhereStep<R> selectFrom(Table<R> table);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting <code>*</code>.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * Without knowing any columns from the argument table (see
+     * {@link #selectFrom(Table)}), this will project <code>SELECT *</code>.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT * FROM table
      * </pre></code>
      *
      * @see DSL#table(Name)
@@ -5468,10 +5566,15 @@ public interface DSLContext extends Scope , AutoCloseable  {
     <R extends Record> SelectWhereStep<R> selectFrom(Name table);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting <code>*</code>.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * Without knowing any columns from the argument table (see
+     * {@link #selectFrom(Table)}), this will project <code>SELECT *</code>.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT * FROM table
      * </pre></code>
      * <p>
      * <b>NOTE</b>: When inserting plain SQL into jOOQ objects, you must
@@ -5483,13 +5586,19 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see SQL
      */
     @Support
+    @PlainSQL
     <R extends Record> SelectWhereStep<R> selectFrom(SQL sql);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting <code>*</code>.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * Without knowing any columns from the argument table (see
+     * {@link #selectFrom(Table)}), this will project <code>SELECT *</code>.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT * FROM table
      * </pre></code>
      * <p>
      * <b>NOTE</b>: When inserting plain SQL into jOOQ objects, you must
@@ -5502,13 +5611,19 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see SQL
      */
     @Support
+    @PlainSQL
     <R extends Record> SelectWhereStep<R> selectFrom(String sql);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting <code>*</code>.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * Without knowing any columns from the argument table (see
+     * {@link #selectFrom(Table)}), this will project <code>SELECT *</code>.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT * FROM table
      * </pre></code>
      * <p>
      * <b>NOTE</b>: When inserting plain SQL into jOOQ objects, you must
@@ -5521,13 +5636,19 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see SQL
      */
     @Support
+    @PlainSQL
     <R extends Record> SelectWhereStep<R> selectFrom(String sql, Object... bindings);
 
     /**
-     * Create a new DSL select statement.
+     * Create a new DSL select statement, projecting <code>*</code>.
      * <p>
-     * Example: <code><pre>
-     * SELECT * FROM [table] WHERE [conditions] ORDER BY [ordering] LIMIT [limit clause]
+     * Without knowing any columns from the argument table (see
+     * {@link #selectFrom(Table)}), this will project <code>SELECT *</code>.
+     * <p>
+     * Example:
+     * <p>
+     * <code><pre>
+     * SELECT * FROM table
      * </pre></code>
      * <p>
      * <b>NOTE</b>: When inserting plain SQL into jOOQ objects, you must
@@ -5540,6 +5661,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see SQL
      */
     @Support
+    @PlainSQL
     <R extends Record> SelectWhereStep<R> selectFrom(String sql, QueryPart... parts);
 
     /**
@@ -5582,7 +5704,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * statement from this {@link DSLContext}. If you don't need to render or
      * execute this <code>SELECT</code> statement (e.g. because you want to
      * create a subselect), consider using the static
-     * {@link DSL#select(SelectField...)} instead.
+     * {@link DSL#select(SelectFieldOrAsterisk...)} instead.
      * <p>
      * Example: <code><pre>
      * DSLContext create = DSL.using(configuration);
@@ -5604,17 +5726,17 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * using plain SQL</li>
      * </ul>
      *
-     * @see DSL#select(SelectField...)
+     * @see DSL#select(SelectFieldOrAsterisk...)
      */
     @Support
     SelectSelectStep<Record> select(SelectFieldOrAsterisk... fields);
 
-    // [jooq-tools] START [select]
+
 
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Field#in(Select)}, {@link Field#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5643,7 +5765,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row2#in(Select)}, {@link Row2#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5672,7 +5794,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row3#in(Select)}, {@link Row3#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5701,7 +5823,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row4#in(Select)}, {@link Row4#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5730,7 +5852,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row5#in(Select)}, {@link Row5#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5759,7 +5881,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row6#in(Select)}, {@link Row6#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5788,7 +5910,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row7#in(Select)}, {@link Row7#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5817,7 +5939,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row8#in(Select)}, {@link Row8#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5846,7 +5968,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row9#in(Select)}, {@link Row9#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5875,7 +5997,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row10#in(Select)}, {@link Row10#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5904,7 +6026,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row11#in(Select)}, {@link Row11#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5933,7 +6055,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row12#in(Select)}, {@link Row12#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5962,7 +6084,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row13#in(Select)}, {@link Row13#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -5991,7 +6113,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row14#in(Select)}, {@link Row14#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6020,7 +6142,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row15#in(Select)}, {@link Row15#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6049,7 +6171,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row16#in(Select)}, {@link Row16#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6078,7 +6200,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row17#in(Select)}, {@link Row17#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6107,7 +6229,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row18#in(Select)}, {@link Row18#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6136,7 +6258,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row19#in(Select)}, {@link Row19#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6165,7 +6287,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row20#in(Select)}, {@link Row20#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6194,7 +6316,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row21#in(Select)}, {@link Row21#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6223,7 +6345,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new DSL select statement.
      * <p>
-     * This is the same as {@link #select(SelectField...)}, except that it
+     * This is the same as {@link #select(SelectFieldOrAsterisk...)}, except that it
      * declares additional record-level typesafety, which is needed by
      * {@link Row22#in(Select)}, {@link Row22#equal(Select)} and other predicate
      * building methods taking subselect arguments.
@@ -6249,7 +6371,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> SelectSelectStep<Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>> select(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20, SelectField<T21> field21, SelectField<T22> field22);
 
-// [jooq-tools] END [select]
+
 
     /**
      * Create a new DSL select statement.
@@ -6317,7 +6439,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     SelectSelectStep<Record> selectDistinct(SelectFieldOrAsterisk... fields);
 
-    // [jooq-tools] START [selectDistinct]
+
 
     /**
      * Create a new DSL select statement.
@@ -6957,7 +7079,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> SelectSelectStep<Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>> selectDistinct(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20, SelectField<T21> field21, SelectField<T22> field22);
 
-// [jooq-tools] END [selectDistinct]
+
 
     /**
      * Create a new DSL select statement for a constant <code>0</code> literal.
@@ -7081,7 +7203,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     <R extends Record> InsertSetStep<R> insertInto(Table<R> into);
 
-    // [jooq-tools] START [insert]
+
 
     /**
      * Create a new DSL insert statement.
@@ -7457,7 +7579,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> InsertValuesStep22<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> insertInto(Table<R> into, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [insert]
+
 
     /**
      * Create a new DSL insert statement.
@@ -7518,7 +7640,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * </pre></code>
      * <p>
      * Note that some databases support table expressions more complex than
-     * simple table references. In CUBRID and MySQL, for instance, you can write
+     * simple table references. In MySQL, for instance, you can write
      * <code><pre>
      * create.update(t1.join(t2).on(t1.id.eq(t2.id)))
      *       .set(t1.value, value1)
@@ -7541,13 +7663,6 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * <th>support type</th>
      * <th>documentation</th>
      * </tr>
-     * <tr>
-     * <td>CUBRID</td>
-     * <td>SQL:2008 standard and some enhancements</td>
-     * <td><a href="http://www.cubrid.org/manual/90/en/MERGE"
-     * >http://www.cubrid.org/manual/90/en/MERGE</a></td>
-     * </tr>
-     * <tr>
      * <tr>
      * <td>DB2</td>
      * <td>SQL:2008 standard and major enhancements</td>
@@ -7604,10 +7719,10 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * statement without field specification. See also
      * {@link #mergeInto(Table, Field...)}
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record> MergeUsingStep<R> mergeInto(Table<R> table);
 
-    // [jooq-tools] START [merge]
+
 
     /**
      * Create a new DSL UPSERT statement ({@link SQLDialect#H2}
@@ -7615,7 +7730,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1> MergeKeyStep1<R, T1> mergeInto(Table<R> table, Field<T1> field1);
 
     /**
@@ -7624,7 +7739,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2> MergeKeyStep2<R, T1, T2> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2);
 
     /**
@@ -7633,7 +7748,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3> MergeKeyStep3<R, T1, T2, T3> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3);
 
     /**
@@ -7642,7 +7757,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4> MergeKeyStep4<R, T1, T2, T3, T4> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4);
 
     /**
@@ -7651,7 +7766,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5> MergeKeyStep5<R, T1, T2, T3, T4, T5> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5);
 
     /**
@@ -7660,7 +7775,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6> MergeKeyStep6<R, T1, T2, T3, T4, T5, T6> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6);
 
     /**
@@ -7669,7 +7784,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7> MergeKeyStep7<R, T1, T2, T3, T4, T5, T6, T7> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7);
 
     /**
@@ -7678,7 +7793,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8> MergeKeyStep8<R, T1, T2, T3, T4, T5, T6, T7, T8> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8);
 
     /**
@@ -7687,7 +7802,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9> MergeKeyStep9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9);
 
     /**
@@ -7696,7 +7811,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> MergeKeyStep10<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10);
 
     /**
@@ -7705,7 +7820,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> MergeKeyStep11<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11);
 
     /**
@@ -7714,7 +7829,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> MergeKeyStep12<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12);
 
     /**
@@ -7723,7 +7838,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> MergeKeyStep13<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13);
 
     /**
@@ -7732,7 +7847,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> MergeKeyStep14<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14);
 
     /**
@@ -7741,7 +7856,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> MergeKeyStep15<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15);
 
     /**
@@ -7750,7 +7865,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> MergeKeyStep16<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16);
 
     /**
@@ -7759,7 +7874,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> MergeKeyStep17<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17);
 
     /**
@@ -7768,7 +7883,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> MergeKeyStep18<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18);
 
     /**
@@ -7777,7 +7892,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> MergeKeyStep19<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19);
 
     /**
@@ -7786,7 +7901,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> MergeKeyStep20<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20);
 
     /**
@@ -7795,7 +7910,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21> MergeKeyStep21<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21);
 
     /**
@@ -7804,10 +7919,10 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> MergeKeyStep22<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> mergeInto(Table<R> table, Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [merge]
+
 
     /**
      * Create a new DSL UPSERT statement ({@link SQLDialect#H2}
@@ -7841,7 +7956,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * </tr>
      * </table>
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record> MergeKeyStepN<R> mergeInto(Table<R> table, Field<?>... fields);
 
     /**
@@ -7849,7 +7964,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see #mergeInto(Table, Field...)
      */
-    @Support({ CUBRID, FIREBIRD_3_0, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     <R extends Record> MergeKeyStepN<R> mergeInto(Table<R> table, Collection<? extends Field<?>> fields);
 
     /**
@@ -7939,6 +8054,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see java.sql.Statement#executeBatch()
      */
     @Support
+    @PlainSQL
     Batch batch(String... queries);
 
     /**
@@ -8006,6 +8122,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see java.sql.Statement#executeBatch()
      */
     @Support
+    @PlainSQL
     BatchBindStep batch(String sql);
 
     /**
@@ -8037,6 +8154,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see java.sql.Statement#executeBatch()
      */
     @Support
+    @PlainSQL
     Batch batch(String sql, Object[]... bindings);
 
     /**
@@ -8216,138 +8334,124 @@ public interface DSLContext extends Scope , AutoCloseable  {
     // -------------------------------------------------------------------------
 
     /**
-     * Generate the complete creation script for the entire catalog.
+     * Convenience method for {@link Meta#ddl()}.
      *
-     * @see #ddl(Catalog, DDLFlag...)
+     * @see #meta(Catalog...)
+     * @see Meta#ddl()
      */
     Queries ddl(Catalog catalog);
 
     /**
-     * Generate a partial creation script for the entire catalog.
-     * <p>
-     * The following {@link DDLFlag} can be set:
-     * <ul>
-     * <li>{@link DDLFlag#SCHEMA}: If set, the catalog's <code>SCHEMA</code>
-     * specification will be generated.</li>
-     * <li>{@link DDLFlag#TABLE}: If set, the schema's <code>TABLE</code>
-     * specification will be generated.</li>
-     * <li>{@link DDLFlag#PRIMARY_KEY}: If set, a potential
-     * <code>PRIMARY KEY</code> constraint is specified inline with the table.
-     * </li>
-     * <li>{@link DDLFlag#UNIQUE}: If set, any potential <code>UNIQUE</code>
-     * constraint is specified inline with the table.</li>
-     * <li>{@link DDLFlag#FOREIGN_KEY}: If set, any potential
-     * <code>FOREIGN KEY</code> constraint is specified after all the tables, as
-     * a separate <code>ALTER TABLE .. ADD CONSTRAINT</code> statement.</li>
-     * </ul>
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Catalog...)
+     * @see Meta#ddl(DDLExportConfiguration)
+     */
+    Queries ddl(Catalog schema, DDLExportConfiguration configuration);
+
+    /**
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Catalog...)
+     * @see Meta#ddl(DDLExportConfiguration)
      */
     Queries ddl(Catalog schema, DDLFlag... flags);
 
     /**
-     * Generate the complete creation script for the entire schema.
+     * Convenience method for {@link Meta#ddl()}.
      *
-     * @see #ddl(Schema, DDLFlag...)
+     * @see #meta(Schema...)
+     * @see Meta#ddl()
      */
     Queries ddl(Schema schema);
 
     /**
-     * Generate a partial creation script for the entire schema.
-     * <p>
-     * The following {@link DDLFlag} can be set:
-     * <ul>
-     * <li>{@link DDLFlag#TABLE}: If set, the schema's <code>TABLE</code>
-     * specification will be generated.</li>
-     * <li>{@link DDLFlag#PRIMARY_KEY}: If set, a potential
-     * <code>PRIMARY KEY</code> constraint is specified inline with the table.
-     * </li>
-     * <li>{@link DDLFlag#UNIQUE}: If set, any potential <code>UNIQUE</code>
-     * constraint is specified inline with the table.</li>
-     * <li>{@link DDLFlag#FOREIGN_KEY}: If set, any potential
-     * <code>FOREIGN KEY</code> constraint is specified after all the tables, as
-     * a separate <code>ALTER TABLE .. ADD CONSTRAINT</code> statement.</li>
-     * </ul>
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Schema...)
+     * @see Meta#ddl(DDLExportConfiguration)
+     */
+    Queries ddl(Schema schema, DDLExportConfiguration configuration);
+
+    /**
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Schema...)
+     * @see Meta#ddl(DDLExportConfiguration)
      */
     Queries ddl(Schema schema, DDLFlag... flags);
 
     /**
-     * Generate the complete creation script for a table.
+     * Convenience method for {@link Meta#ddl()}.
      *
-     * @see #ddl(Table, DDLFlag...)
+     * @see #meta(Table...)
+     * @see Meta#ddl()
      */
     Queries ddl(Table<?> table);
 
     /**
-     * Generate a partial creation script for a table.
-     * <p>
-     * The following {@link DDLFlag} can be set:
-     * <ul>
-     * <li>{@link DDLFlag#TABLE}: If not set, this will generate nothing at all.
-     * </li>
-     * <li>{@link DDLFlag#PRIMARY_KEY}: If set, a potential
-     * <code>PRIMARY KEY</code> constraint is specified inline with the table.
-     * </li>
-     * <li>{@link DDLFlag#UNIQUE}: If set, any potential <code>UNIQUE</code>
-     * constraint is specified inline with the table.</li>
-     * <li>{@link DDLFlag#FOREIGN_KEY}: If set, any potential
-     * <code>FOREIGN KEY</code> constraint is specified inline with the table.
-     * </li>
-     * </ul>
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
+     */
+    Queries ddl(Table<?> table, DDLExportConfiguration configuration);
+
+    /**
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
      */
     Queries ddl(Table<?> table, DDLFlag... flags);
 
     /**
-     * Generate the complete creation script for tables.
+     * Convenience method for {@link Meta#ddl()}.
      *
-     * @see #ddl(Table[], DDLFlag...)
+     * @see #meta(Table...)
+     * @see Meta#ddl()
      */
     Queries ddl(Table<?>... tables);
 
     /**
-     * Generate the complete creation script for tables.
-     * <p>
-     * The following {@link DDLFlag} can be set:
-     * <ul>
-     * <li>{@link DDLFlag#TABLE}: If not set, this will generate nothing at all.
-     * </li>
-     * <li>{@link DDLFlag#PRIMARY_KEY}: If set, a potential
-     * <code>PRIMARY KEY</code> constraint is specified inline with the table.
-     * </li>
-     * <li>{@link DDLFlag#UNIQUE}: If set, any potential <code>UNIQUE</code>
-     * constraint is specified inline with the table.</li>
-     * <li>{@link DDLFlag#FOREIGN_KEY}: If set, any potential
-     * <code>FOREIGN KEY</code> constraint is specified inline with the table.
-     * </li>
-     * </ul>
-     * </p>
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
+     */
+    Queries ddl(Table<?>[] tables, DDLExportConfiguration configuration);
+
+    /**
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
      */
     Queries ddl(Table<?>[] tables, DDLFlag... flags);
 
     /**
-     * Generate the complete creation script for tables.
+     * Convenience method for {@link Meta#ddl()}.
      *
-     * @see #ddl(Collection, DDLFlag...)
+     * @see #meta(Table...)
+     * @see Meta#ddl()
      */
     Queries ddl(Collection<? extends Table<?>> tables);
 
     /**
-     * Generate the complete creation script for tables.
-     * <p>
-     * The following {@link DDLFlag} can be set:
-     * <ul>
-     * <li>{@link DDLFlag#TABLE}: If not set, this will generate nothing at all.
-     * </li>
-     * <li>{@link DDLFlag#PRIMARY_KEY}: If set, a potential
-     * <code>PRIMARY KEY</code> constraint is specified inline with the table.
-     * </li>
-     * <li>{@link DDLFlag#UNIQUE}: If set, any potential <code>UNIQUE</code>
-     * constraint is specified inline with the table.</li>
-     * <li>{@link DDLFlag#FOREIGN_KEY}: If set, any potential
-     * <code>FOREIGN KEY</code> constraint is specified inline with the table.
-     * </li>
-     * </ul>
-     * </p>
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
      */
     Queries ddl(Collection<? extends Table<?>> tables, DDLFlag... flags);
+
+    /**
+     * Convenience method for {@link Meta#ddl(DDLExportConfiguration)}.
+     *
+     * @see #meta(Table...)
+     * @see Meta#ddl(DDLExportConfiguration)
+     */
+    Queries ddl(Collection<? extends Table<?>> tables, DDLExportConfiguration configuration);
 
     // -------------------------------------------------------------------------
     // XXX Session Statements
@@ -8359,7 +8463,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see DSL#catalog(Name)
      */
     @Support({ MARIADB, MYSQL })
-    Query setCatalog(String catalog);
+    RowCountQuery setCatalog(String catalog);
 
     /**
      * Set the current catalog to a new value.
@@ -8367,35 +8471,39 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see DSL#catalog(Name)
      */
     @Support({ MARIADB, MYSQL })
-    Query setCatalog(Name catalog);
+    RowCountQuery setCatalog(Name catalog);
 
     /**
      * Set the current catalog to a new value.
      */
     @Support({ MARIADB, MYSQL })
-    Query setCatalog(Catalog catalog);
+    RowCountQuery setCatalog(Catalog catalog);
 
     /**
      * Set the current schema to a new value.
      *
      * @see DSL#schema(Name)
+     * @see DSL#setSchema(String)
      */
     @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
-    Query setSchema(String schema);
+    RowCountQuery setSchema(String schema);
 
     /**
      * Set the current schema to a new value.
      *
      * @see DSL#schema(Name)
+     * @see DSL#setSchema(Name)
      */
     @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
-    Query setSchema(Name schema);
+    RowCountQuery setSchema(Name schema);
 
     /**
      * Set the current schema to a new value.
+     *
+     * @see DSL#setSchema(Schema)
      */
     @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
-    Query setSchema(Schema schema);
+    RowCountQuery setSchema(Schema schema);
 
     // -------------------------------------------------------------------------
     // XXX DDL Statements
@@ -8460,7 +8568,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#commentOnColumn(Name)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CommentOnIsStep commentOnColumn(Name columnName);
 
     /**
@@ -8468,7 +8576,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#commentOnColumn(Field)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CommentOnIsStep commentOnColumn(Field<?> field);
 
     /**
@@ -8476,7 +8584,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(String)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchema(String schema);
 
     /**
@@ -8484,7 +8592,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(Name)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchema(Name schema);
 
     /**
@@ -8492,7 +8600,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(Schema)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchema(Schema schema);
 
     /**
@@ -8500,7 +8608,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchemaIfNotExists(String)
      */
-    @Support({ H2, MARIADB, POSTGRES })
+    @Support({ H2, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchemaIfNotExists(String schema);
 
     /**
@@ -8508,7 +8616,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchemaIfNotExists(Name)
      */
-    @Support({ H2, MARIADB, POSTGRES })
+    @Support({ H2, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchemaIfNotExists(Name schema);
 
     /**
@@ -8516,7 +8624,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchemaIfNotExists(Schema)
      */
-    @Support({ H2, MARIADB, POSTGRES })
+    @Support({ H2, MARIADB, MYSQL, POSTGRES })
     CreateSchemaFinalStep createSchemaIfNotExists(Schema schema);
 
     /**
@@ -8524,7 +8632,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTable(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateTableColumnStep createTable(String table);
 
     /**
@@ -8532,7 +8640,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTable(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateTableColumnStep createTable(Name table);
 
     /**
@@ -8540,7 +8648,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTable(Table)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateTableColumnStep createTable(Table<?> table);
 
     /**
@@ -8572,7 +8680,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTemporaryTable(String)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createTemporaryTable(String table);
 
     /**
@@ -8580,7 +8688,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTemporaryTable(Name)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createTemporaryTable(Name table);
 
     /**
@@ -8588,15 +8696,39 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createTemporaryTable(Table)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createTemporaryTable(Table<?> table);
+
+    /**
+     * Create a new DSL <code>CREATE TEMPORARY TABLE IF NOT EXISTS</code> statement.
+     *
+     * @see DSL#createTemporaryTableIfNotExists(String)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    CreateTableColumnStep createTemporaryTableIfNotExists(String table);
+
+    /**
+     * Create a new DSL <code>CREATE TEMPORARY TABLE IF NOT EXISTS</code> statement.
+     *
+     * @see DSL#createTemporaryTableIfNotExists(Name)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    CreateTableColumnStep createTemporaryTableIfNotExists(Name table);
+
+    /**
+     * Create a new DSL <code>CREATE TEMPORARY TABLE IF NOT EXISTS</code> statement.
+     *
+     * @see DSL#createTemporaryTableIfNotExists(Table)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    CreateTableColumnStep createTemporaryTableIfNotExists(Table<?> table);
 
     /**
      * Create a new DSL <code>CREATE GLOBAL TEMPORARY TABLE</code> statement.
      *
      * @see DSL#createGlobalTemporaryTable(String)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createGlobalTemporaryTable(String table);
 
     /**
@@ -8604,7 +8736,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createGlobalTemporaryTable(Name)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createGlobalTemporaryTable(Name table);
 
     /**
@@ -8612,7 +8744,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createGlobalTemporaryTable(Table)
      */
-    @Support({ MARIADB, MYSQL, POSTGRES })
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     CreateTableColumnStep createGlobalTemporaryTable(Table<?> table);
 
     /**
@@ -8718,7 +8850,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(String view, String... fields);
 
     /**
@@ -8726,7 +8858,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(Name, Name...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Name view, Name... fields);
 
     /**
@@ -8734,7 +8866,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(Table, Field...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Table<?> view, Field<?>... fields);
 
 
@@ -8747,7 +8879,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(String view, Function<? super Field<?>, ? extends String> fieldNameFunction);
 
     /**
@@ -8759,7 +8891,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(String view, BiFunction<? super Field<?>, ? super Integer, ? extends String> fieldNameFunction);
 
     /**
@@ -8771,7 +8903,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Name view, Function<? super Field<?>, ? extends Name> fieldNameFunction);
 
     /**
@@ -8783,7 +8915,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Name view, BiFunction<? super Field<?>, ? super Integer, ? extends Name> fieldNameFunction);
 
     /**
@@ -8795,7 +8927,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Table<?> view, Function<? super Field<?>, ? extends Field<?>> fieldNameFunction);
 
     /**
@@ -8807,7 +8939,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createOrReplaceView(String, String...)
      */
-    @Support({ H2, POSTGRES })
+    @Support({ FIREBIRD, H2, MARIADB, MYSQL, POSTGRES })
     CreateViewAsStep<Record> createOrReplaceView(Table<?> view, BiFunction<? super Field<?>, ? super Integer, ? extends Field<?>> fieldNameFunction);
 
 
@@ -8926,6 +9058,22 @@ public interface DSLContext extends Scope , AutoCloseable  {
     CreateTypeStep createType(Name type);
 
     /**
+     * Create a new DSL <code>ALTER TYPE</code> statement.
+     *
+     * @see DSL#alterType(String)
+     */
+    @Support({ POSTGRES })
+    AlterTypeStep alterType(String type);
+
+    /**
+     * Create a new DSL <code>ALTER TYPE</code> statement.
+     *
+     * @see DSL#alterType(Name)
+     */
+    @Support({ POSTGRES })
+    AlterTypeStep alterType(Name type);
+
+    /**
      * Create a new DSL <code>DROP TYPE</code> statement.
      *
      * @see DSL#dropType(String)
@@ -9010,7 +9158,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex()
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createIndex();
 
     /**
@@ -9018,7 +9166,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createIndex(String index);
 
     /**
@@ -9026,7 +9174,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createIndex(Name index);
 
     /**
@@ -9034,7 +9182,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(Index)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createIndex(Index index);
 
     /**
@@ -9042,7 +9190,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndexIfNotExists(String)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     CreateIndexStep createIndexIfNotExists(String index);
 
     /**
@@ -9050,7 +9198,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndexIfNotExists(Name)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     CreateIndexStep createIndexIfNotExists(Name index);
 
     /**
@@ -9058,7 +9206,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndexIfNotExists(Index)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES, SQLITE })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     CreateIndexStep createIndexIfNotExists(Index index);
 
     /**
@@ -9066,7 +9214,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createUniqueIndex()
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createUniqueIndex();
 
     /**
@@ -9074,7 +9222,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createUniqueIndex(String index);
 
     /**
@@ -9082,7 +9230,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createUniqueIndex(Name index);
 
     /**
@@ -9090,7 +9238,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createIndex(Index)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     CreateIndexStep createUniqueIndex(Index index);
 
     /**
@@ -9122,7 +9270,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSequence(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequence(String sequence);
 
     /**
@@ -9130,7 +9278,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSequence(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequence(Name sequence);
 
     /**
@@ -9138,7 +9286,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSequence(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequence(Sequence<?> sequence);
 
     /**
@@ -9146,7 +9294,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSequenceIfNotExists(String)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequenceIfNotExists(String sequence);
 
     /**
@@ -9154,15 +9302,15 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSequenceIfNotExists(Name)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequenceIfNotExists(Name sequence);
 
     /**
      * Create a new DSL <code>CREATE SEQUENCE</code> statement.
      *
-     * @see DSL#createSequenceIfNotExists(String)
+     * @see DSL#createSequenceIfNotExists(Sequence)
      */
-    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     CreateSequenceFlagsStep createSequenceIfNotExists(Sequence<?> sequence);
 
     /**
@@ -9170,7 +9318,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequence(String)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     AlterSequenceStep<BigInteger> alterSequence(String sequence);
 
     /**
@@ -9178,7 +9326,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequence(Name)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     AlterSequenceStep<BigInteger> alterSequence(Name sequence);
 
     /**
@@ -9186,7 +9334,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequence(Sequence)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     <T extends Number> AlterSequenceStep<T> alterSequence(Sequence<T> sequence);
 
     /**
@@ -9194,7 +9342,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequenceIfExists(String)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, MARIADB, POSTGRES })
     AlterSequenceStep<BigInteger> alterSequenceIfExists(String sequence);
 
     /**
@@ -9202,7 +9350,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequenceIfExists(Name)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, MARIADB, POSTGRES })
     AlterSequenceStep<BigInteger> alterSequenceIfExists(Name sequence);
 
     /**
@@ -9210,7 +9358,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSequenceIfExists(Sequence)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, MARIADB, POSTGRES })
     <T extends Number> AlterSequenceStep<T> alterSequenceIfExists(Sequence<T> sequence);
 
     /**
@@ -9266,7 +9414,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchema(String)
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterSchemaStep alterSchema(String schema);
 
     /**
@@ -9274,7 +9422,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchema(Name)
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterSchemaStep alterSchema(Name schema);
 
     /**
@@ -9282,7 +9430,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchema(Schema)
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterSchemaStep alterSchema(Schema schema);
 
     /**
@@ -9290,7 +9438,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchemaIfExists(String)
      */
-    @Support({ POSTGRES })
+    @Support({ H2 })
     AlterSchemaStep alterSchemaIfExists(String schema);
 
     /**
@@ -9298,7 +9446,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchemaIfExists(Name)
      */
-    @Support({ POSTGRES })
+    @Support({ H2 })
     AlterSchemaStep alterSchemaIfExists(Name schema);
 
     /**
@@ -9306,7 +9454,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterSchemaIfExists(Schema)
      */
-    @Support({ POSTGRES })
+    @Support({ H2 })
     AlterSchemaStep alterSchemaIfExists(Schema schema);
 
     /**
@@ -9314,7 +9462,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterView(String)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
     AlterViewStep alterView(String view);
 
     /**
@@ -9322,7 +9470,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterView(Name)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
     AlterViewStep alterView(Name view);
 
     /**
@@ -9330,7 +9478,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterView(Table)
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ FIREBIRD, H2, HSQLDB, POSTGRES })
     AlterViewStep alterView(Table<?> view);
 
     /**
@@ -9338,7 +9486,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterViewIfExists(String)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, POSTGRES })
     AlterViewStep alterViewIfExists(String view);
 
     /**
@@ -9346,7 +9494,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterViewIfExists(Name)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, POSTGRES })
     AlterViewStep alterViewIfExists(Name view);
 
     /**
@@ -9354,7 +9502,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterViewIfExists(Table)
      */
-    @Support({ POSTGRES })
+    @Support({ H2, POSTGRES })
     AlterViewStep alterViewIfExists(Table<?> view);
 
     /**
@@ -9362,7 +9510,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterIndex(String)
      */
-    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     AlterIndexOnStep alterIndex(String index);
 
     /**
@@ -9370,7 +9518,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterIndex(Name)
      */
-    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     AlterIndexOnStep alterIndex(Name index);
 
     /**
@@ -9378,7 +9526,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#alterIndex(Name)
      */
-    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     AlterIndexOnStep alterIndex(Index index);
 
     /**
@@ -9410,7 +9558,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(String)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchema(String schema);
 
     /**
@@ -9418,7 +9566,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(Name)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchema(Name schema);
 
     /**
@@ -9426,7 +9574,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(Schema)
      */
-    @Support({ DERBY, H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchema(Schema schema);
 
     /**
@@ -9434,7 +9582,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchemaIfExists(String)
      */
-    @Support({ H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchemaIfExists(String schema);
 
     /**
@@ -9442,7 +9590,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchemaIfExists(Name)
      */
-    @Support({ H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchemaIfExists(Name schema);
 
     /**
@@ -9450,7 +9598,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchemaIfExists(Schema)
      */
-    @Support({ H2, HSQLDB, MARIADB, POSTGRES })
+    @Support({ H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
     DropSchemaStep dropSchemaIfExists(Schema schema);
 
     /**
@@ -9485,7 +9633,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropViewIfExists(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropViewFinalStep dropViewIfExists(String view);
 
     /**
@@ -9496,7 +9644,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropViewIfExists(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropViewFinalStep dropViewIfExists(Name view);
 
     /**
@@ -9507,7 +9655,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropViewIfExists(Table)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropViewFinalStep dropViewIfExists(Table<?> view);
 
     /**
@@ -9542,7 +9690,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTableIfExists(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropTableStep dropTableIfExists(String table);
 
     /**
@@ -9553,7 +9701,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTableIfExists(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropTableStep dropTableIfExists(Name table);
 
     /**
@@ -9564,7 +9712,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTableIfExists(Table)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropTableStep dropTableIfExists(Table<?> table);
 
     /**
@@ -9572,7 +9720,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTemporaryTable(String)
      */
-    @Support
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     DropTableStep dropTemporaryTable(String table);
 
     /**
@@ -9580,7 +9728,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTemporaryTable(Name)
      */
-    @Support
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     DropTableStep dropTemporaryTable(Name table);
 
     /**
@@ -9588,15 +9736,39 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropTemporaryTable(Table)
      */
-    @Support
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
     DropTableStep dropTemporaryTable(Table<?> table);
+
+    /**
+     * Create a new DSL <code>DROP TEMPORARY TABLE IF EXISTS</code> statement.
+     *
+     * @see DSL#dropTemporaryTableIfExists(String)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    DropTableStep dropTemporaryTableIfExists(String table);
+
+    /**
+     * Create a new DSL <code>DROP TEMPORARY TABLE IF EXISTS</code> statement.
+     *
+     * @see DSL#dropTemporaryTableIfExists(Name)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    DropTableStep dropTemporaryTableIfExists(Name table);
+
+    /**
+     * Create a new DSL <code>DROP TEMPORARY TABLE IF EXISTS</code> statement.
+     *
+     * @see DSL#dropTemporaryTableIfExists(Table)
+     */
+    @Support({ FIREBIRD, MARIADB, MYSQL, POSTGRES })
+    DropTableStep dropTemporaryTableIfExists(Table<?> table);
 
     /**
      * Create a new DSL <code>DROP INDEX</code> statement.
      *
      * @see DSL#dropIndex(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropIndexOnStep dropIndex(String index);
 
     /**
@@ -9604,7 +9776,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropIndex(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropIndexOnStep dropIndex(Name index);
 
     /**
@@ -9612,7 +9784,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropIndex(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     DropIndexOnStep dropIndex(Index index);
 
     /**
@@ -9623,7 +9795,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropIndexIfExists(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     DropIndexOnStep dropIndexIfExists(String index);
 
     /**
@@ -9634,7 +9806,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropIndexIfExists(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     DropIndexOnStep dropIndexIfExists(Name index);
 
     /**
@@ -9645,7 +9817,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropIndexIfExists(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES, SQLITE })
     DropIndexOnStep dropIndexIfExists(Index index);
 
     /**
@@ -9653,7 +9825,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequence(String)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequence(String sequence);
 
     /**
@@ -9661,7 +9833,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequence(Name)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequence(Name sequence);
 
     /**
@@ -9669,7 +9841,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequence(Sequence)
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequence(Sequence<?> sequence);
 
     /**
@@ -9680,7 +9852,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequenceIfExists(String)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequenceIfExists(String sequence);
 
     /**
@@ -9691,7 +9863,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequenceIfExists(Name)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequenceIfExists(Name sequence);
 
     /**
@@ -9702,8 +9874,32 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSequenceIfExists(Sequence)
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     DropSequenceFinalStep dropSequenceIfExists(Sequence<?> sequence);
+
+    /**
+     * Create a new DSL truncate statement.
+     * <p>
+     * Synonym for {@link #truncateTable(String)}
+     */
+    @Support
+    TruncateIdentityStep<Record> truncate(String table);
+
+    /**
+     * Create a new DSL truncate statement.
+     * <p>
+     * Synonym for {@link #truncateTable(Name)}
+     */
+    @Support
+    TruncateIdentityStep<Record> truncate(Name table);
+
+    /**
+     * Create a new DSL truncate statement.
+     * <p>
+     * Synonym for {@link #truncateTable(Table)}
+     */
+    @Support
+    <R extends Record> TruncateIdentityStep<R> truncate(Table<R> table);
 
     /**
      * Create a new DSL truncate statement.
@@ -9744,7 +9940,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see #truncate(Table)
      */
     @Support
-    TruncateIdentityStep<Record> truncate(String table);
+    TruncateIdentityStep<Record> truncateTable(String table);
 
     /**
      * Create a new DSL truncate statement.
@@ -9785,7 +9981,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * @see #truncate(Name)
      */
     @Support
-    TruncateIdentityStep<Record> truncate(Name table);
+    TruncateIdentityStep<Record> truncateTable(Name table);
 
     /**
      * Create a new DSL truncate statement.
@@ -9824,7 +10020,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * dialects that do not support them natively.
      */
     @Support
-    <R extends Record> TruncateIdentityStep<R> truncate(Table<R> table);
+    <R extends Record> TruncateIdentityStep<R> truncateTable(Table<R> table);
 
     // -------------------------------------------------------------------------
     // XXX Access control
@@ -9895,7 +10091,6 @@ public interface DSLContext extends Scope , AutoCloseable  {
      * <ul>
      * <li>{@link SQLDialect#ACCESS}: Using <code>@@identity</code></li>
      * <li>{@link SQLDialect#ASE}: Using <code>@@identity</code></li>
-     * <li>{@link SQLDialect#CUBRID}: Using <code>last_insert_id()</code></li>
      * <li>{@link SQLDialect#DERBY}: Using <code>identity_val_local()</code></li>
      * <li>{@link SQLDialect#H2}: Using <code>identity()</code></li>
      * <li>{@link SQLDialect#HSQLDB}: Using <code>identity()</code></li>
@@ -9924,7 +10119,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     BigInteger nextval(String sequence) throws DataAccessException;
 
     /**
@@ -9933,7 +10128,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     BigInteger nextval(Name sequence) throws DataAccessException;
 
     /**
@@ -9942,7 +10137,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     <T extends Number> T nextval(Sequence<T> sequence) throws DataAccessException;
 
     /**
@@ -9951,7 +10146,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     BigInteger currval(String sequence) throws DataAccessException;
 
     /**
@@ -9960,7 +10155,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     BigInteger currval(Name sequence) throws DataAccessException;
 
     /**
@@ -9969,7 +10164,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @throws DataAccessException if something went wrong executing the query
      */
-    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, POSTGRES })
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, POSTGRES })
     <T extends Number> T currval(Sequence<T> sequence) throws DataAccessException;
 
     // -------------------------------------------------------------------------
@@ -10054,7 +10249,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     Record newRecord(Collection<? extends Field<?>> fields);
 
-    // [jooq-tools] START [newRecord]
+
 
     /**
      * Create a new empty {@link Record}.
@@ -10298,7 +10493,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> newRecord(Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [newRecord]
+
 
     /**
      * Create a new empty {@link Result}.
@@ -10336,7 +10531,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     Result<Record> newResult(Collection<? extends Field<?>> fields);
 
-// [jooq-tools] START [newResult]
+
 
     /**
      * Create a new empty {@link Result}.
@@ -10580,7 +10775,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      */
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> Result<Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>> newResult(Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [newResult]
+
 
     // -------------------------------------------------------------------------
     // XXX Executing queries
@@ -10971,7 +11166,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -10986,7 +11181,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11001,7 +11196,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11019,7 +11214,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11037,7 +11232,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11052,7 +11247,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11067,7 +11262,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11085,7 +11280,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11103,7 +11298,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return exactly one record for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11119,7 +11314,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return exactly one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11135,7 +11330,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return exactly one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11154,7 +11349,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return exactly one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11171,10 +11366,422 @@ public interface DSLContext extends Scope , AutoCloseable  {
     @Support
     <R extends Record> R fetchSingle(Table<R> table, Collection<? extends Condition> conditions) throws DataAccessException, NoDataFoundException, TooManyRowsException;
 
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    Record fetchSingle(SelectField<?>... fields) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    Record fetchSingle(Collection<? extends SelectField<?>> fields) throws DataAccessException;
+
+
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1> Record1<T1> fetchSingle(SelectField<T1> field1) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2> Record2<T1, T2> fetchSingle(SelectField<T1> field1, SelectField<T2> field2) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3> Record3<T1, T2, T3> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4> Record4<T1, T2, T3, T4> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5> Record5<T1, T2, T3, T4, T5> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6> Record6<T1, T2, T3, T4, T5, T6> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7> Record7<T1, T2, T3, T4, T5, T6, T7> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8> Record8<T1, T2, T3, T4, T5, T6, T7, T8> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9> Record9<T1, T2, T3, T4, T5, T6, T7, T8, T9> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Record10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> Record11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> Record12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> Record13<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> Record14<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> Record15<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> Record16<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> Record17<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> Record18<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> Record19<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> Record20<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21> Record21<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20, SelectField<T21> field21) throws DataAccessException;
+
+    /**
+     * Execute and return exactly one record for
+     * <code><pre>SELECT F1, F2, ..., FN</pre></code>.
+     * <p>
+     * The resulting record is attached to this {@link Configuration} by
+     * default. Use {@link Settings#isAttachRecords()} to override this
+     * behaviour.
+     * <p>
+     * Convenience API for calling {@link #fetchSingle(ResultQuery)} with
+     * {@link DSL#select(SelectFieldOrAsterisk...)}.
+     *
+     * @return The record. This is never <code>null</code>.
+     * @throws DataAccessException if something went wrong executing the query
+     */
+    @Support
+    <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> fetchSingle(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20, SelectField<T21> field21, SelectField<T22> field22) throws DataAccessException;
+
+
+
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11189,7 +11796,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11204,7 +11811,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11222,7 +11829,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11241,7 +11848,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] LIMIT 1</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table LIMIT 1</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11255,7 +11862,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] LIMIT 1</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition LIMIT 1</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11269,7 +11876,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] LIMIT 1</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition LIMIT 1</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11286,7 +11893,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return zero or one record for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] LIMIT 1</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition LIMIT 1</pre></code>.
      * <p>
      * The resulting record is attached to this {@link Configuration} by
      * default. Use {@link Settings#isAttachRecords()} to override this
@@ -11303,7 +11910,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11317,7 +11924,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11331,7 +11938,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11348,7 +11955,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11367,7 +11974,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11381,7 +11988,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11395,7 +12002,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11412,7 +12019,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11429,7 +12036,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11443,7 +12050,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11457,7 +12064,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11474,7 +12081,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records asynchronously for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11491,7 +12098,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table]</pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11504,7 +12111,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11517,7 +12124,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}
@@ -11533,7 +12140,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
 
     /**
      * Execute and return all records lazily for
-     * <code><pre>SELECT * FROM [table] WHERE [condition] </pre></code>.
+     * <code><pre>SELECT table.col1, table.col2 FROM table WHERE condition</pre></code>.
      * <p>
      * The result and its contained records are attached to this
      * {@link Configuration} by default. Use {@link Settings#isAttachRecords()}

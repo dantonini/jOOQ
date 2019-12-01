@@ -37,14 +37,17 @@
  */
 package org.jooq.impl;
 
-import org.jooq.Configuration;
+import static org.jooq.impl.Keywords.F_UCASE;
+import static org.jooq.impl.Keywords.F_UPPER;
+import static org.jooq.impl.Names.N_UPPER;
+
+import org.jooq.Context;
 import org.jooq.Field;
-import org.jooq.QueryPart;
 
 /**
  * @author Lukas Eder
  */
-final class Upper extends AbstractFunction<String> {
+final class Upper extends AbstractField<String> {
 
     /**
      * Generated UID
@@ -53,21 +56,23 @@ final class Upper extends AbstractFunction<String> {
     private final Field<String> field;
 
     Upper(Field<String> field) {
-        super("upper", field.getDataType(), field);
+        super(N_UPPER, field.getDataType());
 
         this.field = field;
     }
 
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.dialect().family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
 
 
             default:
-                return DSL.field("{upper}({0})", getDataType(), field);
+                ctx.visit(F_UPPER).sql('(').visit(field).sql(')');
+                break;
         }
     }
 }

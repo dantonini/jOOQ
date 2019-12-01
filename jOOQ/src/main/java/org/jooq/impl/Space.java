@@ -37,11 +37,14 @@
  */
 package org.jooq.impl;
 
-import org.jooq.Configuration;
-import org.jooq.Field;
-import org.jooq.QueryPart;
+import static org.jooq.impl.Keywords.F_SPACE;
+import static org.jooq.impl.Names.N_SPACE;
+import static org.jooq.impl.SQLDataType.VARCHAR;
 
-final class Space extends AbstractFunction<String> {
+import org.jooq.Context;
+import org.jooq.Field;
+
+final class Space extends AbstractField<String> {
 
     /**
      * Generated UID
@@ -51,14 +54,16 @@ final class Space extends AbstractFunction<String> {
     private final Field<Integer> count;
 
     Space(Field<Integer> count) {
-        super("space", SQLDataType.VARCHAR, count);
+        super(N_SPACE, VARCHAR);
 
         this.count = count;
     }
 
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
+
 
 
 
@@ -74,7 +79,8 @@ final class Space extends AbstractFunction<String> {
             case HSQLDB:
             case POSTGRES:
             case SQLITE:
-                return DSL.repeat(DSL.inline(" "), count);
+                ctx.visit(DSL.repeat(DSL.inline(" "), count));
+                break;
 
 
 
@@ -91,7 +97,8 @@ final class Space extends AbstractFunction<String> {
             case MYSQL:
             case H2:
             default:
-                return DSL.field("{space}({0})", getDataType(), count);
+                ctx.visit(F_SPACE).sql('(').visit(count).sql(')');
+                break;
         }
     }
 

@@ -5,7 +5,7 @@
 
     <groupId>org.jooq</groupId>
     <artifactId>jooq-jpa-example</artifactId>
-    <version>3.12.0-SNAPSHOT</version>
+    <version>3.13.0-SNAPSHOT</version>
     <name>jOOQ JPA Example</name>
 
     <licenses>
@@ -18,9 +18,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <org.jooq.version>3.12.0-SNAPSHOT</org.jooq.version>
-        <org.h2.version>1.4.197</org.h2.version>
-        <org.hibernate.version>5.3.1.Final</org.hibernate.version>
+        <org.h2.version>1.4.200</org.h2.version>
+        <org.hibernate.version>5.4.9.Final</org.hibernate.version>
         <org.springframework.version>5.0.7.RELEASE</org.springframework.version>
     </properties>
 
@@ -30,14 +29,14 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq-jpa-example-entities</artifactId>
-            <version>${org.jooq.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Database access -->
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>${org.jooq.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.persistence</groupId>
@@ -100,13 +99,13 @@
                     <maxmem>1024m</maxmem>
                     <meminitial>256m</meminitial>
                     <encoding>UTF-8</encoding>
-                    <!-- [java-9] -->
-                    <release>11</release>
-                    <!-- [/java-9] -->
+
+
+
 
                     <!-- IntelliJ needs these https://youtrack.jetbrains.com/issue/IDEA-195472 -->
-                    <source>11</source>
-                    <target>11</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
 
                     <debug>true</debug>
                     <debuglevel>lines,vars,source</debuglevel>
@@ -122,7 +121,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>${org.jooq.version}</version>
+                <version>${project.version}</version>
 
                 <executions>
                     <execution>
@@ -162,7 +161,7 @@
                     <dependency>
                         <groupId>org.jooq</groupId>
                         <artifactId>jooq-meta-extensions</artifactId>
-                        <version>${org.jooq.version}</version>
+                        <version>${project.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>javax.persistence</groupId>

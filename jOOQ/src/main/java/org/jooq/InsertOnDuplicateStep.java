@@ -39,16 +39,21 @@ package org.jooq;
 
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
-import static org.jooq.SQLDialect.FIREBIRD_3_0;
+import static org.jooq.SQLDialect.DERBY;
+import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
-import static org.jooq.SQLDialect.POSTGRES_9_5;
+import static org.jooq.SQLDialect.POSTGRES;
+import static org.jooq.SQLDialect.SQLITE;
+// ...
 // ...
 // ...
 
@@ -92,62 +97,62 @@ import java.util.Collection;
 public interface InsertOnDuplicateStep<R extends Record> extends InsertReturningStep<R> {
 
     /**
-     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this query.
+     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this INSERT statement.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, HSQLDB, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, HSQLDB, MYSQL, POSTGRES })
     InsertOnConflictDoUpdateStep<R> onConflictOnConstraint(Constraint constraint);
 
     /**
-     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this query.
+     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this INSERT statement.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, HSQLDB, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, FIREBIRD, HSQLDB, MYSQL, POSTGRES })
     InsertOnConflictDoUpdateStep<R> onConflictOnConstraint(Name constraint);
 
     /**
-     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this query.
+     * Add a <code>ON CONFLICT ON CONSTRAINT</code> clause to this INSERT statement.
      */
     @Support
     InsertOnConflictDoUpdateStep<R> onConflictOnConstraint(UniqueKey<R> constraint);
 
     /**
-     * Add an <code>ON CONFLICT</code> clause to this insert query.
+     * Add an <code>ON CONFLICT</code> clause to this INSERT statement.
      * <p>
-     * Only {@link SQLDialect#POSTGRES} has native support for this clause. The
-     * other dialects can emulate it using <code>MERGE</code>, if table meta
-     * data is available.
+     * Only {@link SQLDialect#POSTGRES} and {@link SQLDialect#SQLITE} have
+     * native support for this clause. The other dialects can emulate it using
+     * <code>MERGE</code>, if table meta data is available.
      */
     @Support
     InsertOnConflictDoUpdateStep<R> onConflict(Field<?>... keys);
 
     /**
-     * Add an <code>ON CONFLICT</code> clause to this insert query.
+     * Add an <code>ON CONFLICT</code> clause to this INSERT statement.
      * <p>
-     * Only {@link SQLDialect#POSTGRES} has native support for this clause. The
-     * other dialects can emulate it using <code>MERGE</code>, if table meta
-     * data is available.
+     * Only {@link SQLDialect#POSTGRES} and {@link SQLDialect#SQLITE} have
+     * native support for this clause. The other dialects can emulate it using
+     * <code>MERGE</code>, if table meta data is available.
      */
     @Support
     InsertOnConflictDoUpdateStep<R> onConflict(Collection<? extends Field<?>> keys);
 
     /**
-     * Add an <code>ON CONFLICT DO NOTHING</code> clause to this insert query.
+     * Add an <code>ON CONFLICT DO NOTHING</code> clause to this INSERT statement.
      * <p>
-     * Only {@link SQLDialect#POSTGRES} has native support for this clause. The
-     * other dialects can emulate it using <code>MERGE</code>, if table meta
-     * data is available.
+     * Only {@link SQLDialect#POSTGRES} and {@link SQLDialect#SQLITE} have
+     * native support for this clause. The other dialects can emulate it using
+     * <code>MERGE</code>, if table meta data is available.
      */
     @Support
     InsertReturningStep<R> onConflictDoNothing();
 
     /**
-     * Add an <code>ON DUPLICATE KEY UPDATE</code> clause to this insert query.
+     * Add an <code>ON DUPLICATE KEY UPDATE</code> clause to this INSERT statement.
      * <p>
      * This will try to <code>INSERT</code> a record. If there is a primary key
      * or unique key in this <code>INSERT</code> statement's affected table that
      * matches the value being inserted, then the <code>UPDATE</code> clause is
      * executed instead.
      * <p>
-     * MySQL and CUBRID natively implements this type of clause. jOOQ can
+     * MySQL natively implements this type of clause. jOOQ can
      * emulate this clause using a <code>MERGE</code> statement on some other
      * databases. The conditions for a RDBMS to emulate this clause are:
      * <ul>
@@ -159,11 +164,11 @@ public interface InsertOnDuplicateStep<R extends Record> extends InsertReturning
      * <p>
      * H2 supports this clause in MySQL mode.
      */
-    @Support({ CUBRID, H2, HSQLDB, MARIADB, MYSQL, POSTGRES_9_5 })
+    @Support({ CUBRID, DERBY, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     InsertOnDuplicateSetStep<R> onDuplicateKeyUpdate();
 
     /**
-     * Add an <code>ON DUPLICATE KEY IGNORE</code> clause to this insert query.
+     * Add an <code>ON DUPLICATE KEY IGNORE</code> clause to this INSERT statement.
      * <p>
      * This will try to <code>INSERT</code> a record. If there is a primary key
      * or unique key in this <code>INSERT</code> statement's affected table that
@@ -182,14 +187,8 @@ public interface InsertOnDuplicateStep<R extends Record> extends InsertReturning
      * <td><code><pre>INSERT IGNORE INTO ..</pre></code></td>
      * </tr>
      * <tr>
-     * <td>{@link SQLDialect#POSTGRES_9_5}</td>
+     * <td>{@link SQLDialect#POSTGRES_9_5} and {@link SQLDialect#SQLITE}</td>
      * <td><code><pre>INSERT INTO .. ON CONFLICT DO NOTHING</pre></code></td>
-     * </tr>
-     * <tr>
-     * <td>{@link SQLDialect#CUBRID}</td>
-     * <td>
-     * <code><pre>INSERT INTO .. ON DUPLICATE KEY UPDATE [any-field] = [any-field]</pre></code>
-     * </td>
      * </tr>
      * <tr>
      * <td>{@link SQLDialect#DB2}<br/>

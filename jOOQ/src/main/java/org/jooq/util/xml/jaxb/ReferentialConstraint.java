@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.util.xml.jaxb;
 
 import java.io.Serializable;
@@ -15,6 +8,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -48,10 +43,10 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class ReferentialConstraint implements Serializable
+public class ReferentialConstraint implements Serializable, XMLAppendable
 {
 
-    private final static long serialVersionUID = 31200L;
+    private final static long serialVersionUID = 31300L;
     @XmlElement(name = "constraint_catalog")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String constraintCatalog;
@@ -71,146 +66,50 @@ public class ReferentialConstraint implements Serializable
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String uniqueConstraintName;
 
-    /**
-     * Gets the value of the constraintCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getConstraintCatalog() {
         return constraintCatalog;
     }
 
-    /**
-     * Sets the value of the constraintCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setConstraintCatalog(String value) {
         this.constraintCatalog = value;
     }
 
-    /**
-     * Gets the value of the constraintSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getConstraintSchema() {
         return constraintSchema;
     }
 
-    /**
-     * Sets the value of the constraintSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setConstraintSchema(String value) {
         this.constraintSchema = value;
     }
 
-    /**
-     * Gets the value of the constraintName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getConstraintName() {
         return constraintName;
     }
 
-    /**
-     * Sets the value of the constraintName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setConstraintName(String value) {
         this.constraintName = value;
     }
 
-    /**
-     * Gets the value of the uniqueConstraintCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUniqueConstraintCatalog() {
         return uniqueConstraintCatalog;
     }
 
-    /**
-     * Sets the value of the uniqueConstraintCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUniqueConstraintCatalog(String value) {
         this.uniqueConstraintCatalog = value;
     }
 
-    /**
-     * Gets the value of the uniqueConstraintSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUniqueConstraintSchema() {
         return uniqueConstraintSchema;
     }
 
-    /**
-     * Sets the value of the uniqueConstraintSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUniqueConstraintSchema(String value) {
         this.uniqueConstraintSchema = value;
     }
 
-    /**
-     * Gets the value of the uniqueConstraintName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUniqueConstraintName() {
         return uniqueConstraintName;
     }
 
-    /**
-     * Sets the value of the uniqueConstraintName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUniqueConstraintName(String value) {
         this.uniqueConstraintName = value;
     }
@@ -246,39 +145,20 @@ public class ReferentialConstraint implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("constraint_catalog", constraintCatalog);
+        builder.append("constraint_schema", constraintSchema);
+        builder.append("constraint_name", constraintName);
+        builder.append("unique_constraint_catalog", uniqueConstraintCatalog);
+        builder.append("unique_constraint_schema", uniqueConstraintSchema);
+        builder.append("unique_constraint_name", uniqueConstraintName);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (constraintCatalog!= null) {
-            sb.append("<constraint_catalog>");
-            sb.append(constraintCatalog);
-            sb.append("</constraint_catalog>");
-        }
-        if (constraintSchema!= null) {
-            sb.append("<constraint_schema>");
-            sb.append(constraintSchema);
-            sb.append("</constraint_schema>");
-        }
-        if (constraintName!= null) {
-            sb.append("<constraint_name>");
-            sb.append(constraintName);
-            sb.append("</constraint_name>");
-        }
-        if (uniqueConstraintCatalog!= null) {
-            sb.append("<unique_constraint_catalog>");
-            sb.append(uniqueConstraintCatalog);
-            sb.append("</unique_constraint_catalog>");
-        }
-        if (uniqueConstraintSchema!= null) {
-            sb.append("<unique_constraint_schema>");
-            sb.append(uniqueConstraintSchema);
-            sb.append("</unique_constraint_schema>");
-        }
-        if (uniqueConstraintName!= null) {
-            sb.append("<unique_constraint_name>");
-            sb.append(uniqueConstraintName);
-            sb.append("</unique_constraint_name>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

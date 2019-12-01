@@ -64,7 +64,7 @@ import org.jooq.impl.DSL;
  *    .execute();
  *
  * // Wrapping procedural code
- * Variable&lt;Integer> i = var("i", SQLDataType.INTEGER);
+ * Variable&lt;Integer&gt; i = var("i", SQLDataType.INTEGER);
  * using(configuration)
  *    .begin(
  *        for_(i).in(1, 3).loop(
@@ -78,6 +78,6 @@ import org.jooq.impl.DSL;
  *
  * @author Lukas Eder
  */
-public interface Block extends Query {
+public interface Block extends RowCountQuery {
 
 }

@@ -38,7 +38,9 @@
 package org.jooq.impl;
 
 // ...
+import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
 // ...
 import static org.jooq.impl.DSL.comment;
 import static org.jooq.impl.DSL.inline;
@@ -57,7 +59,7 @@ import static org.jooq.impl.Keywords.K_ON;
 import static org.jooq.impl.Keywords.K_TABLE;
 import static org.jooq.impl.Keywords.K_VIEW;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 import org.jooq.Comment;
 import org.jooq.CommentOnFinalStep;
@@ -73,7 +75,7 @@ import org.jooq.Table;
 /**
  * @author Lukas Eder
  */
-class CommentOnImpl extends AbstractQuery
+class CommentOnImpl extends AbstractRowCountQuery
 implements
     CommentOnIsStep,
     CommentOnFinalStep {
@@ -82,7 +84,7 @@ implements
      * Generated UID
      */
     private static final long                serialVersionUID         = 2665659331902435568L;
-    private static final EnumSet<SQLDialect> SUPPORTS_COMMENT_ON_VIEW = EnumSet.of(POSTGRES);
+    private static final Set<SQLDialect>     SUPPORTS_COMMENT_ON_VIEW = SQLDialect.supportedBy(FIREBIRD, POSTGRES);
 
     private final Table<?>                   table;
     private final boolean                    isView;
@@ -105,9 +107,34 @@ implements
         this.field = field;
     }
 
+    final Table<?> $table()   { return table; }
+    final boolean  $isView()  { return isView; }
+    final Field<?> $field()   { return field; }
+    final Comment  $comment() { return comment; }
+
+    // ------------------------------------------------------------------------
+    // XXX: DSL API
+    // ------------------------------------------------------------------------
+
+    @Override
+    public final CommentOnImpl is(String c) {
+        return is(comment(c));
+    }
+
+    @Override
+    public final CommentOnImpl is(Comment c) {
+        this.comment = c;
+        return this;
+    }
+
+    // ------------------------------------------------------------------------
+    // XXX: QueryPart API
+    // ------------------------------------------------------------------------
+
     @Override
     public final void accept(Context<?> ctx) {
         switch (ctx.family()) {
+
 
 
 
@@ -174,6 +201,8 @@ implements
 
 
 
+
+
     private final void acceptMySQL(Context<?> ctx) {
         ctx.visit(K_ALTER_TABLE).sql(' ').visit(table).sql(' ').visit(K_COMMENT).sql(" = ").visit(comment);
     }
@@ -193,16 +222,5 @@ implements
             throw new IllegalStateException();
 
         ctx.sql(' ').visit(K_IS).sql(' ').visit(comment);
-    }
-
-    @Override
-    public final CommentOnImpl is(String c) {
-        return is(comment(c));
-    }
-
-    @Override
-    public final CommentOnImpl is(Comment c) {
-        this.comment = c;
-        return this;
     }
 }

@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.util.xml.jaxb;
 
 import java.io.Serializable;
@@ -18,6 +11,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -38,6 +33,7 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="table_constraints" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}TableConstraints" minOccurs="0"/&gt;
  *         &lt;element name="key_column_usages" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}KeyColumnUsages" minOccurs="0"/&gt;
  *         &lt;element name="referential_constraints" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}ReferentialConstraints" minOccurs="0"/&gt;
+ *         &lt;element name="check_constraints" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}CheckConstraints" minOccurs="0"/&gt;
  *         &lt;element name="indexes" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}Indexes" minOccurs="0"/&gt;
  *         &lt;element name="index_column_usages" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}IndexColumnUsages" minOccurs="0"/&gt;
  *         &lt;element name="routines" type="{http://www.jooq.org/xsd/jooq-meta-3.12.0.xsd}Routines" minOccurs="0"/&gt;
@@ -59,10 +55,10 @@ import javax.xml.bind.annotation.XmlType;
 @SuppressWarnings({
     "all"
 })
-public class InformationSchema implements Serializable
+public class InformationSchema implements Serializable, XMLAppendable
 {
 
-    private final static long serialVersionUID = 31200L;
+    private final static long serialVersionUID = 31300L;
     @XmlElementWrapper(name = "catalogs")
     @XmlElement(name = "catalog")
     protected List<Catalog> catalogs;
@@ -87,6 +83,9 @@ public class InformationSchema implements Serializable
     @XmlElementWrapper(name = "referential_constraints")
     @XmlElement(name = "referential_constraint")
     protected List<ReferentialConstraint> referentialConstraints;
+    @XmlElementWrapper(name = "check_constraints")
+    @XmlElement(name = "check_constraint")
+    protected List<CheckConstraint> checkConstraints;
     @XmlElementWrapper(name = "indexes")
     @XmlElement(name = "index")
     protected List<Index> indexes;
@@ -189,6 +188,17 @@ public class InformationSchema implements Serializable
 
     public void setReferentialConstraints(List<ReferentialConstraint> referentialConstraints) {
         this.referentialConstraints = referentialConstraints;
+    }
+
+    public List<CheckConstraint> getCheckConstraints() {
+        if (checkConstraints == null) {
+            checkConstraints = new ArrayList<CheckConstraint>();
+        }
+        return checkConstraints;
+    }
+
+    public void setCheckConstraints(List<CheckConstraint> checkConstraints) {
+        this.checkConstraints = checkConstraints;
     }
 
     public List<Index> getIndexes() {
@@ -414,6 +424,27 @@ public class InformationSchema implements Serializable
         return this;
     }
 
+    public InformationSchema withCheckConstraints(CheckConstraint... values) {
+        if (values!= null) {
+            for (CheckConstraint value: values) {
+                getCheckConstraints().add(value);
+            }
+        }
+        return this;
+    }
+
+    public InformationSchema withCheckConstraints(Collection<CheckConstraint> values) {
+        if (values!= null) {
+            getCheckConstraints().addAll(values);
+        }
+        return this;
+    }
+
+    public InformationSchema withCheckConstraints(List<CheckConstraint> checkConstraints) {
+        setCheckConstraints(checkConstraints);
+        return this;
+    }
+
     public InformationSchema withIndexes(Index... values) {
         if (values!= null) {
             for (Index value: values) {
@@ -520,126 +551,28 @@ public class InformationSchema implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("catalogs", "catalog", catalogs);
+        builder.append("schemata", "schema", schemata);
+        builder.append("sequences", "sequence", sequences);
+        builder.append("tables", "table", tables);
+        builder.append("columns", "column", columns);
+        builder.append("table_constraints", "table_constraint", tableConstraints);
+        builder.append("key_column_usages", "key_column_usage", keyColumnUsages);
+        builder.append("referential_constraints", "referential_constraint", referentialConstraints);
+        builder.append("check_constraints", "check_constraint", checkConstraints);
+        builder.append("indexes", "index", indexes);
+        builder.append("index_column_usages", "index_column_usage", indexColumnUsages);
+        builder.append("routines", "routine", routines);
+        builder.append("parameters", "parameter", parameters);
+        builder.append("element_types", "element_type", elementTypes);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (catalogs!= null) {
-            sb.append("<catalogs>");
-            for (int i = 0; (i<catalogs.size()); i ++) {
-                sb.append("<catalog>");
-                sb.append(catalogs.get(i));
-                sb.append("</catalog>");
-            }
-            sb.append("</catalogs>");
-        }
-        if (schemata!= null) {
-            sb.append("<schemata>");
-            for (int i = 0; (i<schemata.size()); i ++) {
-                sb.append("<schema>");
-                sb.append(schemata.get(i));
-                sb.append("</schema>");
-            }
-            sb.append("</schemata>");
-        }
-        if (sequences!= null) {
-            sb.append("<sequences>");
-            for (int i = 0; (i<sequences.size()); i ++) {
-                sb.append("<sequence>");
-                sb.append(sequences.get(i));
-                sb.append("</sequence>");
-            }
-            sb.append("</sequences>");
-        }
-        if (tables!= null) {
-            sb.append("<tables>");
-            for (int i = 0; (i<tables.size()); i ++) {
-                sb.append("<table>");
-                sb.append(tables.get(i));
-                sb.append("</table>");
-            }
-            sb.append("</tables>");
-        }
-        if (columns!= null) {
-            sb.append("<columns>");
-            for (int i = 0; (i<columns.size()); i ++) {
-                sb.append("<column>");
-                sb.append(columns.get(i));
-                sb.append("</column>");
-            }
-            sb.append("</columns>");
-        }
-        if (tableConstraints!= null) {
-            sb.append("<table_constraints>");
-            for (int i = 0; (i<tableConstraints.size()); i ++) {
-                sb.append("<table_constraint>");
-                sb.append(tableConstraints.get(i));
-                sb.append("</table_constraint>");
-            }
-            sb.append("</table_constraints>");
-        }
-        if (keyColumnUsages!= null) {
-            sb.append("<key_column_usages>");
-            for (int i = 0; (i<keyColumnUsages.size()); i ++) {
-                sb.append("<key_column_usage>");
-                sb.append(keyColumnUsages.get(i));
-                sb.append("</key_column_usage>");
-            }
-            sb.append("</key_column_usages>");
-        }
-        if (referentialConstraints!= null) {
-            sb.append("<referential_constraints>");
-            for (int i = 0; (i<referentialConstraints.size()); i ++) {
-                sb.append("<referential_constraint>");
-                sb.append(referentialConstraints.get(i));
-                sb.append("</referential_constraint>");
-            }
-            sb.append("</referential_constraints>");
-        }
-        if (indexes!= null) {
-            sb.append("<indexes>");
-            for (int i = 0; (i<indexes.size()); i ++) {
-                sb.append("<index>");
-                sb.append(indexes.get(i));
-                sb.append("</index>");
-            }
-            sb.append("</indexes>");
-        }
-        if (indexColumnUsages!= null) {
-            sb.append("<index_column_usages>");
-            for (int i = 0; (i<indexColumnUsages.size()); i ++) {
-                sb.append("<index_column_usage>");
-                sb.append(indexColumnUsages.get(i));
-                sb.append("</index_column_usage>");
-            }
-            sb.append("</index_column_usages>");
-        }
-        if (routines!= null) {
-            sb.append("<routines>");
-            for (int i = 0; (i<routines.size()); i ++) {
-                sb.append("<routine>");
-                sb.append(routines.get(i));
-                sb.append("</routine>");
-            }
-            sb.append("</routines>");
-        }
-        if (parameters!= null) {
-            sb.append("<parameters>");
-            for (int i = 0; (i<parameters.size()); i ++) {
-                sb.append("<parameter>");
-                sb.append(parameters.get(i));
-                sb.append("</parameter>");
-            }
-            sb.append("</parameters>");
-        }
-        if (elementTypes!= null) {
-            sb.append("<element_types>");
-            for (int i = 0; (i<elementTypes.size()); i ++) {
-                sb.append("<element_type>");
-                sb.append(elementTypes.get(i));
-                sb.append("</element_type>");
-            }
-            sb.append("</element_types>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override
@@ -726,6 +659,15 @@ public class InformationSchema implements Serializable
                 return false;
             }
         }
+        if (checkConstraints == null) {
+            if (other.checkConstraints!= null) {
+                return false;
+            }
+        } else {
+            if (!checkConstraints.equals(other.checkConstraints)) {
+                return false;
+            }
+        }
         if (indexes == null) {
             if (other.indexes!= null) {
                 return false;
@@ -786,6 +728,7 @@ public class InformationSchema implements Serializable
         result = ((prime*result)+((tableConstraints == null)? 0 :tableConstraints.hashCode()));
         result = ((prime*result)+((keyColumnUsages == null)? 0 :keyColumnUsages.hashCode()));
         result = ((prime*result)+((referentialConstraints == null)? 0 :referentialConstraints.hashCode()));
+        result = ((prime*result)+((checkConstraints == null)? 0 :checkConstraints.hashCode()));
         result = ((prime*result)+((indexes == null)? 0 :indexes.hashCode()));
         result = ((prime*result)+((indexColumnUsages == null)? 0 :indexColumnUsages.hashCode()));
         result = ((prime*result)+((routines == null)? 0 :routines.hashCode()));

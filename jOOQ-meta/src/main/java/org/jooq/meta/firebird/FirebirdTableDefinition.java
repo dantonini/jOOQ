@@ -46,6 +46,7 @@ import static org.jooq.meta.firebird.rdb.Tables.RDB$RELATION_FIELDS;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.jooq.Record;
 import org.jooq.impl.DSL;
@@ -62,13 +63,15 @@ import org.jooq.meta.firebird.rdb.tables.Rdb$relationFields;
  */
 public class FirebirdTableDefinition extends AbstractTableDefinition {
 
+    private static final Pattern P_DEFAULT = Pattern.compile("DEFAULT\\s+");
+
     public FirebirdTableDefinition(SchemaDefinition schema, String name, String comment) {
         super(schema, name, comment);
     }
 
     @Override
     protected List<ColumnDefinition> getElements0() throws SQLException {
-        List<ColumnDefinition> result = new ArrayList<ColumnDefinition>();
+        List<ColumnDefinition> result = new ArrayList<>();
 
         Rdb$relationFields r = RDB$RELATION_FIELDS.as("r");
         Rdb$fields f = RDB$FIELDS.as("f");
@@ -89,12 +92,19 @@ public class FirebirdTableDefinition extends AbstractTableDefinition {
                     f.RDB$FIELD_PRECISION,
                     FIELD_SCALE(f).as("FIELD_SCALE"),
                     FIELD_TYPE(f).as("FIELD_TYPE"),
-                    f.RDB$FIELD_SUB_TYPE)
+                    f.RDB$FIELD_SUB_TYPE,
+                    r.RDB$DESCRIPTION)
                 .from(r)
                 .leftOuterJoin(f).on(r.RDB$FIELD_SOURCE.eq(f.RDB$FIELD_NAME))
                 .where(r.RDB$RELATION_NAME.eq(getName()))
                 .orderBy(r.RDB$FIELD_POSITION)
                 .fetch()) {
+
+            // [#9411] Firebird reports the DEFAULT keyword in this column, which
+            //         we do not want to reproduce in generated code.
+            String defaultValue = record.get(r.RDB$DEFAULT_SOURCE);
+            if (defaultValue != null)
+                defaultValue = P_DEFAULT.matcher(defaultValue).replaceFirst("");
 
             DefaultDataTypeDefinition type = new DefaultDataTypeDefinition(
                     getDatabase(),
@@ -104,7 +114,7 @@ public class FirebirdTableDefinition extends AbstractTableDefinition {
                     record.get(f.RDB$FIELD_PRECISION),
                     record.get("FIELD_SCALE", Integer.class),
                     record.get(r.RDB$NULL_FLAG) == 0,
-                    record.get(r.RDB$DEFAULT_SOURCE)
+                    defaultValue
             );
 
             ColumnDefinition column = new DefaultColumnDefinition(
@@ -113,7 +123,7 @@ public class FirebirdTableDefinition extends AbstractTableDefinition {
                     record.get(r.RDB$FIELD_POSITION),
                     type,
                     false,
-                    null
+                    record.get(r.RDB$DESCRIPTION)
             );
 
             result.add(column);

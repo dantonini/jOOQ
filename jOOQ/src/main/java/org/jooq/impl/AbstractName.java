@@ -59,8 +59,8 @@ abstract class AbstractName extends AbstractQueryPart implements Name {
     /**
      * Generated UID
      */
-    private static final long serialVersionUID = 8562325639223483938L;
-    static final Name         NO_NAME          = DSL.name("");
+    private static final long    serialVersionUID = 8562325639223483938L;
+    static final UnqualifiedName NO_NAME          = new UnqualifiedName("");
 
     @Override
     public final Name append(String name) {
@@ -69,6 +69,11 @@ abstract class AbstractName extends AbstractQueryPart implements Name {
 
     @Override
     public final Name append(Name name) {
+        if (empty())
+            return name;
+        else if (name.empty())
+            return this;
+
         Name[] p1 = parts();
         Name[] p2 = name.parts();
         Name[] array = new Name[p1.length + p2.length];
@@ -120,7 +125,7 @@ abstract class AbstractName extends AbstractQueryPart implements Name {
 
 
 
-    // [jooq-tools] START [fields]
+
 
     @Override
     public final DerivedColumnListImpl fields(String fieldName1) {
@@ -342,7 +347,7 @@ abstract class AbstractName extends AbstractQueryPart implements Name {
         return fields(new Name[] { fieldName1, fieldName2, fieldName3, fieldName4, fieldName5, fieldName6, fieldName7, fieldName8, fieldName9, fieldName10, fieldName11, fieldName12, fieldName13, fieldName14, fieldName15, fieldName16, fieldName17, fieldName18, fieldName19, fieldName20, fieldName21, fieldName22 });
     }
 
-// [jooq-tools] END [fields]
+
 
     // ------------------------------------------------------------------------
     // XXX: Object API
@@ -389,5 +394,10 @@ abstract class AbstractName extends AbstractQueryPart implements Name {
         }
 
         return true;
+    }
+
+    @Override
+    public int compareTo(Name o) {
+        return unquotedName().toString().compareTo(o.unquotedName().toString());
     }
 }

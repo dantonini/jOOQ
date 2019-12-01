@@ -41,6 +41,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -51,7 +52,9 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
 import static org.jooq.SQLDialect.SQLITE;
 // ...
@@ -87,8 +90,13 @@ public interface ConstraintForeignKeyOnStep extends ConstraintFinalStep {
     /**
      * Add an <code>ON DELETE NO ACTION</code> clause to the
      * <code>FOREIGN KEY</code> constraint.
+     * <p>
+     * This is the standard action according to the SQL standard. If a given
+     * {@link SQLDialect} does not support setting this action explicitly, no
+     * explicit action will be specified and calling this method is equivalent
+     * to not calling any method at all.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     ConstraintForeignKeyOnStep onDeleteNoAction();
 
     /**
@@ -122,8 +130,13 @@ public interface ConstraintForeignKeyOnStep extends ConstraintFinalStep {
     /**
      * Add an <code>ON UPDATE NO ACTION</code> clause to the
      * <code>FOREIGN KEY</code> constraint.
+     * <p>
+     * This is the standard action according to the SQL standard. If a given
+     * {@link SQLDialect} does not support setting this action explicitly, no
+     * explicit action will be specified and calling this method is equivalent
+     * to not calling any method at all.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     ConstraintForeignKeyOnStep onUpdateNoAction();
 
     /**

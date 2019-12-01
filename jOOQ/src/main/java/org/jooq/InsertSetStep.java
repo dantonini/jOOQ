@@ -40,6 +40,7 @@ package org.jooq;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -48,6 +49,7 @@ import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
@@ -111,7 +113,7 @@ public interface InsertSetStep<R extends Record> {
     @Support
     InsertValuesStepN<R> columns(Collection<? extends Field<?>> fields);
 
-    // [jooq-tools] START [columns]
+
 
     /**
      * Set the columns for insert.
@@ -245,7 +247,7 @@ public interface InsertSetStep<R extends Record> {
     @Support
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> InsertValuesStep22<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> columns(Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [columns]
+
 
     /**
      * Set a value for a field in the <code>INSERT</code> statement.
@@ -266,6 +268,17 @@ public interface InsertSetStep<R extends Record> {
     <T> InsertSetMoreStep<R> set(Field<T> field, Select<? extends Record1<T>> value);
 
     /**
+     * Set a <code>null</code> value for a field in the <code>INSERT</code>
+     * statement.
+     * <p>
+     * This method is convenience for calling {@link #set(Field, Object)},
+     * without the necessity of casting the Java <code>null</code> literal to
+     * <code>(T)</code>.
+     */
+    @Support
+    <T> InsertSetMoreStep<R> setNull(Field<T> field);
+
+    /**
      * Set values in the <code>INSERT</code> statement.
      * <p>
      * Keys can either be of type {@link String}, {@link Name}, or
@@ -282,7 +295,7 @@ public interface InsertSetStep<R extends Record> {
      * Set values in the <code>INSERT</code> statement.
      * <p>
      * This is the same as calling {@link #set(Map)} with the argument record
-     * treated as a <code>Map&lt;Field&lt;?>, Object></code>, except that the
+     * treated as a <code>Map&lt;Field&lt;?&gt;, Object&gt;</code>, except that the
      * {@link Record#changed()} flags are taken into consideration in order to
      * update only changed values.
      *
@@ -312,7 +325,7 @@ public interface InsertSetStep<R extends Record> {
     /**
      * Add an empty record with default values.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Support
     InsertOnDuplicateStep<R> defaultValues();
 
     /**

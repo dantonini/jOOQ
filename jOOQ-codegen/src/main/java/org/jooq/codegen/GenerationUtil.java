@@ -64,7 +64,7 @@ class GenerationUtil {
     static final Pattern       TYPE_REFERENCE_PATTERN     = Pattern.compile("^((?:[\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)((?:<.*>|\\[.*\\])*)$");
     static final Pattern       PLAIN_GENERIC_TYPE_PATTERN = Pattern.compile("[<\\[]((?:[\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)[>\\]]");
 
-    private static Set<String> JAVA_KEYWORDS = unmodifiableSet(new HashSet<String>(asList(
+    private static Set<String> JAVA_KEYWORDS = unmodifiableSet(new HashSet<>(asList(
         "abstract",
         "assert",
         "boolean",
@@ -119,7 +119,7 @@ class GenerationUtil {
         "volatile",
         "while")));
 
-    private static Set<String> SCALA_KEYWORDS = unmodifiableSet(new HashSet<String>(asList(
+    private static Set<String> SCALA_KEYWORDS = unmodifiableSet(new HashSet<>(asList(
         "abstract",
         "case",
         "catch",
@@ -171,14 +171,14 @@ class GenerationUtil {
         "@"*/
     )));
 
-    private static Set<Character> SCALA_WHITESPACE = unmodifiableSet(new HashSet<Character>(asList(
+    private static Set<Character> SCALA_WHITESPACE = unmodifiableSet(new HashSet<>(asList(
         (char)0x0020,
         (char)0x0009,
         (char)0x000D,
         (char)0x000A
     )));
 
-    private static Set<Character> SCALA_PARENTHESES = unmodifiableSet(new HashSet<Character>(asList(
+    private static Set<Character> SCALA_PARENTHESES = unmodifiableSet(new HashSet<>(asList(
         '(',
         ')',
         '[',
@@ -187,7 +187,7 @@ class GenerationUtil {
         '}'
     )));
 
-    private static Set<Character> SCALA_DELIMITER = unmodifiableSet(new HashSet<Character>(asList(
+    private static Set<Character> SCALA_DELIMITER = unmodifiableSet(new HashSet<>(asList(
         '`',
         '\'',
         '"',
@@ -196,7 +196,7 @@ class GenerationUtil {
         ','
     )));
 
-    private static Set<String> WINDOWS_FORBIDDEN = unmodifiableSet(new HashSet<String>(asList(
+    private static Set<String> WINDOWS_FORBIDDEN = unmodifiableSet(new HashSet<>(asList(
         "CON",
         "PRN",
         "AUX",
@@ -367,6 +367,12 @@ class GenerationUtil {
 
 
 
+
+
+
+
+
+
             case POSTGRES: {
 
                 // The convention is to prepend a "_" to a type to get an array type
@@ -393,14 +399,12 @@ class GenerationUtil {
 
                 // In HSQLDB 2.2.5, there has been an incompatible INFORMATION_SCHEMA change around the
                 // ELEMENT_TYPES view. Arrays are now described much more explicitly
-                if ("ARRAY".equalsIgnoreCase(t)) {
+                if ("ARRAY".equalsIgnoreCase(t))
                     return name("OTHER");
-                }
 
                 // This is for backwards compatibility
-                else {
+                else
                     return name(t.replace(" ARRAY", ""));
-                }
             }
         }
 

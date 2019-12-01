@@ -61,7 +61,7 @@ import org.jooq.TruncateIdentityStep;
 /**
  * @author Lukas Eder
  */
-final class TruncateImpl<R extends Record> extends AbstractQuery implements
+final class TruncateImpl<R extends Record> extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for Truncate behaviour
     TruncateIdentityStep<R> {
@@ -81,6 +81,12 @@ final class TruncateImpl<R extends Record> extends AbstractQuery implements
 
         this.table = table;
     }
+
+    final Table<?> $table() { return table; }
+
+    // ------------------------------------------------------------------------
+    // XXX: DSL API
+    // ------------------------------------------------------------------------
 
     @Override
     public final TruncateFinalStep<R> cascade() {
@@ -105,6 +111,10 @@ final class TruncateImpl<R extends Record> extends AbstractQuery implements
         restartIdentity = false;
         return this;
     }
+
+    // ------------------------------------------------------------------------
+    // XXX: QueryPart API
+    // ------------------------------------------------------------------------
 
     @Override
     public final void accept(Context<?> ctx) {

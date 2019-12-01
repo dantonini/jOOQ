@@ -47,7 +47,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Locale;
+
+import org.jooq.tools.JooqLogger;
+import org.jooq.util.jaxb.tools.MiniJAXB;
 
 /**
  * Convenience methods for jOOQ runtime settings.
@@ -56,13 +60,15 @@ import java.util.Locale;
  */
 public final class SettingsTools {
 
-    private static final Settings DEFAULT_SETTINGS;
+    private static final Settings   DEFAULT_SETTINGS;
+    private static final JooqLogger log = JooqLogger.getLogger(SettingsTools.class);
 
     static {
         Settings settings = null;
         String property = System.getProperty("org.jooq.settings");
 
         if (property != null) {
+            log.warn("DEPRECATION", "Loading system wide default settings via org.jooq.settings system properties has been deprecated. Please use explicit Settings in your Configuration references, instead.");
 
             // Check classpath first
             InputStream in = SettingsTools.class.getResourceAsStream(property);
@@ -75,8 +81,10 @@ public final class SettingsTools {
         if (settings == null) {
             InputStream in = SettingsTools.class.getResourceAsStream("/jooq-settings.xml");
 
-            if (in != null)
+            if (in != null) {
+                log.warn("DEPRECATION", "Loading system wide default settings via the classpath /jooq-settings.xml resource has been deprecated. Please use explicit Settings in your Configuration references, instead.");
                 settings = MiniJAXB.unmarshal(in, Settings.class);
+            }
         }
 
         if (settings == null)
@@ -292,6 +300,8 @@ public final class SettingsTools {
 
         if (result.renderFormatting != null)
             result.renderFormatting = (RenderFormatting) result.renderFormatting.clone();
+        if (result.parseSearchPath != null)
+            result.parseSearchPath = new ArrayList<>(result.parseSearchPath);
 
         return result;
     }

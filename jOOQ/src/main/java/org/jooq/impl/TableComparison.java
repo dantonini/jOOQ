@@ -38,7 +38,6 @@
 package org.jooq.impl;
 
 import static org.jooq.impl.DSL.row;
-import static org.jooq.impl.DSL.sql;
 
 import org.jooq.Clause;
 import org.jooq.Comparator;
@@ -71,8 +70,9 @@ final class TableComparison<R extends Record> extends AbstractCondition {
 
 
 
+
             case POSTGRES: {
-                ctx.visit(DSL.condition("{0} {1} {2}", lhs, sql(comparator.toSQL()), rhs));
+                ctx.sql('(').visit(lhs).sql(' ').sql(comparator.toSQL()).sql(' ').visit(rhs).sql(')');
                 break;
             }
 

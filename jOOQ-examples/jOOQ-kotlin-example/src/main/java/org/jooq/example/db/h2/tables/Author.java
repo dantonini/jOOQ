@@ -4,7 +4,7 @@
 package org.jooq.example.db.h2.tables;
 
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,6 +14,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -32,7 +33,7 @@ import org.jooq.impl.TableImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Author extends TableImpl<AuthorRecord> {
 
-    private static final long serialVersionUID = -691260260;
+    private static final long serialVersionUID = 43261682;
 
     /**
      * The reference instance of <code>PUBLIC.AUTHOR</code>
@@ -65,7 +66,7 @@ public class Author extends TableImpl<AuthorRecord> {
     /**
      * The column <code>PUBLIC.AUTHOR.DATE_OF_BIRTH</code>.
      */
-    public final TableField<AuthorRecord, Date> DATE_OF_BIRTH = createField(DSL.name("DATE_OF_BIRTH"), org.jooq.impl.SQLDataType.DATE, this, "");
+    public final TableField<AuthorRecord, LocalDate> DATE_OF_BIRTH = createField(DSL.name("DATE_OF_BIRTH"), org.jooq.impl.SQLDataType.LOCALDATE, this, "");
 
     /**
      * The column <code>PUBLIC.AUTHOR.YEAR_OF_BIRTH</code>.
@@ -110,57 +111,36 @@ public class Author extends TableImpl<AuthorRecord> {
         super(child, key, AUTHOR);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Index> getIndexes() {
         return Arrays.<Index>asList(Indexes.PRIMARY_KEY_7);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Identity<AuthorRecord, Integer> getIdentity() {
         return Keys.IDENTITY_AUTHOR;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public UniqueKey<AuthorRecord> getPrimaryKey() {
         return Keys.PK_T_AUTHOR;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<UniqueKey<AuthorRecord>> getKeys() {
         return Arrays.<UniqueKey<AuthorRecord>>asList(Keys.PK_T_AUTHOR);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Author as(String alias) {
         return new Author(DSL.name(alias), this);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Author as(Name alias) {
         return new Author(alias, this);
@@ -180,5 +160,14 @@ public class Author extends TableImpl<AuthorRecord> {
     @Override
     public Author rename(Name name) {
         return new Author(name, null);
+    }
+
+    // -------------------------------------------------------------------------
+    // Row6 type methods
+    // -------------------------------------------------------------------------
+
+    @Override
+    public Row6<Integer, String, String, LocalDate, Integer, String> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

@@ -38,6 +38,7 @@
 package org.jooq.impl;
 
 
+import static org.jooq.util.xml.jaxb.TableConstraintType.CHECK;
 import static org.jooq.util.xml.jaxb.TableConstraintType.FOREIGN_KEY;
 import static org.jooq.util.xml.jaxb.TableConstraintType.PRIMARY_KEY;
 import static org.jooq.util.xml.jaxb.TableConstraintType.UNIQUE;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jooq.Catalog;
+import org.jooq.Check;
 import org.jooq.Configuration;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
@@ -59,6 +61,7 @@ import org.jooq.SortOrder;
 import org.jooq.Table;
 import org.jooq.UniqueKey;
 import org.jooq.tools.StringUtils;
+import org.jooq.util.xml.jaxb.CheckConstraint;
 import org.jooq.util.xml.jaxb.Column;
 import org.jooq.util.xml.jaxb.IndexColumnUsage;
 import org.jooq.util.xml.jaxb.InformationSchema;
@@ -75,9 +78,9 @@ final class InformationSchemaExport {
     static final InformationSchema exportTables(Configuration configuration, List<Table<?>> tables) {
         InformationSchema result = new InformationSchema();
 
-        Set<Catalog> includedCatalogs = new LinkedHashSet<Catalog>();
-        Set<Schema> includedSchemas = new LinkedHashSet<Schema>();
-        Set<Table<?>> includedTables = new LinkedHashSet<Table<?>>(tables);
+        Set<Catalog> includedCatalogs = new LinkedHashSet<>();
+        Set<Schema> includedSchemas = new LinkedHashSet<>();
+        Set<Table<?>> includedTables = new LinkedHashSet<>(tables);
 
         for (Table<?> t : tables)
             includedSchemas.add(t.getSchema());
@@ -100,8 +103,8 @@ final class InformationSchemaExport {
     static final InformationSchema exportSchemas(Configuration configuration, List<Schema> schemas) {
         InformationSchema result = new InformationSchema();
 
-        Set<Catalog> includedCatalogs = new LinkedHashSet<Catalog>();
-        Set<Table<?>> includedTables = new LinkedHashSet<Table<?>>();
+        Set<Catalog> includedCatalogs = new LinkedHashSet<>();
+        Set<Table<?>> includedTables = new LinkedHashSet<>();
 
         for (Schema s : schemas) {
             includedCatalogs.add(s.getCatalog());
@@ -129,7 +132,7 @@ final class InformationSchemaExport {
     static final InformationSchema exportCatalogs(Configuration configuration, List<Catalog> catalogs) {
         InformationSchema result = new InformationSchema();
 
-        Set<Table<?>> includedTables = new LinkedHashSet<Table<?>>();
+        Set<Table<?>> includedTables = new LinkedHashSet<>();
 
         for (Catalog c : catalogs)
             for (Schema s : c.getSchemas())
@@ -252,8 +255,31 @@ final class InformationSchemaExport {
             if (includedTables.contains(fk.getKey().getTable()))
                 exportKey0(result, t, fk, FOREIGN_KEY);
 
+        for (Check<?> chk : t.getChecks())
+            if (includedTables.contains(chk.getTable()))
+                exportCheck0(configuration, result, t, chk);
+
         for (Index index : t.getIndexes())
             exportIndex0(result, t, index);
+    }
+
+    private static final void exportCheck0(Configuration configuration, InformationSchema result, Table<?> t, Check<?> chk) {
+        exportTableConstraint(result, t, chk.getName(), CHECK);
+
+        CheckConstraint c = new CheckConstraint();
+
+        String catalogName = t.getCatalog().getName();
+        String schemaName = t.getSchema().getName();
+
+        if (!StringUtils.isBlank(catalogName))
+            c.setConstraintCatalog(catalogName);
+
+        if (!StringUtils.isBlank(schemaName))
+            c.setConstraintSchema(schemaName);
+
+        c.setConstraintName(chk.getName());
+        c.setCheckClause(configuration.dsl().render(chk.condition()));
+        result.getCheckConstraints().add(c);
     }
 
     private static final void exportIndex0(InformationSchema result, Table<?> t, Index index) {
@@ -262,15 +288,13 @@ final class InformationSchemaExport {
         String catalogName = t.getCatalog().getName();
         String schemaName = t.getSchema().getName();
 
-        if (!StringUtils.isBlank(catalogName)) {
-            i.setIndexCatalog(catalogName);
-            i.setTableCatalog(catalogName);
-        }
+        if (!StringUtils.isBlank(catalogName))
+            i.withIndexCatalog(catalogName)
+             .withTableCatalog(catalogName);
 
-        if (!StringUtils.isBlank(schemaName)) {
-            i.setIndexSchema(schemaName);
-            i.setTableSchema(schemaName);
-        }
+        if (!StringUtils.isBlank(schemaName))
+            i.withIndexSchema(schemaName)
+             .withTableSchema(schemaName);
 
         i.setIndexName(index.getName());
         i.setTableName(t.getName());
@@ -281,15 +305,13 @@ final class InformationSchemaExport {
         for (SortField<?> sortField : index.getFields()) {
             IndexColumnUsage ic = new IndexColumnUsage();
 
-            if (!StringUtils.isBlank(catalogName)) {
-                ic.setIndexCatalog(catalogName);
-                ic.setTableCatalog(catalogName);
-            }
+            if (!StringUtils.isBlank(catalogName))
+                ic.withIndexCatalog(catalogName)
+                  .withTableCatalog(catalogName);
 
-            if (!StringUtils.isBlank(schemaName)) {
-                ic.setIndexSchema(schemaName);
-                ic.setTableSchema(schemaName);
-            }
+            if (!StringUtils.isBlank(schemaName))
+                ic.withIndexSchema(schemaName)
+                  .withTableSchema(schemaName);
 
             ic.setIndexName(index.getName());
             ic.setTableName(t.getName());
@@ -303,26 +325,10 @@ final class InformationSchemaExport {
     }
 
     private static final void exportKey0(InformationSchema result, Table<?> t, Key<?> key, TableConstraintType constraintType) {
-        TableConstraint tc = new TableConstraint();
+        exportTableConstraint(result, t, key.getName(), constraintType);
 
         String catalogName = t.getCatalog().getName();
         String schemaName = t.getSchema().getName();
-
-        tc.setConstraintName(key.getName());
-        tc.setConstraintType(constraintType);
-
-        if (!StringUtils.isBlank(catalogName)) {
-            tc.setConstraintCatalog(catalogName);
-            tc.setTableCatalog(catalogName);
-        }
-
-        if (!StringUtils.isBlank(schemaName)) {
-            tc.setConstraintSchema(schemaName);
-            tc.setTableSchema(schemaName);
-        }
-
-        tc.setTableName(t.getName());
-        result.getTableConstraints().add(tc);
 
         int i = 0;
         for (Field<?> f : key.getFields()) {
@@ -369,6 +375,27 @@ final class InformationSchemaExport {
 
             result.getReferentialConstraints().add(rc);
         }
+    }
+
+    private static final void exportTableConstraint(InformationSchema result, Table<?> t, String constraintName, TableConstraintType constraintType) {
+        TableConstraint tc = new TableConstraint();
+
+        String catalogName = t.getCatalog().getName();
+        String schemaName = t.getSchema().getName();
+
+        tc.setConstraintName(constraintName);
+        tc.setConstraintType(constraintType);
+
+        if (!StringUtils.isBlank(catalogName))
+            tc.withConstraintCatalog(catalogName)
+              .withTableCatalog(catalogName);
+
+        if (!StringUtils.isBlank(schemaName))
+            tc.withConstraintSchema(schemaName)
+              .withTableSchema(schemaName);
+
+        tc.setTableName(t.getName());
+        result.getTableConstraints().add(tc);
     }
 
     private InformationSchemaExport() {}

@@ -43,6 +43,7 @@ import org.jooq.Context;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * @author Lukas Eder
@@ -56,7 +57,7 @@ final class Lateral<R extends Record> extends AbstractTable<R> {
     private final Table<R>    table;
 
     Lateral(Table<R> table) {
-        super(table.getName(), table.getSchema());
+        super(TableOptions.expression(), table.getQualifiedName(), table.getSchema());
 
         this.table = table;
     }
@@ -73,12 +74,12 @@ final class Lateral<R extends Record> extends AbstractTable<R> {
 
     @Override
     public final Table<R> as(Name alias) {
-        return new Lateral<R>(table.as(alias));
+        return new Lateral<>(table.as(alias));
     }
 
     @Override
     public final Table<R> as(Name alias, Name... fieldAliases) {
-        return new Lateral<R>(table.as(alias, fieldAliases));
+        return new Lateral<>(table.as(alias, fieldAliases));
     }
 
     @Override
@@ -88,6 +89,6 @@ final class Lateral<R extends Record> extends AbstractTable<R> {
 
     @Override
     final Fields<R> fields0() {
-        return new Fields<R>(table.fields());
+        return new Fields<>(table.fields());
     }
 }

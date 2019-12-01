@@ -54,6 +54,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+// ...
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -171,7 +172,8 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
     SelectConnectByAfterStartWithStep<R>,
     SelectHavingConditionStep<R>,
     SelectQualifyConditionStep<R>,
-    // [jooq-tools] START [implements-select-seek-step]
+
+
     SelectSeekStep1<R, T1>,
     SelectSeekStep2<R, T1, T2>,
     SelectSeekStep3<R, T1, T2, T3>,
@@ -195,7 +197,8 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
     SelectSeekStep21<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21>,
     SelectSeekStep22<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>,
 
-// [jooq-tools] END [implements-select-seek-step]
+
+
     SelectSeekStepN<R>,
     SelectSeekLimitStep<R>,
     SelectLimitPercentStep<R>,
@@ -246,7 +249,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
     }
 
     SelectImpl(Configuration configuration, WithImpl with, boolean distinct) {
-        this(new SelectQueryImpl<R>(configuration, with, distinct));
+        this(new SelectQueryImpl<>(configuration, with, distinct));
     }
 
     SelectImpl(Select<R> query) {
@@ -266,7 +269,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
 
     /**
      * This method must be able to return both incompatible types
-     * SelectSelectStep&lt;Record> and SelectSelectStep&lt;R>
+     * SelectSelectStep&lt;Record&gt; and SelectSelectStep&lt;R&gt;
      */
     @Override
     public final SelectImpl select(SelectFieldOrAsterisk... fields) {
@@ -276,7 +279,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
 
     /**
      * This method must be able to return both incompatible types
-     * SelectSelectStep&lt;Record> and SelectSelectStep&lt;R>
+     * SelectSelectStep&lt;Record&gt; and SelectSelectStep&lt;R&gt;
      */
     @Override
     public final SelectImpl select(Collection<? extends SelectFieldOrAsterisk> fields) {
@@ -715,7 +718,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return this;
     }
 
-// [jooq-tools] START [order-by-orderfield-array]
+
 
     @Override
     public final SelectSeekStep1 orderBy(OrderField t1) {
@@ -827,7 +830,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return orderBy(new OrderField[] { t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22 });
     }
 
-// [jooq-tools] END [order-by-orderfield-array]
+
 
     @Override
     public final SelectImpl orderBy(OrderField<?>... fields) {
@@ -868,7 +871,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return this;
     }
 
-// [jooq-tools] START [seek]
+
 
     @Override
     public final SelectSeekLimitStep<R> seek(Object t1) {
@@ -1574,7 +1577,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return seekAfter(new Field[] { t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22 });
     }
 
-// [jooq-tools] END [seek]
+
 
     private final List<? extends Field<?>> seekValues(Object[] values) {
         if (getQuery() instanceof SelectQueryImpl) {
@@ -1743,16 +1746,11 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return this;
     }
 
-
-
-
-
-
-
-
-
-
-
+    @Override
+    public final SelectImpl percent() {
+        getQuery().setLimitPercent(true);
+        return this;
+    }
 
     @Override
     public final SelectImpl withTies() {
@@ -1790,14 +1788,11 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return this;
     }
 
-
-
-
-
-
-
-
-
+    @Override
+    public final SelectImpl wait(int seconds) {
+        getQuery().setForUpdateWait(seconds);
+        return this;
+    }
 
     @Override
     public final SelectImpl noWait() {
@@ -2705,6 +2700,21 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return getDelegate().iterator();
     }
 
+
+
+
+
+
+
+
+
+
+
+
+    @Override
+    public final void subscribe(org.reactivestreams.Subscriber<? super R> subscriber) {
+        getDelegate().subscribe(subscriber);
+    }
 
     @Override
     public final Stream<R> fetchStream() {
@@ -3936,7 +3946,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return getDelegate().coerce(fields);
     }
 
-    // [jooq-tools] START [coerce]
+
 
     @Override
     @SuppressWarnings("hiding")
@@ -4070,7 +4080,7 @@ final class SelectImpl<R extends Record, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
         return getDelegate().coerce(field1, field2, field3, field4, field5, field6, field7, field8, field9, field10, field11, field12, field13, field14, field15, field16, field17, field18, field19, field20, field21, field22);
     }
 
-// [jooq-tools] END [coerce]
+
 
     /**
      * The {@link SelectImpl} current condition step

@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.util.xml.jaxb;
 
 import javax.xml.bind.annotation.XmlRegistry;
@@ -106,6 +99,14 @@ public class ObjectFactory {
      */
     public ReferentialConstraint createReferentialConstraint() {
         return new ReferentialConstraint();
+    }
+
+    /**
+     * Create an instance of {@link CheckConstraint }
+     *
+     */
+    public CheckConstraint createCheckConstraint() {
+        return new CheckConstraint();
     }
 
     /**

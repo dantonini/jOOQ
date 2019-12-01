@@ -4,13 +4,13 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jooq</groupId>
-    <artifactId>jooq-spark-chart-example</artifactId>
-    <version>1.0</version>
+    <parent>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-examples</artifactId>
+        <version>3.13.0-SNAPSHOT</version>
+    </parent>
 
-    <properties>
-        <org.jooq.version>3.12.0-SNAPSHOT</org.jooq.version>
-    </properties>
+    <artifactId>jooq-spark-chart-example</artifactId>
 
     <build>
         <plugins>
@@ -20,7 +20,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
+                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <phase>initialize</phase>
@@ -41,13 +41,13 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <!-- [java-9] -->
-                    <release>10</release>
-                    <!-- [/java-9] -->
+
+
+
 
                     <!-- IntelliJ needs these https://youtrack.jetbrains.com/issue/IDEA-195472 -->
-                    <source>10</source>
-                    <target>10</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
 
                 </configuration>
             </plugin>
@@ -77,7 +77,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>${org.jooq.version}</version>
+                <version>${project.version}</version>
 
                 <executions>
                     <execution>
@@ -114,7 +114,7 @@
                     <dependency>
                         <groupId>org.postgresql</groupId>
                         <artifactId>postgresql</artifactId>
-                        <version>42.2.5</version>
+                        <version>42.2.8</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -150,12 +150,12 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>${org.jooq.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.5</version>
+            <version>42.2.8</version>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>

@@ -3,9 +3,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jooq</groupId>
+    <parent>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-examples</artifactId>
+        <version>3.13.0-SNAPSHOT</version>
+    </parent>
+
     <artifactId>jooq-javafx-example</artifactId>
-    <version>1.0</version>
     <name>jOOQ JavaFX Example</name>
 
     <licenses>
@@ -19,8 +23,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <org.springframework.version>3.2.6.RELEASE</org.springframework.version>
-        <org.jooq.version>3.12.0-SNAPSHOT</org.jooq.version>
-        <org.h2.version>1.4.197</org.h2.version>
+        <org.h2.version>1.4.199</org.h2.version>
     </properties>
 
     <dependencies>
@@ -29,7 +32,7 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>${org.jooq.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
@@ -42,6 +45,13 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>2.11.0</version>
+        </dependency>
+
+        <!-- JavaFX -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>12.0.1</version>
         </dependency>
 
         <!-- Testing -->
@@ -80,13 +90,13 @@
                     <maxmem>1024m</maxmem>
                     <meminitial>256m</meminitial>
                     <encoding>UTF-8</encoding>
-                    <!-- [java-9] -->
-                    <release>10</release>
-                    <!-- [/java-9] -->
+
+
+
 
                     <!-- IntelliJ needs these https://youtrack.jetbrains.com/issue/IDEA-195472 -->
-                    <source>10</source>
-                    <target>10</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
 
                     <debug>true</debug>
                     <debuglevel>lines,vars,source</debuglevel>
@@ -98,13 +108,22 @@
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.2</version>
+                <configuration>
+                    <mainClass>org.jooq.example.javafx.BarChartSample</mainClass>
+                </configuration>
+            </plugin>
+
             <!-- We're using the properties plugin to load external properties into Maven.
                  See this excellent blog post for an explanation:
                  http://www.petrikainulainen.net/programming/tips-and-tricks/creating-profile-specific-configuration-files-with-maven/ -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
+                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <phase>initialize</phase>
@@ -165,7 +184,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>${org.jooq.version}</version>
+                <version>${project.version}</version>
 
                 <executions>
                     <execution>

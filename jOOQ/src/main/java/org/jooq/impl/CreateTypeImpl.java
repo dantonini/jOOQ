@@ -58,7 +58,7 @@ import org.jooq.conf.ParamType;
 /**
  * @author Lukas Eder
  */
-final class CreateTypeImpl extends AbstractQuery implements
+final class CreateTypeImpl extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for CREATE TYPE behaviour
     CreateTypeStep,
@@ -98,7 +98,7 @@ final class CreateTypeImpl extends AbstractQuery implements
 
     @Override
     public final CreateTypeFinalStep asEnum(Collection<?> v) {
-        values = new QueryPartList<Field<?>>(Tools.fields(v, VARCHAR));
+        values = new QueryPartList<>(Tools.fields(v, VARCHAR));
         return this;
     }
 

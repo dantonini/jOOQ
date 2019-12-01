@@ -40,6 +40,7 @@ package org.jooq;
 
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
@@ -65,44 +66,26 @@ public interface DeleteQuery<R extends Record> extends ConditionProvider, Delete
     // Methods from ConditionProvider, OrderProvider, LockProvider
     // ------------------------------------------------------------------------
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Condition condition);
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Condition... conditions);
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Collection<? extends Condition> conditions);
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Operator operator, Condition condition);
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Operator operator, Condition... conditions);
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Support
     void addConditions(Operator operator, Collection<? extends Condition> conditions);

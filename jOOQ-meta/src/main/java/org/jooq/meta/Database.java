@@ -47,8 +47,10 @@ import org.jooq.DSLContext;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.Table;
+import org.jooq.TableField;
 import org.jooq.meta.jaxb.CatalogMappingType;
 import org.jooq.meta.jaxb.CustomType;
+import org.jooq.meta.jaxb.Embeddable;
 import org.jooq.meta.jaxb.EnumType;
 import org.jooq.meta.jaxb.ForcedType;
 import org.jooq.meta.jaxb.RegexFlag;
@@ -150,6 +152,21 @@ public interface Database  extends AutoCloseable  {
      * Get a table in this database by name.
      */
     TableDefinition getTable(SchemaDefinition schema, Name name, boolean ignoreCase);
+
+    /**
+     * Get all embeddables.
+     */
+    List<EmbeddableDefinition> getEmbeddables();
+
+    /**
+     * Get all embeddables for a given schema.
+     */
+    List<EmbeddableDefinition> getEmbeddables(SchemaDefinition schema);
+
+    /**
+     * Get all embeddables for a given table.
+     */
+    List<EmbeddableDefinition> getEmbeddables(TableDefinition table);
 
     /**
      * The enum UDTs defined in this database.
@@ -412,6 +429,26 @@ public interface Database  extends AutoCloseable  {
     boolean getIncludePrimaryKeys();
 
     /**
+     * whether check constraints should be included.
+     */
+    void setIncludeCheckConstraints(boolean checkConstraints);
+
+    /**
+     * whether check constraints should be included.
+     */
+    boolean getIncludeCheckConstraints();
+
+    /**
+     * whether system generated check constraints should be included.
+     */
+    void setIncludeSystemCheckConstraints(boolean systemCheckConstraints);
+
+    /**
+     * whether system generated check constraints should be included.
+     */
+    boolean getIncludeSystemCheckConstraints();
+
+    /**
      * whether indexes should be included.
      */
     void setIncludeIndexes(boolean includeIndexes);
@@ -512,6 +549,16 @@ public interface Database  extends AutoCloseable  {
     boolean getIncludeTables();
 
     /**
+     * Whether embeddable types should be included.
+     */
+    void setIncludeEmbeddables(boolean includeEmbeddables);
+
+    /**
+     * Whether embeddable types should be included.
+     */
+    boolean getIncludeEmbeddables();
+
+    /**
      * Whether invisible columns should be included.
      */
     void setIncludeInvisibleColumns(boolean includeInvisibleColumns);
@@ -592,6 +639,20 @@ public interface Database  extends AutoCloseable  {
      * names.
      */
     boolean getRegexMatchesPartialQualification();
+
+    /**
+     * Whether the SQL statements matching database objects should match
+     * partially qualified names as well as fully qualified and unqualified
+     * names.
+     */
+    void setSqlMatchesPartialQualification(boolean sqlMatchesPartialQualification);
+
+    /**
+     * Whether the SQL statements matching database objects should match
+     * partially qualified names as well as fully qualified and unqualified
+     * names.
+     */
+    boolean getSqlMatchesPartialQualification();
 
     /**
      * Table columns matching these regular expressions will be considered as
@@ -708,6 +769,16 @@ public interface Database  extends AutoCloseable  {
     void setLogSlowQueriesAfterSeconds(int logSlowQueriesAfterSeconds);
 
     /**
+     * Log slow results after this amount of seconds.
+     */
+    int getLogSlowResultsAfterSeconds();
+
+    /**
+     * Log slow results after this amount of seconds.
+     */
+    void setLogSlowResultsAfterSeconds(int logSlowResultsAfterSeconds);
+
+    /**
      * The database's schema version provider.
      */
     SchemaVersionProvider getSchemaVersionProvider();
@@ -738,6 +809,16 @@ public interface Database  extends AutoCloseable  {
     void setOrderProvider(Comparator<Definition> provider);
 
     /**
+     * Mark a forced type as used.
+     */
+    void markUsed(ForcedType forcedType);
+
+    /**
+     * Retrieve the not-yet used forced types.
+     */
+    List<ForcedType> getUnusedForcedTypes();
+
+    /**
      * Database objects matching any of these field names will be generated as
      * forced types.
      */
@@ -754,6 +835,17 @@ public interface Database  extends AutoCloseable  {
      * or <code>null</code> if no {@link ForcedType} matches the definition.
      */
     ForcedType getConfiguredForcedType(Definition definition, DataTypeDefinition definedType);
+
+    /**
+     * Configure the embeddable types.
+     */
+    void setConfiguredEmbeddables(List<Embeddable> configuredEmbeddables);
+
+    /**
+     * Get the configured embeddable type definitions for any given
+     * {@link Definition}.
+     */
+    List<Embeddable> getConfiguredEmbeddables();
 
     /**
      * Get the dialect for this database.
@@ -781,6 +873,18 @@ public interface Database  extends AutoCloseable  {
     boolean supportsUnsignedTypes();
 
     /**
+     * Whether this database includes integer display widths in metadata, where
+     * applicable.
+     */
+    void setIntegerDisplayWidths(boolean integerDisplayWidths);
+
+    /**
+     * Whether this database includes integer display widths in metadata, where
+     * applicable.
+     */
+    boolean integerDisplayWidths();
+
+    /**
      * Whether this database should ignore procedure return values.
      */
     void setIgnoreProcedureReturnValues(boolean ignoreProcedureReturnValues);
@@ -801,6 +905,18 @@ public interface Database  extends AutoCloseable  {
     boolean dateAsTimestamp();
 
     /**
+     * Whether <code>java.time</code> types are used, as opposed to
+     * <code>java.sql</code> types.
+     */
+    void setJavaTimeTypes(boolean javaTimeTypes);
+
+    /**
+     * Whether <code>java.time</code> types are used, as opposed to
+     * <code>java.sql</code> types.
+     */
+    boolean javaTimeTypes();
+
+    /**
      * [#3559] Whether relations (i.e. constraints) should be included in this database.
      */
     void setIncludeRelations(boolean includeRelations);
@@ -819,6 +935,16 @@ public interface Database  extends AutoCloseable  {
      * [#4838] Whether table-valued functions should be reported as tables.
      */
     boolean tableValuedFunctions();
+
+    /**
+     * Check for the existence of a table field in the dictionary views.
+     */
+    boolean exists(TableField<?, ?> field);
+
+    /**
+     * Check for the existence of several table fields in the dictionary views.
+     */
+    boolean existAll(TableField<?, ?>... fields);
 
     /**
      * Check for the existence of a table in the dictionary views.

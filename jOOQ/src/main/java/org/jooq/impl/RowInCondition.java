@@ -51,6 +51,7 @@ import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.SQLITE;
 // ...
 // ...
@@ -60,8 +61,8 @@ import static org.jooq.impl.DSL.trueCondition;
 import static org.jooq.impl.InCondition.padded;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jooq.Clause;
 import org.jooq.Comparator;
@@ -84,8 +85,9 @@ final class RowInCondition extends AbstractCondition {
     private static final Clause[]              CLAUSES_IN       = { CONDITION, CONDITION_IN };
     private static final Clause[]              CLAUSES_IN_NOT   = { CONDITION, CONDITION_NOT_IN };
 
-    // Currently not yet supported in SQLite: https://www.sqlite.org/rowvalue.html
-    private static final EnumSet<SQLDialect>   EMULATE_IN       = EnumSet.of(DERBY, FIREBIRD, SQLITE);
+    // Currently not yet supported in SQLite:
+    // https://www.sqlite.org/rowvalue.html
+    private static final Set<SQLDialect>       EMULATE_IN       = SQLDialect.supportedBy(DERBY, FIREBIRD, SQLITE);
 
     private final Row                          left;
     private final QueryPartList<? extends Row> right;
@@ -109,7 +111,7 @@ final class RowInCondition extends AbstractCondition {
 
     private final QueryPartInternal delegate(Configuration configuration) {
         if (EMULATE_IN.contains(configuration.family())) {
-            List<Condition> conditions = new ArrayList<Condition>(right.size());
+            List<Condition> conditions = new ArrayList<>(right.size());
 
             for (Row row : right)
                 conditions.add(new RowCondition(left, row, EQUALS));
@@ -146,7 +148,7 @@ final class RowInCondition extends AbstractCondition {
                    .sql(' ')
                    .visit(comparator.toKeyword())
                    .sql(" (")
-                   .visit(new QueryPartList<Row>(padded(ctx, right)))
+                   .visit(new QueryPartList<>(padded(ctx, right)))
                    .sql(')');
             }
         }

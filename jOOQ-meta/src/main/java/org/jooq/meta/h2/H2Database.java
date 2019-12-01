@@ -37,10 +37,10 @@
  */
 package org.jooq.meta.h2;
 
-import static org.jooq.impl.DSL.falseCondition;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.nullif;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.meta.h2.information_schema.tables.Columns.COLUMNS;
@@ -67,7 +67,8 @@ import org.jooq.Record4;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.SortOrder;
-import org.jooq.exception.DataAccessException;
+import org.jooq.Table;
+import org.jooq.TableField;
 import org.jooq.impl.DSL;
 import org.jooq.meta.AbstractDatabase;
 import org.jooq.meta.AbstractIndexDefinition;
@@ -110,14 +111,26 @@ import org.jooq.util.h2.H2DataType;
  */
 public class H2Database extends AbstractDatabase {
 
+    private static final long DEFAULT_SEQUENCE_MAXVALUE = Long.MAX_VALUE;
+
     @Override
     protected DSLContext create0() {
         return DSL.using(getConnection(), SQLDialect.H2);
     }
 
     @Override
+    protected boolean exists0(TableField<?, ?> field) {
+        return exists1(field, COLUMNS, Columns.TABLE_SCHEMA, Columns.TABLE_NAME, Columns.COLUMN_NAME);
+    }
+
+    @Override
+    protected boolean exists0(Table<?> table) {
+        return exists1(table, TABLES, Tables.TABLE_SCHEMA, Tables.TABLE_NAME);
+    }
+
+    @Override
     protected List<IndexDefinition> getIndexes0() throws SQLException {
-        List<IndexDefinition> result = new ArrayList<IndexDefinition>();
+        List<IndexDefinition> result = new ArrayList<>();
 
         // Same implementation as in HSQLDBDatabase and MySQLDatabase
         Map<Record, Result<Record>> indexes = create()
@@ -171,7 +184,7 @@ public class H2Database extends AbstractDatabase {
                     continue indexLoop;
 
             result.add(new AbstractIndexDefinition(tableSchema, indexName, table, unique) {
-                List<IndexColumnDefinition> indexColumns = new ArrayList<IndexColumnDefinition>();
+                List<IndexColumnDefinition> indexColumns = new ArrayList<>();
 
                 {
                     for (Record column : columns) {
@@ -345,14 +358,14 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() throws SQLException {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
 
         for (Record record : create().select(
                     Schemata.SCHEMA_NAME,
@@ -370,11 +383,17 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<SequenceDefinition> getSequences0() throws SQLException {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
 
         for (Record record : create().select(
                     Sequences.SEQUENCE_SCHEMA,
-                    Sequences.SEQUENCE_NAME)
+                    Sequences.SEQUENCE_NAME,
+                    Sequences.INCREMENT,
+                    Sequences.MIN_VALUE,
+                    nullif(Sequences.MAX_VALUE, inline(DEFAULT_SEQUENCE_MAXVALUE)).as(Sequences.MAX_VALUE),
+                    Sequences.IS_CYCLE,
+                    Sequences.CACHE
+                    )
                 .from(SEQUENCES)
                 .where(Sequences.SEQUENCE_SCHEMA.in(getInputSchemata()))
                 .and(Sequences.SEQUENCE_NAME.upper().notLike("SYSTEM!_SEQUENCE!_%", '!'))
@@ -394,7 +413,17 @@ public class H2Database extends AbstractDatabase {
                     H2DataType.BIGINT.getTypeName()
                 );
 
-                result.add(new DefaultSequenceDefinition(schema, name, type));
+                result.add(new DefaultSequenceDefinition(
+                    schema,
+                    name,
+                    type,
+                    null,
+                    null, // H2 doesn't support Postgres-style START WITH
+                    record.get(Sequences.INCREMENT),
+                    record.get(Sequences.MIN_VALUE),
+                    record.get(Sequences.MAX_VALUE),
+                    record.get(Sequences.IS_CYCLE),
+                    record.get(Sequences.CACHE)));
             }
         }
 
@@ -403,7 +432,7 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<TableDefinition> getTables0() throws SQLException {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
 
         for (Record record : create().select(
                     Tables.TABLE_SCHEMA,
@@ -432,7 +461,7 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<RoutineDefinition> getRoutines0() throws SQLException {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
 
         Field<Boolean> overloaded = field(select(field(DSL.exists(
             select(one())
@@ -485,13 +514,13 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<PackageDefinition> getPackages0() throws SQLException {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<EnumDefinition> getEnums0() throws SQLException {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
 
         if (!is1_4_197())
             return result;
@@ -599,19 +628,19 @@ public class H2Database extends AbstractDatabase {
 
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<UDTDefinition> getUDTs0() throws SQLException {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<ArrayDefinition> getArrays0() throws SQLException {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 
@@ -619,43 +648,19 @@ public class H2Database extends AbstractDatabase {
     private static Boolean is1_4_198;
 
     boolean is1_4_197() {
-        if (is1_4_197 == null) {
 
-            // [#5874] The COLUMNS.COLUMN_TYPE column was introduced in H2 1.4.197
-            try {
-                create(true)
-                    .select(Columns.COLUMN_TYPE)
-                    .from(COLUMNS)
-                    .where(falseCondition())
-                    .fetch();
-
-                is1_4_197 = true;
-            }
-            catch (DataAccessException e) {
-                is1_4_197 = false;
-            }
-        }
+        // [#5874] The COLUMNS.COLUMN_TYPE column was introduced in H2 1.4.197
+        if (is1_4_197 == null)
+            is1_4_197 = exists(Columns.COLUMN_TYPE);
 
         return is1_4_197;
     }
 
     boolean is1_4_198() {
-        if (is1_4_198 == null) {
 
-            // [#5874] The COLUMNS.IS_VISIBLE column was introduced in H2 1.4.198
-            try {
-                create(true)
-                    .select(Columns.IS_VISIBLE)
-                    .from(COLUMNS)
-                    .where(falseCondition())
-                    .fetch();
-
-                is1_4_198 = true;
-            }
-            catch (DataAccessException e) {
-                is1_4_198 = false;
-            }
-        }
+        // [#5874] The COLUMNS.IS_VISIBLE column was introduced in H2 1.4.198
+        if (is1_4_198 == null)
+            is1_4_198 = exists(Columns.IS_VISIBLE);
 
         return is1_4_198;
     }

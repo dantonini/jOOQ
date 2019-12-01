@@ -40,6 +40,7 @@ package org.jooq.impl;
 
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.Names.N_DUAL;
 
 import org.jooq.Context;
 import org.jooq.Field;
@@ -48,6 +49,7 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
 import org.jooq.Table;
+import org.jooq.TableOptions;
 
 /**
  * @author Lukas Eder
@@ -83,7 +85,7 @@ final class Dual extends AbstractTable<Record> {
     }
 
     Dual(boolean force) {
-        super(DSL.name("dual"), (Schema) null);
+        super(TableOptions.expression(), N_DUAL, (Schema) null);
 
         this.force = force;
     }
@@ -95,22 +97,18 @@ final class Dual extends AbstractTable<Record> {
 
     @Override
     public final Table<Record> as(Name alias) {
-        if (force) {
+        if (force)
             return FORCED_DUAL.as(alias);
-        }
-        else {
-            return new TableAlias<Record>(this, alias);
-        }
+        else
+            return new TableAlias<>(this, alias);
     }
 
     @Override
     public final Table<Record> as(Name alias, Name... fieldAliases) {
-        if (force) {
+        if (force)
             return FORCED_DUAL.as(alias, fieldAliases);
-        }
-        else {
-            return new TableAlias<Record>(this, alias, fieldAliases);
-        }
+        else
+            return new TableAlias<>(this, alias, fieldAliases);
     }
 
     @Override
@@ -125,6 +123,7 @@ final class Dual extends AbstractTable<Record> {
         }
         else {
             switch (ctx.family()) {
+
 
 
 
@@ -190,6 +189,7 @@ final class Dual extends AbstractTable<Record> {
 
 
 
+
                 default:
                     ctx.sql("dual");
                     break;
@@ -199,6 +199,6 @@ final class Dual extends AbstractTable<Record> {
 
     @Override
     final Fields<Record> fields0() {
-        return new Fields<Record>();
+        return new Fields<>();
     }
 }

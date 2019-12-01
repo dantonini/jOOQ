@@ -54,6 +54,8 @@ import org.jooq.ExecuteListener;
 import org.jooq.ExecuteListenerProvider;
 import org.jooq.ExecutorProvider;
 import org.jooq.MetaProvider;
+import org.jooq.MigrationListener;
+import org.jooq.MigrationListenerProvider;
 import org.jooq.RecordListener;
 import org.jooq.RecordListenerProvider;
 import org.jooq.RecordMapper;
@@ -66,6 +68,7 @@ import org.jooq.TransactionListenerProvider;
 import org.jooq.TransactionProvider;
 import org.jooq.Unwrapper;
 import org.jooq.UnwrapperProvider;
+import org.jooq.VersionProvider;
 import org.jooq.VisitListener;
 import org.jooq.VisitListenerProvider;
 import org.jooq.conf.Settings;
@@ -128,8 +131,23 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public ConnectionProvider interpreterConnectionProvider() {
+        return new MockConnectionProvider(delegate.interpreterConnectionProvider(), provider);
+    }
+
+    @Override
+    public ConnectionProvider systemConnectionProvider() {
+        return new MockConnectionProvider(delegate.systemConnectionProvider(), provider);
+    }
+
+    @Override
     public MetaProvider metaProvider() {
         return delegate.metaProvider();
+    }
+
+    @Override
+    public VersionProvider versionProvider() {
+        return delegate.versionProvider();
     }
 
     @Override
@@ -160,6 +178,11 @@ public class MockConfiguration implements Configuration {
     @Override
     public ExecuteListenerProvider[] executeListenerProviders() {
         return delegate.executeListenerProviders();
+    }
+
+    @Override
+    public MigrationListenerProvider[] migrationListenerProviders() {
+        return delegate.migrationListenerProviders();
     }
 
     @Override
@@ -225,6 +248,11 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public Configuration set(VersionProvider newVersionProvider) {
+        return delegate.set(newVersionProvider);
+    }
+
+    @Override
     public Configuration set(Connection newConnection) {
         return delegate.set(newConnection);
     }
@@ -287,6 +315,16 @@ public class MockConfiguration implements Configuration {
     @Override
     public Configuration set(ExecuteListenerProvider... newExecuteListenerProviders) {
         return delegate.set(newExecuteListenerProviders);
+    }
+
+    @Override
+    public Configuration set(MigrationListener... newMigrationListeners) {
+        return delegate.set(newMigrationListeners);
+    }
+
+    @Override
+    public Configuration set(MigrationListenerProvider... newMigrationListenerProviders) {
+        return delegate.set(newMigrationListenerProviders);
     }
 
     @Override
@@ -377,6 +415,11 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public Configuration derive(VersionProvider newVersionProvider) {
+        return delegate.derive(newVersionProvider);
+    }
+
+    @Override
     public Configuration derive(Executor newExecutor) {
         return delegate.derive(newExecutor);
     }
@@ -429,6 +472,16 @@ public class MockConfiguration implements Configuration {
     @Override
     public Configuration derive(ExecuteListenerProvider... newExecuteListenerProviders) {
         return delegate.derive(newExecuteListenerProviders);
+    }
+
+    @Override
+    public Configuration derive(MigrationListener... newMigrationListeners) {
+        return delegate.derive(newMigrationListeners);
+    }
+
+    @Override
+    public Configuration derive(MigrationListenerProvider... newMigrationListenerProviders) {
+        return delegate.derive(newMigrationListenerProviders);
     }
 
     @Override

@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jooq</groupId>
         <artifactId>jooq-parent</artifactId>
-        <version>3.12.0-SNAPSHOT</version>
+        <version>3.13.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>jooq</artifactId>
@@ -75,6 +75,14 @@
     </build>
 
     <dependencies>
+
+        <dependency>
+          <groupId>org.reactivestreams</groupId>
+          <artifactId>reactive-streams</artifactId>
+          <version>1.0.2</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -91,6 +99,20 @@
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
         </dependency>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

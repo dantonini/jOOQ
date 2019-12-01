@@ -48,6 +48,7 @@ import static org.jooq.Clause.CREATE_TABLE_NAME;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -58,12 +59,14 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 import static org.jooq.SQLDialect.MARIADB;
+// ...
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
+// ...
 // ...
 // ...
 // ...
@@ -95,14 +98,16 @@ import static org.jooq.impl.Tools.begin;
 import static org.jooq.impl.Tools.beginExecuteImmediate;
 import static org.jooq.impl.Tools.end;
 import static org.jooq.impl.Tools.endExecuteImmediate;
+import static org.jooq.impl.Tools.enumLiterals;
+import static org.jooq.impl.Tools.storedEnumType;
 import static org.jooq.impl.Tools.BooleanDataKey.DATA_SELECT_NO_DATA;
 import static org.jooq.impl.Tools.DataKey.DATA_SELECT_INTO_TABLE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jooq.Comment;
 import org.jooq.Configuration;
@@ -122,11 +127,12 @@ import org.jooq.SQL;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.Table;
+import org.jooq.TableOptions.OnCommit;
 
 /**
  * @author Lukas Eder
  */
-final class CreateTableImpl extends AbstractQuery implements
+final class CreateTableImpl extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for CREATE TABLE behaviour
     CreateTableWithDataStep,
@@ -135,18 +141,18 @@ final class CreateTableImpl extends AbstractQuery implements
     /**
      * Generated UID
      */
-    private static final long                serialVersionUID               = 8904572826501186329L;
-    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_NOT_EXISTS       = EnumSet.of(DERBY, FIREBIRD);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_WITH_DATA           = EnumSet.of(H2, MARIADB, MYSQL, SQLITE);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_CTAS_COLUMN_NAMES   = EnumSet.of(H2);
-    private static final EnumSet<SQLDialect> EMULATE_INDEXES_IN_BLOCK       = EnumSet.of(POSTGRES);
-    private static final EnumSet<SQLDialect> EMULATE_ENUM_TYPES_AS_CHECK    = EnumSet.of(CUBRID, DERBY, FIREBIRD, HSQLDB, SQLITE);
-    private static final EnumSet<SQLDialect> REQUIRES_WITH_DATA             = EnumSet.of(HSQLDB);
-    private static final EnumSet<SQLDialect> WRAP_SELECT_IN_PARENS          = EnumSet.of(HSQLDB);
-    private static final EnumSet<SQLDialect> SUPPORT_TEMPORARY              = EnumSet.of(MARIADB, MYSQL, POSTGRES);
-    private static final EnumSet<SQLDialect> EMULATE_COMMENT_IN_BLOCK       = EnumSet.of(POSTGRES);
-
-
+    private static final long                serialVersionUID                   = 8904572826501186329L;
+    private static final Set<SQLDialect>     NO_SUPPORT_IF_NOT_EXISTS           = SQLDialect.supportedBy(DERBY, FIREBIRD);
+    private static final Set<SQLDialect>     NO_SUPPORT_WITH_DATA               = SQLDialect.supportedBy(H2, MARIADB, MYSQL, SQLITE);
+    private static final Set<SQLDialect>     NO_SUPPORT_CTAS_COLUMN_NAMES       = SQLDialect.supportedBy(H2);
+    private static final Set<SQLDialect>     EMULATE_INDEXES_IN_BLOCK           = SQLDialect.supportedBy(FIREBIRD, POSTGRES);
+    private static final Set<SQLDialect>     EMULATE_SOME_ENUM_TYPES_AS_CHECK   = SQLDialect.supportedBy(CUBRID, DERBY, FIREBIRD, HSQLDB, POSTGRES, SQLITE);
+    private static final Set<SQLDialect>     EMULATE_STORED_ENUM_TYPES_AS_CHECK = SQLDialect.supportedBy(CUBRID, DERBY, FIREBIRD, HSQLDB, SQLITE);
+    private static final Set<SQLDialect>     REQUIRES_WITH_DATA                 = SQLDialect.supportedBy(HSQLDB);
+    private static final Set<SQLDialect>     WRAP_SELECT_IN_PARENS              = SQLDialect.supportedBy(HSQLDB);
+    private static final Set<SQLDialect>     SUPPORT_TEMPORARY                  = SQLDialect.supportedBy(MARIADB, MYSQL, POSTGRES);
+    private static final Set<SQLDialect>     EMULATE_COMMENT_IN_BLOCK           = SQLDialect.supportedBy(FIREBIRD, POSTGRES);
+    private static final Set<SQLDialect>     REQUIRE_EXECUTE_IMMEDIATE          = SQLDialect.supportedBy(FIREBIRD);
 
 
 
@@ -171,11 +177,22 @@ final class CreateTableImpl extends AbstractQuery implements
         this.table = table;
         this.temporary = temporary;
         this.ifNotExists = ifNotExists;
-        this.columnFields = new ArrayList<Field<?>>();
-        this.columnTypes = new ArrayList<DataType<?>>();
-        this.constraints = new ArrayList<Constraint>();
-        this.indexes = new ArrayList<Index>();
+        this.columnFields = new ArrayList<>();
+        this.columnTypes = new ArrayList<>();
+        this.constraints = new ArrayList<>();
+        this.indexes = new ArrayList<>();
     }
+
+    final Table<?>          $table()        { return table; }
+    final boolean           $temporary()    { return temporary; }
+    final OnCommit          $onCommit()     { return onCommit; }
+    final Select<?>         $select()       { return select; }
+    final List<Field<?>>    $columnFields() { return columnFields; }
+    final List<DataType<?>> $columnTypes()  { return columnTypes; }
+    final List<Constraint>  $constraints()  { return constraints; }
+    final List<Index>       $indexes()      { return indexes; }
+    final boolean           $ifNotExists()  { return ifNotExists; }
+    final Comment           $comment()      { return comment; }
 
     // ------------------------------------------------------------------------
     // XXX: DSL API
@@ -356,58 +373,46 @@ final class CreateTableImpl extends AbstractQuery implements
         if (c || i) {
             begin(ctx);
 
-
-
-
-
+            if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                beginExecuteImmediate(ctx);
 
             accept1(ctx);
 
-
-
-
-
-
-            ctx.sql(';');
+            if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                endExecuteImmediate(ctx);
+            else
+                ctx.sql(';');
 
             if (c) {
                 ctx.formatSeparator();
 
-
-
-
-
+                if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                    beginExecuteImmediate(ctx);
 
                 ctx.visit(commentOnTable(table).is(comment));
 
-
-
-
-
-
-                ctx.sql(';');
+                if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                    endExecuteImmediate(ctx);
+                else
+                    ctx.sql(';');
             }
 
             if (i) {
                 for (Index index : indexes) {
                     ctx.formatSeparator();
 
-
-
-
-
+                    if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                        beginExecuteImmediate(ctx);
 
                     if ("".equals(index.getName()))
                         ctx.visit(createIndex().on(index.getTable(), index.getFields()));
                     else
                         ctx.visit(createIndex(index.getUnqualifiedName()).on(index.getTable(), index.getFields()));
 
-
-
-
-
-
-                    ctx.sql(';');
+                    if (REQUIRE_EXECUTE_IMMEDIATE.contains(ctx.family()))
+                        endExecuteImmediate(ctx);
+                    else
+                        ctx.sql(';');
                 }
             }
 
@@ -442,7 +447,7 @@ final class CreateTableImpl extends AbstractQuery implements
                .visit(K_COMMENT).sql(' ').visit(comment);
 
         // [#7772] This data() value should be available from ctx directly, not only from ctx.configuration()
-        if (storage != null && ctx.configuration().data("org.jooq.meta.extensions.ddl.ignore-storage-clauses") == null)
+        if (storage != null && ctx.configuration().data("org.jooq.ddl.ignore-storage-clauses") == null)
             ctx.formatSeparator()
                .visit(storage);
 
@@ -493,17 +498,23 @@ final class CreateTableImpl extends AbstractQuery implements
                            .formatSeparator()
                            .visit(constraint);
 
-            if (EMULATE_ENUM_TYPES_AS_CHECK.contains(ctx.family())) {
+            if (EMULATE_SOME_ENUM_TYPES_AS_CHECK.contains(ctx.family())) {
                 for (int i = 0; i < columnFields.size(); i++) {
                     DataType<?> type = columnTypes.get(i);
 
                     if (EnumType.class.isAssignableFrom(type.getType())) {
-                        Field<?> field = columnFields.get(i);
 
-                        ctx.sql(',')
-                           .formatSeparator()
-                           .visit(DSL.constraint(table.getName() + "_" + field.getName() + "_chk")
-                                     .check(((Field) field).in(Tools.enumLiterals((Class<EnumType>) type.getType()))));
+                        @SuppressWarnings("unchecked")
+                        DataType<EnumType> enumType = (DataType<EnumType>) type;
+
+                        if (EMULATE_STORED_ENUM_TYPES_AS_CHECK.contains(ctx.family()) || !storedEnumType(enumType)) {
+                            Field<?> field = columnFields.get(i);
+
+                            ctx.sql(',')
+                               .formatSeparator()
+                               .visit(DSL.constraint(table.getName() + "_" + field.getName() + "_chk")
+                                         .check(((Field) field).in(Tools.inline(enumLiterals(enumType.getType())))));
+                        }
                     }
                 }
             }
@@ -580,13 +591,13 @@ final class CreateTableImpl extends AbstractQuery implements
         }
 
         if (FALSE.equals(withData) && !NO_SUPPORT_WITH_DATA.contains(ctx.family()))
-            ctx.sql(' ')
+            ctx.formatSeparator()
                .visit(K_WITH_NO_DATA);
         else if (TRUE.equals(withData) && !NO_SUPPORT_WITH_DATA.contains(ctx.family()))
-            ctx.sql(' ')
+            ctx.formatSeparator()
                .visit(K_WITH_DATA);
         else if (REQUIRES_WITH_DATA.contains(ctx.family()))
-            ctx.sql(' ')
+            ctx.formatSeparator()
                .visit(K_WITH_DATA);
     }
 
@@ -682,10 +693,4 @@ final class CreateTableImpl extends AbstractQuery implements
 
 
 
-
-    private enum OnCommit {
-        DELETE_ROWS,
-        PRESERVE_ROWS,
-        DROP;
-    }
 }

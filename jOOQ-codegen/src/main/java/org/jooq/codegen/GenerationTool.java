@@ -50,7 +50,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
@@ -60,17 +59,9 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.sql.DataSource;
-import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.ValidationEventHandler;
-import javax.xml.validation.SchemaFactory;
 
 import org.jooq.Constants;
 import org.jooq.Log.Level;
-import org.jooq.conf.MiniJAXB;
-import org.jooq.exception.ExceptionTools;
 import org.jooq.meta.CatalogVersionProvider;
 import org.jooq.meta.Database;
 import org.jooq.meta.Databases;
@@ -78,10 +69,12 @@ import org.jooq.meta.Definition;
 import org.jooq.meta.SchemaVersionProvider;
 import org.jooq.meta.jaxb.CatalogMappingType;
 import org.jooq.meta.jaxb.Configuration;
+import org.jooq.meta.jaxb.ForcedType;
 import org.jooq.meta.jaxb.Generate;
 import org.jooq.meta.jaxb.Jdbc;
 import org.jooq.meta.jaxb.Logging;
 import org.jooq.meta.jaxb.Matchers;
+import org.jooq.meta.jaxb.OnError;
 import org.jooq.meta.jaxb.Property;
 import org.jooq.meta.jaxb.SchemaMappingType;
 import org.jooq.meta.jaxb.Strategy;
@@ -90,7 +83,7 @@ import org.jooq.meta.jaxb.Target;
 import org.jooq.tools.JooqLogger;
 import org.jooq.tools.StringUtils;
 import org.jooq.tools.jdbc.JDBCUtils;
-import org.jooq.util.xml.jaxb.InformationSchema;
+import org.jooq.util.jaxb.tools.MiniJAXB;
 
 
 /**
@@ -116,6 +109,7 @@ public class GenerationTool {
     private ClassLoader             loader;
     private DataSource              dataSource;
     private Connection              connection;
+    private Boolean                 autoCommit;
     private boolean                 close;
 
     /**
@@ -130,7 +124,7 @@ public class GenerationTool {
     /**
      * The JDBC connection to use with this generation tool.
      * <p>
-     * If set, the configuration XML's <code>&lt;jdbc/></code> configuration is
+     * If set, the configuration XML's <code>&lt;jdbc/&gt;</code> configuration is
      * ignored, and this connection is used for meta data inspection, instead.
      */
     public void setConnection(Connection connection) {
@@ -140,7 +134,7 @@ public class GenerationTool {
     /**
      * The JDBC data source to use with this generation tool.
      * <p>
-     * If set, the configuration XML's <code>&lt;jdbc/></code> configuration is
+     * If set, the configuration XML's <code>&lt;jdbc/&gt;</code> configuration is
      * ignored, and this connection is used for meta data inspection, instead.
      */
     public void setDataSource(DataSource dataSource) {
@@ -223,8 +217,29 @@ public class GenerationTool {
         new GenerationTool().run(configuration);
     }
 
-    @SuppressWarnings("unchecked")
     public void run(Configuration configuration) throws Exception {
+        try {
+            run0(configuration);
+        }
+        catch (Exception e) {
+            OnError onError = configuration.getOnError();
+            if (onError == null) {
+                onError = OnError.FAIL;
+            }
+            switch (onError) {
+                case SILENT:
+                    break;
+                case LOG:
+                    log.warn("Code generation failed", e);
+                    break;
+                case FAIL:
+                    throw e;
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void run0(Configuration configuration) throws Exception {
         if (Boolean.getBoolean("jooq.codegen.skip")) {
             log.info("Skipping jOOQ code generation");
             return;
@@ -273,7 +288,9 @@ public class GenerationTool {
         if (g == null)
             throw new GeneratorException("The <generator/> tag is mandatory. For details, see " + Constants.NS_CODEGEN);
 
-        // Some default values for optional elements to avoid NPE's
+        // [#1394] The <generate/> element and some others should be optional
+        if (g.getGenerate() == null)
+            g.setGenerate(new Generate());
         if (g.getStrategy() == null)
             g.setStrategy(new Strategy());
         if (g.getTarget() == null)
@@ -307,6 +324,13 @@ public class GenerationTool {
                             j.setUsername(System.getProperty("jooq.codegen.jdbc.username"));
                         if (j.getPassword() == null)
                             j.setPassword(System.getProperty("jooq.codegen.jdbc.password"));
+
+                        if (j.isAutoCommit() == null) {
+                            String a = System.getProperty("jooq.codegen.jdbc.autoCommit");
+
+                            if (a != null)
+                                j.setAutoCommit(Boolean.valueOf(a));
+                        }
                     }
 
                     if (j != null) {
@@ -325,6 +349,10 @@ public class GenerationTool {
 
             j = defaultIfNull(j, new Jdbc());
 
+            if (connection != null && j.isAutoCommit() != null) {
+                autoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(j.isAutoCommit());
+            }
 
             // Initialise generator
             // --------------------
@@ -485,11 +513,14 @@ public class GenerationTool {
             database.setIncludePackageUDTs(!FALSE.equals(d.isIncludePackageUDTs()));
             database.setIncludePackageConstants(!FALSE.equals(d.isIncludePackageConstants()));
             database.setIncludeIndexes(!FALSE.equals(d.isIncludeIndexes()));
+            database.setIncludeCheckConstraints(!FALSE.equals(d.isIncludeCheckConstraints()));
+            database.setIncludeSystemCheckConstraints(TRUE.equals(d.isIncludeSystemCheckConstraints()));
             database.setIncludeInvisibleColumns(!FALSE.equals(d.isIncludeInvisibleColumns()));
             database.setIncludePrimaryKeys(!FALSE.equals(d.isIncludePrimaryKeys()));
             database.setIncludeRoutines(!FALSE.equals(d.isIncludeRoutines()));
             database.setIncludeSequences(!FALSE.equals(d.isIncludeSequences()));
             database.setIncludeTables(!FALSE.equals(d.isIncludeTables()));
+            database.setIncludeEmbeddables(!FALSE.equals(d.isIncludeEmbeddables()));
             database.setIncludeTriggerRoutines(TRUE.equals(d.isIncludeTriggerRoutines()));
             database.setIncludeUDTs(!FALSE.equals(d.isIncludeUDTs()));
             database.setIncludeUniqueKeys(!FALSE.equals(d.isIncludeUniqueKeys()));
@@ -502,11 +533,19 @@ public class GenerationTool {
             database.setConfiguredCustomTypes(d.getCustomTypes());
             database.setConfiguredEnumTypes(d.getEnumTypes());
             database.setConfiguredForcedTypes(d.getForcedTypes());
+            database.setConfiguredEmbeddables(d.getEmbeddables());
             database.setLogSlowQueriesAfterSeconds(defaultIfNull(g.getDatabase().getLogSlowQueriesAfterSeconds(), 5));
+            database.setLogSlowResultsAfterSeconds(defaultIfNull(g.getDatabase().getLogSlowResultsAfterSeconds(), 5));
 
-            if (d.getRegexFlags() != null)
+            if (d.getRegexFlags() != null) {
                 database.setRegexFlags(d.getRegexFlags());
+
+                if (strategy instanceof MatcherStrategy) {
+                    ((MatcherStrategy) strategy).getPatterns().setRegexFlags(d.getRegexFlags());
+                }
+            }
             database.setRegexMatchesPartialQualification(!FALSE.equals(d.isRegexMatchesPartialQualification()));
+            database.setSqlMatchesPartialQualification(!FALSE.equals(d.isSqlMatchesPartialQualification()));
 
             SchemaVersionProvider svp = null;
             CatalogVersionProvider cvp = null;
@@ -567,8 +606,12 @@ public class GenerationTool {
 
             if (d.isDateAsTimestamp() != null)
                 database.setDateAsTimestamp(d.isDateAsTimestamp());
+            if (g.getGenerate().isJavaTimeTypes() != null)
+                database.setJavaTimeTypes(g.getGenerate().isJavaTimeTypes());
             if (d.isUnsignedTypes() != null)
                 database.setSupportsUnsignedTypes(d.isUnsignedTypes());
+            if (d.isIntegerDisplayWidths() != null)
+                database.setIntegerDisplayWidths(d.isIntegerDisplayWidths());
             if (d.isIgnoreProcedureReturnValues() != null)
                 database.setIgnoreProcedureReturnValues(d.isIgnoreProcedureReturnValues());
 
@@ -589,9 +632,6 @@ public class GenerationTool {
             if (g.getTarget().isClean() != null)
                 generator.setTargetClean(g.getTarget().isClean());
 
-            // [#1394] The <generate/> element should be optional
-            if (g.getGenerate() == null)
-                g.setGenerate(new Generate());
             if (g.getGenerate().isIndexes() != null)
                 generator.setGenerateIndexes(g.getGenerate().isIndexes());
             if (g.getGenerate().isRelations() != null)
@@ -616,6 +656,8 @@ public class GenerationTool {
                 generator.setGenerateUDTs(g.getGenerate().isUdts());
             if (g.getGenerate().isTables() != null)
                 generator.setGenerateTables(g.getGenerate().isTables());
+            if (g.getGenerate().isEmbeddables() != null)
+                generator.setGenerateEmbeddables(g.getGenerate().isEmbeddables());
             if (g.getGenerate().isRecords() != null)
                 generator.setGenerateRecords(g.getGenerate().isRecords());
             if (g.getGenerate().isRecordsImplementingRecordN() != null)
@@ -749,16 +791,27 @@ public class GenerationTool {
             strategy.setJavaBeansGettersAndSetters(generator.generateJavaBeansGettersAndSetters());
 
 
-            if (true)
-                ;
-            else
 
-                if (g.getGenerate().isJavaTimeTypes() != null) {
-                    log.warn("INVALID CONFIG", "The java.time API cannot be used in the Java 6 distribution of jOOQ 3.9+");
-                    generator.setGenerateJavaTimeTypes(false);
-                }
+
+
+
+
+
+
+
+
+
+
+
 
             generator.generate(database);
+
+            if (!database.getUnusedForcedTypes().isEmpty()) {
+                log.info("Unused ForcedTypes", "There are unused forced types, which have not been used by this generation run. This can be because of misconfigurations (e.g. bad regular expressions, which do not take into account case sensitivity or object qualification) or because the forced type is obsolete.");
+
+                for (ForcedType f : database.getUnusedForcedTypes())
+                    log.info("Unused ForcedType", f);
+            }
         }
         finally {
             if (database != null)
@@ -770,8 +823,12 @@ public class GenerationTool {
                 }
 
             // Close connection only if it was created by the GenerationTool
-            if (close && connection != null)
-                connection.close();
+            if (connection != null) {
+                if (close)
+                    connection.close();
+                else if (autoCommit != null)
+                    connection.setAutoCommit(autoCommit);
+            }
         }
     }
 
@@ -823,12 +880,7 @@ public class GenerationTool {
             // [#2283] If no explicit class loader was provided try loading the class
             // with "default" techniques
             if (loader == null) {
-                try {
-                    return Class.forName(className);
-                }
-                catch (ClassNotFoundException e) {
-                    return Thread.currentThread().getContextClassLoader().loadClass(className);
-                }
+                return loadClass0(className);
             }
 
             // Prefer the explicit class loader if available
@@ -840,10 +892,22 @@ public class GenerationTool {
         catch (ClassNotFoundException e) {
             String message = null;
 
-            // [#7556]
+            // [#7556] [#8781]
             if (className.startsWith("org.jooq.util.")) {
+                String alternative = null;
+
+                alternativeLoop:
+                for (String pkg : new String[] { "org.jooq.meta", "org.jooq.meta.extensions", "org.jooq.codegen", "org.jooq.codegen.maven" }) {
+                    try {
+                        alternative = loadClass0(className.replace("org.jooq.util", pkg)).getName();
+                        break alternativeLoop;
+                    }
+                    catch (ClassNotFoundException ignore) {}
+                }
+
                 log.warn("Type not found", message =
-                    "Your configured org.jooq.util type was not found.\n"
+                    "Your configured " + className + " type was not found.\n"
+                  + (alternative != null ? ("Did you mean " + alternative + "?\n") : "")
                   + "Do note that in jOOQ 3.11, jOOQ-meta and jOOQ-codegen packages have been renamed. New package names are:\n"
                   + "- org.jooq.meta\n"
                   + "- org.jooq.meta.extensions\n"
@@ -864,6 +928,15 @@ public class GenerationTool {
                 throw e;
             else
                 throw new ClassNotFoundException(message, e);
+        }
+    }
+
+    private Class<?> loadClass0(String className) throws ClassNotFoundException {
+        try {
+            return Class.forName(className);
+        }
+        catch (ClassNotFoundException e) {
+            return Thread.currentThread().getContextClassLoader().loadClass(className);
         }
     }
 
@@ -910,41 +983,6 @@ public class GenerationTool {
             "<(\\w+:)?configuration xmlns(:\\w+)?=\"http://www.jooq.org/xsd/jooq-codegen-\\d+\\.\\d+\\.\\d+.xsd\">",
             "<$1configuration xmlns$2=\"" + Constants.NS_CODEGEN + "\">");
 
-        xml = xml.replace(
-            "<configuration>",
-            "<configuration xmlns=\"" + Constants.NS_CODEGEN + "\">");
-
-        try {
-            SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            javax.xml.validation.Schema schema = sf.newSchema(
-                GenerationTool.class.getResource("/xsd/" + Constants.XSD_CODEGEN)
-            );
-
-            JAXBContext ctx = JAXBContext.newInstance(Configuration.class);
-            Unmarshaller unmarshaller = ctx.createUnmarshaller();
-            unmarshaller.setSchema(schema);
-            unmarshaller.setEventHandler(new ValidationEventHandler() {
-                @Override
-                public boolean handleEvent(ValidationEvent event) {
-                    log.warn("Unmarshal warning", event.getMessage());
-                    return true;
-                }
-            });
-
-            // [#7579] [#8044] Workaround for obscure JAXB bug on JDK 9+
-            xml = MiniJAXB.jaxbNamespaceBugWorkaround(xml, new InformationSchema());
-
-            return (Configuration) unmarshaller.unmarshal(new StringReader(xml));
-        }
-        catch (Throwable t) {
-
-            // [#7734] If JAXB cannot be loaded, try using our own
-            if (ExceptionTools.getCause(t, ClassNotFoundException.class) != null ||
-                ExceptionTools.getCause(t, Error.class) != null) {
-                return MiniJAXB.unmarshal(xml, Configuration.class);
-            }
-
-            throw new GeneratorException("Error while reading XML configuration", t);
-        }
+        return MiniJAXB.unmarshal(xml, Configuration.class);
     }
 }

@@ -39,6 +39,7 @@ package org.jooq.impl;
 
 import static org.jooq.impl.DefaultBinding.binding;
 import static org.jooq.impl.DefaultBinding.DefaultRecordBinding.pgNewRecord;
+import static org.jooq.impl.Names.N_ROW;
 import static org.jooq.impl.Tools.BooleanDataKey.DATA_LIST_ALREADY_INDENTED;
 
 import org.jooq.Context;
@@ -63,7 +64,7 @@ final class RowField<ROW extends Row, REC extends Record> extends AbstractField<
     private final Field<?>[]  emulatedFields;
 
     RowField(ROW row) {
-        this(row, DSL.name("row"));
+        this(row, N_ROW);
     }
 
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
@@ -108,7 +109,7 @@ final class RowField<ROW extends Row, REC extends Record> extends AbstractField<
             Object previous = ctx.data(DATA_LIST_ALREADY_INDENTED);
 
             ctx.data(DATA_LIST_ALREADY_INDENTED, true);
-            ctx.visit(new SelectFieldList<Field<?>>(emulatedFields()));
+            ctx.visit(new SelectFieldList<>(emulatedFields()));
             ctx.data(DATA_LIST_ALREADY_INDENTED, previous);
         }
         else {
@@ -118,7 +119,7 @@ final class RowField<ROW extends Row, REC extends Record> extends AbstractField<
 
     @Override
     public Field<REC> as(Name alias) {
-        return new RowField<ROW, REC>(row, alias);
+        return new RowField<>(row, alias);
     }
 
     @Override

@@ -39,11 +39,15 @@ package org.jooq;
 
 // ...
 // ...
+// ...
+// ...
 import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
+// ...
 // ...
 
 import org.jooq.impl.DSL;
@@ -97,20 +101,20 @@ public interface AlterViewStep {
      * Add a <code>RENAME TO</code> clause to the <code>ALTER VIEW</code>
      * statement.
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterViewFinalStep renameTo(Table<?> newName);
 
     /**
      * Add a <code>RENAME TO</code> clause to the <code>ALTER VIEW</code>
      * statement.
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterViewFinalStep renameTo(Name newName);
 
     /**
      * Add a <code>RENAME TO</code> clause to the <code>ALTER VIEW</code>
      * statement.
      */
-    @Support({ HSQLDB, POSTGRES })
+    @Support({ H2, HSQLDB, POSTGRES })
     AlterViewFinalStep renameTo(String newName);
 }

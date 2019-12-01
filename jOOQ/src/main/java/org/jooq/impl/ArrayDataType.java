@@ -37,8 +37,12 @@
  */
 package org.jooq.impl;
 
+import org.jooq.CharacterSet;
+import org.jooq.Collation;
 import org.jooq.Configuration;
 import org.jooq.DataType;
+import org.jooq.Field;
+import org.jooq.Nullability;
 
 /**
  * A wrapper for anonymous array data types
@@ -60,6 +64,53 @@ final class ArrayDataType<T> extends DefaultDataType<T[]> {
         this.elementType = elementType;
     }
 
+    /**
+     * [#3225] Performant constructor for creating derived types.
+     */
+    ArrayDataType(
+        DefaultDataType<T[]> t,
+        DataType<T> elementType,
+        int precision,
+        int scale,
+        int length,
+        Nullability nullability,
+        Collation collation,
+        CharacterSet characterSet,
+        boolean identity,
+        Field<T[]> defaultValue
+    ) {
+        super(t, precision, scale, length, nullability, collation, characterSet, identity, defaultValue);
+
+        this.elementType= elementType;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    DefaultDataType<T[]> construct(
+        int newPrecision,
+        int newScale,
+        int newLength,
+        Nullability
+        newNullability,
+        Collation newCollation,
+        CharacterSet newCharacterSet,
+        boolean newIdentity,
+        Field<T[]> newDefaultValue
+    ) {
+        return new ArrayDataType<>(
+            this,
+            (DefaultDataType<T>) elementType,
+            newPrecision,
+            newScale,
+            newLength,
+            newNullability,
+            newCollation,
+            newCharacterSet,
+            newIdentity,
+            (Field) newDefaultValue
+        );
+    }
+
     @Override
     public final String getTypeName(Configuration configuration) {
         String typeName = elementType.getTypeName(configuration);
@@ -76,6 +127,7 @@ final class ArrayDataType<T> extends DefaultDataType<T[]> {
         switch (configuration.family()) {
             case HSQLDB:
                 return dataType + " array";
+
 
 
 

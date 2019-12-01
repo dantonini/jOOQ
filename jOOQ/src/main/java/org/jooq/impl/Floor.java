@@ -37,13 +37,16 @@
  */
 package org.jooq.impl;
 
-import org.jooq.Configuration;
+import static org.jooq.impl.Keywords.F_FLOOR;
+import static org.jooq.impl.Names.N_FLOOR;
+
+import org.jooq.Context;
 import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class Floor<T extends Number> extends AbstractFunction<T> {
+final class Floor<T extends Number> extends AbstractField<T> {
 
     /**
      * Generated UID
@@ -53,14 +56,14 @@ final class Floor<T extends Number> extends AbstractFunction<T> {
     private final Field<T>    argument;
 
     Floor(Field<T> argument) {
-        super("floor", argument.getDataType(), argument);
+        super(N_FLOOR, argument.getDataType());
 
         this.argument = argument;
     }
 
     @Override
-    final Field<T> getFunction0(Configuration configuration) {
-        switch (configuration.dialect()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
 
 
 
@@ -68,10 +71,13 @@ final class Floor<T extends Number> extends AbstractFunction<T> {
 
             // [#8275] Improved emulation for SQLite
             case SQLITE:
-                return DSL.field("({cast}({0} {as} {bigint}) - ({0} < {cast}({0} {as} {bigint})))", getDataType(), argument);
+                Field<Long> cast = DSL.cast(argument, SQLDataType.BIGINT);
+                ctx.sql('(').visit(cast).sql(" - (").visit(argument).sql(" < ").visit(cast).sql("))");
+                break;
 
             default:
-                return DSL.field("{floor}({0})", getDataType(), argument);
+                ctx.visit(F_FLOOR).sql('(').visit(argument).sql(')');
+                break;
         }
     }
 }

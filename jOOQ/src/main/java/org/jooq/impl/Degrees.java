@@ -39,16 +39,19 @@ package org.jooq.impl;
 
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.pi;
+import static org.jooq.impl.Keywords.F_DEGREES;
+import static org.jooq.impl.Names.N_DEGREES;
+import static org.jooq.impl.Tools.castIfNeeded;
 
 import java.math.BigDecimal;
 
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class Degrees extends AbstractFunction<BigDecimal> {
+final class Degrees extends AbstractField<BigDecimal> {
 
     /**
      * Generated UID
@@ -58,14 +61,15 @@ final class Degrees extends AbstractFunction<BigDecimal> {
     private final Field<?>    argument;
 
     Degrees(Field<?> argument) {
-        super("degrees", SQLDataType.NUMERIC, argument);
+        super(N_DEGREES, SQLDataType.NUMERIC);
 
         this.argument = argument;
     }
 
     @Override
-    final Field<BigDecimal> getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
@@ -76,10 +80,12 @@ final class Degrees extends AbstractFunction<BigDecimal> {
 
             case FIREBIRD:
             case SQLITE:
-                return argument.cast(BigDecimal.class).mul(inline(180)).div(pi());
+                ctx.visit(castIfNeeded(argument, BigDecimal.class).mul(inline(180)).div(pi()));
+                break;
 
             default:
-                return DSL.field("{degrees}({0})", SQLDataType.NUMERIC, argument);
+                ctx.visit(F_DEGREES).sql('(').visit(argument).sql(')');
+                break;
         }
     }
 }

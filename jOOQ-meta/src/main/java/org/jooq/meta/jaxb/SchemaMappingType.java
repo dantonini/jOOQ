@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.meta.jaxb;
 
 import java.io.Serializable;
@@ -15,6 +8,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -30,7 +25,7 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class SchemaMappingType implements Serializable
+public class SchemaMappingType implements Serializable, XMLAppendable
 {
 
     private final static long serialVersionUID = 31200L;
@@ -45,21 +40,13 @@ public class SchemaMappingType implements Serializable
     /**
      * See also {@link Database#getInputSchema()}
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getInputSchema() {
         return inputSchema;
     }
 
     /**
-     * Sets the value of the inputSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * See also {@link Database#getInputSchema()}
      *
      */
     public void setInputSchema(String value) {
@@ -69,21 +56,13 @@ public class SchemaMappingType implements Serializable
     /**
      * See also {@link Database#getOutputSchema()}
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getOutputSchema() {
         return outputSchema;
     }
 
     /**
-     * Sets the value of the outputSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * See also {@link Database#getOutputSchema()}
      *
      */
     public void setOutputSchema(String value) {
@@ -114,11 +93,19 @@ public class SchemaMappingType implements Serializable
         this.outputSchemaToDefault = value;
     }
 
+    /**
+     * See also {@link Database#getInputSchema()}
+     *
+     */
     public SchemaMappingType withInputSchema(String value) {
         setInputSchema(value);
         return this;
     }
 
+    /**
+     * See also {@link Database#getOutputSchema()}
+     *
+     */
     public SchemaMappingType withOutputSchema(String value) {
         setOutputSchema(value);
         return this;
@@ -130,24 +117,17 @@ public class SchemaMappingType implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("inputSchema", inputSchema);
+        builder.append("outputSchema", outputSchema);
+        builder.append("outputSchemaToDefault", outputSchemaToDefault);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (inputSchema!= null) {
-            sb.append("<inputSchema>");
-            sb.append(inputSchema);
-            sb.append("</inputSchema>");
-        }
-        if (outputSchema!= null) {
-            sb.append("<outputSchema>");
-            sb.append(outputSchema);
-            sb.append("</outputSchema>");
-        }
-        if (outputSchemaToDefault!= null) {
-            sb.append("<outputSchemaToDefault>");
-            sb.append(outputSchemaToDefault);
-            sb.append("</outputSchemaToDefault>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

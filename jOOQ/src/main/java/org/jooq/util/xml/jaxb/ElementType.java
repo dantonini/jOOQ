@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.util.xml.jaxb;
 
 import java.io.Serializable;
@@ -15,6 +8,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -53,10 +48,10 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class ElementType implements Serializable
+public class ElementType implements Serializable, XMLAppendable
 {
 
-    private final static long serialVersionUID = 31200L;
+    private final static long serialVersionUID = 31300L;
     @XmlElement(name = "object_catalog")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String objectCatalog;
@@ -88,266 +83,90 @@ public class ElementType implements Serializable
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String udtName;
 
-    /**
-     * Gets the value of the objectCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getObjectCatalog() {
         return objectCatalog;
     }
 
-    /**
-     * Sets the value of the objectCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setObjectCatalog(String value) {
         this.objectCatalog = value;
     }
 
-    /**
-     * Gets the value of the objectSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getObjectSchema() {
         return objectSchema;
     }
 
-    /**
-     * Sets the value of the objectSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setObjectSchema(String value) {
         this.objectSchema = value;
     }
 
-    /**
-     * Gets the value of the objectName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getObjectName() {
         return objectName;
     }
 
-    /**
-     * Sets the value of the objectName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setObjectName(String value) {
         this.objectName = value;
     }
 
-    /**
-     * Gets the value of the objectType property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getObjectType() {
         return objectType;
     }
 
-    /**
-     * Sets the value of the objectType property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setObjectType(String value) {
         this.objectType = value;
     }
 
-    /**
-     * Gets the value of the dataType property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getDataType() {
         return dataType;
     }
 
-    /**
-     * Sets the value of the dataType property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setDataType(String value) {
         this.dataType = value;
     }
 
-    /**
-     * Gets the value of the characterMaximumLength property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getCharacterMaximumLength() {
         return characterMaximumLength;
     }
 
-    /**
-     * Sets the value of the characterMaximumLength property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setCharacterMaximumLength(Integer value) {
         this.characterMaximumLength = value;
     }
 
-    /**
-     * Gets the value of the numericPrecision property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getNumericPrecision() {
         return numericPrecision;
     }
 
-    /**
-     * Sets the value of the numericPrecision property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setNumericPrecision(Integer value) {
         this.numericPrecision = value;
     }
 
-    /**
-     * Gets the value of the numericScale property.
-     *
-     * @return
-     *     possible object is
-     *     {@link Integer }
-     *
-     */
     public Integer getNumericScale() {
         return numericScale;
     }
 
-    /**
-     * Sets the value of the numericScale property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link Integer }
-     *
-     */
     public void setNumericScale(Integer value) {
         this.numericScale = value;
     }
 
-    /**
-     * Gets the value of the udtCatalog property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtCatalog() {
         return udtCatalog;
     }
 
-    /**
-     * Sets the value of the udtCatalog property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtCatalog(String value) {
         this.udtCatalog = value;
     }
 
-    /**
-     * Gets the value of the udtSchema property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtSchema() {
         return udtSchema;
     }
 
-    /**
-     * Sets the value of the udtSchema property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtSchema(String value) {
         this.udtSchema = value;
     }
 
-    /**
-     * Gets the value of the udtName property.
-     *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
-     */
     public String getUdtName() {
         return udtName;
     }
 
-    /**
-     * Sets the value of the udtName property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *
-     */
     public void setUdtName(String value) {
         this.udtName = value;
     }
@@ -408,64 +227,25 @@ public class ElementType implements Serializable
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("object_catalog", objectCatalog);
+        builder.append("object_schema", objectSchema);
+        builder.append("object_name", objectName);
+        builder.append("object_type", objectType);
+        builder.append("data_type", dataType);
+        builder.append("character_maximum_length", characterMaximumLength);
+        builder.append("numeric_precision", numericPrecision);
+        builder.append("numeric_scale", numericScale);
+        builder.append("udt_catalog", udtCatalog);
+        builder.append("udt_schema", udtSchema);
+        builder.append("udt_name", udtName);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (objectCatalog!= null) {
-            sb.append("<object_catalog>");
-            sb.append(objectCatalog);
-            sb.append("</object_catalog>");
-        }
-        if (objectSchema!= null) {
-            sb.append("<object_schema>");
-            sb.append(objectSchema);
-            sb.append("</object_schema>");
-        }
-        if (objectName!= null) {
-            sb.append("<object_name>");
-            sb.append(objectName);
-            sb.append("</object_name>");
-        }
-        if (objectType!= null) {
-            sb.append("<object_type>");
-            sb.append(objectType);
-            sb.append("</object_type>");
-        }
-        if (dataType!= null) {
-            sb.append("<data_type>");
-            sb.append(dataType);
-            sb.append("</data_type>");
-        }
-        if (characterMaximumLength!= null) {
-            sb.append("<character_maximum_length>");
-            sb.append(characterMaximumLength);
-            sb.append("</character_maximum_length>");
-        }
-        if (numericPrecision!= null) {
-            sb.append("<numeric_precision>");
-            sb.append(numericPrecision);
-            sb.append("</numeric_precision>");
-        }
-        if (numericScale!= null) {
-            sb.append("<numeric_scale>");
-            sb.append(numericScale);
-            sb.append("</numeric_scale>");
-        }
-        if (udtCatalog!= null) {
-            sb.append("<udt_catalog>");
-            sb.append(udtCatalog);
-            sb.append("</udt_catalog>");
-        }
-        if (udtSchema!= null) {
-            sb.append("<udt_schema>");
-            sb.append(udtSchema);
-            sb.append("</udt_schema>");
-        }
-        if (udtName!= null) {
-            sb.append("<udt_name>");
-            sb.append(udtName);
-            sb.append("</udt_name>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override

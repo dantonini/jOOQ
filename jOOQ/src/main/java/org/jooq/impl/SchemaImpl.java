@@ -62,6 +62,7 @@ import org.jooq.UDT;
  *
  * @author Lukas Eder
  */
+@org.jooq.Internal
 public class SchemaImpl extends AbstractNamed implements Schema {
 
     private static final long     serialVersionUID = -8101463810207566546L;
@@ -116,7 +117,8 @@ public class SchemaImpl extends AbstractNamed implements Schema {
             }
         }
 
-        ctx.visit(getUnqualifiedName());
+        Schema mappedSchema = Tools.getMappedSchema(ctx.configuration(), this);
+        ctx.visit(mappedSchema != null ? mappedSchema.getUnqualifiedName() : getUnqualifiedName());
     }
 
     @Override

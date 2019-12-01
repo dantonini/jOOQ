@@ -3,9 +3,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jooq</groupId>
+    <parent>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-examples</artifactId>
+        <version>3.13.0-SNAPSHOT</version>
+    </parent>
+
     <artifactId>jooq-oracle-example</artifactId>
-    <version>1.0</version>
     <name>jOOQ Oracle Example</name>
 
     <licenses>
@@ -18,8 +22,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <org.jooq.version>3.12.0-SNAPSHOT</org.jooq.version>
-        <db.oracle.version>11</db.oracle.version>
+        <db.oracle.version>19.3.0.0</db.oracle.version>
     </properties>
 
     <dependencies>
@@ -28,14 +31,12 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>${org.jooq.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc6</artifactId>
+            <groupId>com.oracle.ojdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
             <version>${db.oracle.version}</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/ojdbc6.jar</systemPath>
         </dependency>
 
         <!-- Logging -->
@@ -66,13 +67,13 @@
                     <maxmem>1024m</maxmem>
                     <meminitial>256m</meminitial>
                     <encoding>UTF-8</encoding>
-                    <!-- [java-9] -->
-                    <release>10</release>
-                    <!-- [/java-9] -->
+
+
+
 
                     <!-- IntelliJ needs these https://youtrack.jetbrains.com/issue/IDEA-195472 -->
-                    <source>10</source>
-                    <target>10</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
 
                     <debug>true</debug>
                     <debuglevel>lines,vars,source</debuglevel>
@@ -85,7 +86,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
+                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <phase>initialize</phase>
@@ -137,11 +138,9 @@
 
                 <dependencies>
                     <dependency>
-                        <groupId>com.oracle</groupId>
-                        <artifactId>ojdbc6</artifactId>
+                        <groupId>com.oracle.ojdbc</groupId>
+                        <artifactId>ojdbc8</artifactId>
                         <version>${db.oracle.version}</version>
-                        <scope>system</scope>
-                        <systemPath>${basedir}/lib/ojdbc6.jar</systemPath>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -150,7 +149,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>${org.jooq.version}</version>
+                <version>${project.version}</version>
 
                 <executions>
                     <execution>
@@ -203,11 +202,9 @@
 
                 <dependencies>
                     <dependency>
-                        <groupId>com.oracle</groupId>
-                        <artifactId>ojdbc6</artifactId>
+                        <groupId>com.oracle.ojdbc</groupId>
+                        <artifactId>ojdbc8</artifactId>
                         <version>${db.oracle.version}</version>
-                        <scope>system</scope>
-                        <systemPath>${basedir}/lib/ojdbc6.jar</systemPath>
                     </dependency>
                 </dependencies>
             </plugin>

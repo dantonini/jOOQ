@@ -38,13 +38,12 @@
 package org.jooq.tools.jdbc;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.io.StringReader;
+
+import org.jooq.Source;
 
 /**
  * A configuration object for the {@link MockFileDatabase}.
@@ -71,20 +70,24 @@ public final class MockFileDatabaseConfiguration {
         this.nullLiteral = nullLiteral;
     }
 
-    public final MockFileDatabaseConfiguration source(File file) throws IOException {
-        return source(file, "UTF-8");
+    public final MockFileDatabaseConfiguration source(File file) {
+        return source(Source.of(file, "UTF-8"));
     }
 
-    public final MockFileDatabaseConfiguration source(File file, String encoding) throws IOException {
-        return source(new FileInputStream(file), encoding);
+    public final MockFileDatabaseConfiguration source(File file, String encoding) {
+        return source(Source.of(file, encoding));
     }
 
-    public final MockFileDatabaseConfiguration source(InputStream stream) throws IOException {
-        return source(stream, "UTF-8");
+    public final MockFileDatabaseConfiguration source(InputStream stream) {
+        return source(Source.of(stream, "UTF-8"));
     }
 
-    public final MockFileDatabaseConfiguration source(InputStream stream, String encoding) throws IOException {
-        return source(new InputStreamReader(stream, encoding));
+    public final MockFileDatabaseConfiguration source(InputStream stream, String encoding) {
+        return source(Source.of(stream, encoding));
+    }
+
+    public final MockFileDatabaseConfiguration source(Source source) {
+        return source(source.reader());
     }
 
     public final MockFileDatabaseConfiguration source(Reader reader) {
@@ -92,7 +95,7 @@ public final class MockFileDatabaseConfiguration {
     }
 
     public final MockFileDatabaseConfiguration source(String string) {
-        return source(new StringReader(string));
+        return source(Source.of(string));
     }
 
     public final MockFileDatabaseConfiguration patterns(boolean newPatterns) {

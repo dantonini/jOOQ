@@ -38,6 +38,7 @@
 package org.jooq.impl;
 
 import org.jooq.Binding;
+import org.jooq.Check;
 import org.jooq.Converter;
 import org.jooq.DataType;
 import org.jooq.ForeignKey;
@@ -47,6 +48,8 @@ import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.Parameter;
 import org.jooq.Record;
+import org.jooq.Schema;
+import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
@@ -59,7 +62,15 @@ import org.jooq.UniqueKey;
  *
  * @author Lukas Eder
  */
+@org.jooq.Internal
 public final class Internal {
+
+    /**
+     * Factory method for embeddable types.
+     */
+    public static final <R extends Record, T extends Record> TableField<R, T> createEmbeddable(Name name, Class<T> recordType, Table<R> table, TableField<R, ?>... fields) {
+        return new EmbeddableTableField<>(name, recordType, table, fields);
+    }
 
     /**
      * Factory method for indexes.
@@ -79,7 +90,7 @@ public final class Internal {
      * Factory method for identities.
      */
     public static final <R extends Record, T> Identity<R, T> createIdentity(Table<R> table, TableField<R, T> field) {
-        return new IdentityImpl<R, T>(table, field);
+        return new IdentityImpl<>(table, field);
     }
 
     /**
@@ -89,7 +100,7 @@ public final class Internal {
     @SafeVarargs
 
     public static final <R extends Record> UniqueKey<R> createUniqueKey(Table<R> table, TableField<R, ?>... fields) {
-        return new UniqueKeyImpl<R>(table, fields);
+        return new UniqueKeyImpl<>(table, fields);
     }
 
     /**
@@ -99,7 +110,7 @@ public final class Internal {
     @SafeVarargs
 
     public static final <R extends Record> UniqueKey<R> createUniqueKey(Table<R> table, String name, TableField<R, ?>... fields) {
-        return new UniqueKeyImpl<R>(table, name, fields);
+        return new UniqueKeyImpl<>(table, name, fields);
     }
 
     /**
@@ -119,12 +130,33 @@ public final class Internal {
     @SafeVarargs
 
     public static final <R extends Record, U extends Record> ForeignKey<R, U> createForeignKey(UniqueKey<U> key, Table<R> table, String name, TableField<R, ?>... fields) {
-        ForeignKey<R, U> result = new ReferenceImpl<R, U>(key, table, name, fields);
+        ForeignKey<R, U> result = new ReferenceImpl<>(key, table, name, fields);
 
         if (key instanceof UniqueKeyImpl)
             ((UniqueKeyImpl<U>) key).references.add(result);
 
         return result;
+    }
+
+    /**
+     * Factory method for sequences.
+     */
+    public static final <T extends Number> Sequence<T> createSequence(String name, Schema schema, DataType<T> type) {
+        return new SequenceImpl<>(name, schema, type, false);
+    }
+
+    /**
+     * Factory method for sequences.
+     */
+    public static final <T extends Number> Sequence<T> createSequence(String name, Schema schema, DataType<T> type, Long startWith, Long incrementBy, Long minValue, Long maxValue, boolean cycle, Long cache) {
+        return new SequenceImpl<>(DSL.name(name), schema, type, false, Tools.field(startWith, type), Tools.field(incrementBy, type), Tools.field(minValue, type), Tools.field(maxValue, type), cycle, Tools.field(cache, type));
+    }
+
+    /**
+     * Factory method for check constraints.
+     */
+    public static final <R extends Record> Check<R> createCheck(Table<R> table, Name name, String condition) {
+        return new CheckImpl<>(table, name, DSL.condition(condition));
     }
 
     /**
@@ -176,7 +208,7 @@ public final class Internal {
             ? (DataType<U>) type
             : type.asConvertedDataType(actualBinding);
 
-        return new ParameterImpl<U>(name, actualType, actualBinding, isDefaulted, isUnnamed);
+        return new ParameterImpl<>(name, actualType, actualBinding, isDefaulted, isUnnamed);
     }
 
     private Internal() {}

@@ -37,8 +37,10 @@
  */
 package org.jooq.impl;
 
+import static org.jooq.impl.DSL.keyword;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.zero;
+import static org.jooq.impl.Names.N_WIDTH_BUCKET;
 
 import org.jooq.Context;
 import org.jooq.Field;
@@ -58,7 +60,7 @@ final class WidthBucket<T extends Number> extends AbstractField<T> {
     private final Field<Integer> buckets;
 
     WidthBucket(Field<T> field, Field<T> low, Field<T> high, Field<Integer> buckets) {
-        super(DSL.name("width_bucket"), field.getDataType());
+        super(N_WIDTH_BUCKET, field.getDataType());
 
         this.field = field;
         this.low = low;
@@ -78,8 +80,9 @@ final class WidthBucket<T extends Number> extends AbstractField<T> {
 
 
 
+
             case POSTGRES:
-                ctx.visit(DSL.field("{width_bucket}({0}, {1}, {2}, {3})", getType(), field, low, high, buckets));
+                ctx.visit(keyword("width_bucket")).sql('(').visit(field).sql(", ").visit(low).sql(", ").visit(high).sql(", ").visit(buckets).sql(')');
                 break;
 
             default:

@@ -37,6 +37,7 @@
  */
 package org.jooq.impl;
 
+import org.jooq.Keyword;
 import org.jooq.Name;
 // ...
 import org.jooq.SQLDialect;
@@ -69,6 +70,7 @@ enum Term {
         @Override
         public String translate(SQLDialect dialect) {
             switch (dialect.family()) {
+
 
 
 
@@ -148,6 +150,7 @@ enum Term {
 
 
 
+
                 case CUBRID:
                 case H2:
                 case HSQLDB:
@@ -155,6 +158,7 @@ enum Term {
                 case MYSQL:
                 case SQLITE:
                     return "group_concat";
+
 
 
 
@@ -241,12 +245,14 @@ enum Term {
 
 
 
+
             return "stddev_pop";
         }
     },
     STDDEV_SAMP {
         @Override
         public String translate(SQLDialect dialect) {
+
 
 
 
@@ -283,6 +289,7 @@ enum Term {
 
 
 
+
             return "var_pop";
         }
     },
@@ -304,17 +311,20 @@ enum Term {
 
 
 
+
             return "var_samp";
         }
     },
 
     ;
 
-    private final Name   name;
-    private final String translation;
+    private final Name    name;
+    private final Keyword keyword;
+    private final String  translation;
 
     private Term() {
         this.name = DSL.name(name());
+        this.keyword = DSL.keyword(name());
         this.translation = name().toLowerCase();
     }
 
@@ -325,6 +335,10 @@ enum Term {
 
     public final Name toName() {
         return name;
+    }
+
+    public Keyword toKeyword() {
+        return keyword;
     }
 
     /**

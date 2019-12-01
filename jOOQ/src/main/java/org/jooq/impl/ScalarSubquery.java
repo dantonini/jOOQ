@@ -38,6 +38,8 @@
 
 package org.jooq.impl;
 
+import static org.jooq.impl.Names.N_SELECT;
+
 import org.jooq.Context;
 import org.jooq.DataType;
 import org.jooq.Field;
@@ -53,14 +55,14 @@ final class ScalarSubquery<T> extends AbstractField<T> {
     final Select<?>           query;
 
     ScalarSubquery(Select<?> query, DataType<T> type) {
-        super(DSL.name("select"), type);
+        super(N_SELECT, type);
 
         this.query = query;
     }
 
     @Override
     public final Field<T> as(Name alias) {
-        return new FieldAlias<T>(this, alias);
+        return new FieldAlias<>(this, alias);
     }
 
     @Override

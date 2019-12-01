@@ -41,6 +41,9 @@ import static org.jooq.Clause.CONDITION;
 import static org.jooq.Clause.CONDITION_NOT;
 import static org.jooq.impl.DSL.condition;
 import static org.jooq.impl.DSL.not;
+import static org.jooq.impl.Keywords.K_NOT;
+import static org.jooq.impl.Names.N_NOT;
+import static org.jooq.impl.SQLDataType.BOOLEAN;
 
 import org.jooq.Clause;
 import org.jooq.Context;
@@ -54,7 +57,7 @@ final class NotField extends AbstractField<Boolean> {
     private final Field<Boolean>  field;
 
     NotField(Field<Boolean> field) {
-        super(DSL.name("not"), field.getDataType());
+        super(N_NOT, BOOLEAN);
         this.field = field;
     }
 
@@ -85,6 +88,8 @@ final class NotField extends AbstractField<Boolean> {
 
 
 
+
+
             // Native support
             case DERBY:
             case H2:
@@ -94,7 +99,10 @@ final class NotField extends AbstractField<Boolean> {
             case POSTGRES:
             case SQLITE:
             default:
-                ctx.visit(DSL.field("{not}({0})", getDataType(), field));
+                ctx.visit(K_NOT)
+                    .sql('(')
+                    .visit(Tools.hasDefaultConverter(field) ? field : condition(field))
+                    .sql(')');
                 break;
         }
     }

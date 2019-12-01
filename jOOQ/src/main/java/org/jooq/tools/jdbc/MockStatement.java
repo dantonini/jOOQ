@@ -116,15 +116,14 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
     public MockStatement(MockConnection connection, MockDataProvider data, String sql) {
         this.connection = connection;
         this.data = data;
-        this.sql = new ArrayList<String>();
-        this.bindings = new ArrayList<List<Object>>();
-        this.outParameterTypes = new ArrayList<Integer>();
+        this.sql = new ArrayList<>();
+        this.bindings = new ArrayList<>();
+        this.outParameterTypes = new ArrayList<>();
 
-        if (sql != null) {
+        if (sql != null)
             this.sql.add(sql);
-        }
 
-        this.bindings.add(new ArrayList<Object>());
+        this.bindings.add(new ArrayList<>());
     }
 
     // -------------------------------------------------------------------------
@@ -138,21 +137,25 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
     private void ensureBindingsCapacity(int index) {
         List<Object> b = bindings();
 
-        if (b.size() < index) {
+        if (b.size() < index)
             b.addAll(nCopies(index - b.size(), null));
-        }
     }
 
     private void ensureOutParameterTypesCapacity(int index) {
-        if (outParameterTypes.size() < index) {
+        if (outParameterTypes.size() < index)
             outParameterTypes.addAll(nCopies(index - outParameterTypes.size(), (Integer) null));
-        }
     }
 
     private void checkNotClosed() throws SQLException {
-        if (isClosed) {
+        if (isClosed)
             throw new SQLException("Connection is already closed");
-        }
+    }
+
+    private boolean checkException() throws SQLException {
+        if (result[resultIndex].exception != null)
+            throw result[resultIndex].exception;
+        else
+            return true;
     }
 
     @Override
@@ -188,6 +191,7 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
         result = data.execute(context);
         return result != null
             && result.length > 0
+            && checkException()
             && result[resultIndex].data != null
 
             // [#8113] The first result may be the generated keys
@@ -217,7 +221,7 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
 
     @Override
     public boolean getMoreResults(int current) throws SQLException {
-        return (result != null && ++resultIndex < result.length);
+        return (result != null && ++resultIndex < result.length) && checkException();
     }
 
     @Override
@@ -314,7 +318,7 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
     @Override
     public void addBatch() throws SQLException {
         checkNotClosed();
-        bindings.add(new ArrayList<Object>());
+        bindings.add(new ArrayList<>());
     }
 
     @Override
@@ -328,7 +332,7 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
         checkNotClosed();
         sql.clear();
         bindings.clear();
-        bindings.add(new ArrayList<Object>());
+        bindings.add(new ArrayList<>());
     }
 
     @Override
@@ -840,18 +844,26 @@ public class MockStatement extends JDBC41Statement implements CallableStatement 
     }
 
     // -------------------------------------------------------------------------
-    // XXX: Unsupported operations
+    // XXX: Unwrapping
     // -------------------------------------------------------------------------
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Unsupported Operation");
+        if (isWrapperFor(iface))
+            return (T) this;
+        else
+            throw new SQLException("MockStatement does not implement " + iface);
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Unsupported Operation");
+        return iface.isInstance(this);
     }
+
+    // -------------------------------------------------------------------------
+    // XXX: Unsupported operations
+    // -------------------------------------------------------------------------
 
     @Override
     public ParameterMetaData getParameterMetaData() throws SQLException {

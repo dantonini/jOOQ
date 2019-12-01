@@ -103,6 +103,8 @@ final class ExplainQuery {
 
 
 
+
+
             case MARIADB:
             case MYSQL:
             case POSTGRES:
@@ -151,6 +153,7 @@ final class ExplainQuery {
                 rows = result.get(0).get("rows", double.class);
                 break;
             }
+
 
 
 

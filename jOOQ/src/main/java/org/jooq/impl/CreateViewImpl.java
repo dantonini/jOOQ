@@ -44,13 +44,15 @@ import static org.jooq.Clause.CREATE_VIEW_NAME;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.DERBY;
 import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 // ...
+// ...
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
-import static org.jooq.SQLDialect.SQLITE;
 // ...
 // ...
 import static org.jooq.conf.ParamType.INLINED;
@@ -64,9 +66,10 @@ import static org.jooq.impl.Keywords.K_IF_NOT_EXISTS;
 import static org.jooq.impl.Keywords.K_OR;
 import static org.jooq.impl.Keywords.K_REPLACE;
 import static org.jooq.impl.Keywords.K_VIEW;
+import static org.jooq.impl.Tools.EMPTY_FIELD;
 
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.jooq.Clause;
@@ -74,8 +77,12 @@ import org.jooq.Configuration;
 import org.jooq.Context;
 import org.jooq.CreateViewAsStep;
 import org.jooq.CreateViewFinalStep;
+import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.QueryPart;
 import org.jooq.Record;
+import org.jooq.ResultQuery;
+import org.jooq.SQL;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.Table;
@@ -84,7 +91,7 @@ import org.jooq.conf.ParamType;
 /**
  * @author Lukas Eder
  */
-final class CreateViewImpl<R extends Record> extends AbstractQuery implements
+final class CreateViewImpl<R extends Record> extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for CREATE VIEW behaviour
     CreateViewAsStep<R>,
@@ -96,7 +103,7 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
      */
     private static final long                                                       serialVersionUID         = 8904572826501186329L;
     private static final Clause[]                                                   CLAUSES                  = { CREATE_VIEW };
-    private static final EnumSet<SQLDialect>                                        NO_SUPPORT_IF_NOT_EXISTS = EnumSet.of(DERBY, FIREBIRD, POSTGRES);
+    private static final Set<SQLDialect>                                            NO_SUPPORT_IF_NOT_EXISTS = SQLDialect.supportedBy(DERBY, FIREBIRD, POSTGRES);
 
     private final boolean                                                           ifNotExists;
     private final boolean                                                           orReplace;
@@ -105,7 +112,8 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
     private final BiFunction<? super Field<?>, ? super Integer, ? extends Field<?>> fieldNameFunction;
 
     private Field<?>[]                                                              fields;
-    private Select<?>                                                               select;
+    private ResultQuery<?>                                                          select;
+    private transient Select<?>                                                     parsed;
 
     CreateViewImpl(Configuration configuration, Table<?> view, Field<?>[] fields, boolean ifNotExists, boolean orReplace) {
         super(configuration);
@@ -131,6 +139,12 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
     }
 
 
+    final boolean    $ifNotExists() { return ifNotExists; }
+    final boolean    $orReplace()   { return orReplace; }
+    final Table<?>   $view()        { return view; }
+    final Field<?>[] $fields()      { return fields; }
+    final Select<?>  $select()      { return parsed(); }
+
     // ------------------------------------------------------------------------
     // XXX: DSL API
     // ------------------------------------------------------------------------
@@ -149,6 +163,38 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
 
 
         return this;
+    }
+
+    @Override
+    public final CreateViewFinalStep as(SQL sql) {
+        this.select = DSL.resultQuery(sql);
+
+
+        if (fieldNameFunction != null) {
+            Select<?> s = parsed();
+            List<Field<?>> source = s.getSelect();
+            fields = new Field[source.size()];
+            for (int i = 0; i < fields.length; i++)
+                fields[i] = fieldNameFunction.apply(source.get(i), i);
+        }
+
+
+        return this;
+    }
+
+    @Override
+    public final CreateViewFinalStep as(String sql) {
+        return as(DSL.sql(sql));
+    }
+
+    @Override
+    public final CreateViewFinalStep as(String sql, Object... bindings) {
+        return as(DSL.sql(sql, bindings));
+    }
+
+    @Override
+    public final CreateViewFinalStep as(String sql, QueryPart... parts) {
+        return as(DSL.sql(sql, parts));
     }
 
     // ------------------------------------------------------------------------
@@ -172,11 +218,20 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
     }
 
     private final void accept0(Context<?> ctx) {
+        Field<?>[] f = fields;
 
-        // [#3835] SQLite doesn't like renaming columns at the view level
-        boolean rename = fields != null && fields.length > 0;
-        boolean renameSupported = ctx.family() != SQLITE;
-        boolean replaceSupported = false                                                     ;
+        // [#2059] MemSQL doesn't support column aliases at the view level
+        boolean rename = f != null && f.length > 0;
+        boolean renameSupported = true;
+        boolean replaceSupported = false;
+
+
+
+
+
+
+
+
 
         // [#4806] CREATE VIEW doesn't accept parameters in most databases
         ParamType paramType = ctx.paramType();
@@ -192,8 +247,9 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
 
 
 
-
-
+                case FIREBIRD:
+                    ctx.sql(' ').visit(K_ALTER);
+                    break;
 
                 default:
                     ctx.sql(' ').visit(K_REPLACE);
@@ -215,7 +271,7 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
 
             ctx.sql('(')
                .qualify(false)
-               .visit(new QueryPartList<Field<?>>(fields))
+               .visit(new QueryPartList<>(f))
                .qualify(qualify)
                .sql(')');
         }
@@ -228,10 +284,21 @@ final class CreateViewImpl<R extends Record> extends AbstractQuery implements
            .paramType(INLINED)
            .visit(
                rename && !renameSupported
-             ? selectFrom(table(select).as(name("t"), Tools.fieldNames(fields)))
+             ? selectFrom(table(parsed()).as(name("t"), Tools.fieldNames(f)))
              : select)
            .paramType(paramType)
            .end(CREATE_VIEW_AS);
+    }
+
+    private final Select<?> parsed() {
+        if (parsed != null)
+            return parsed;
+
+        if (select instanceof Select)
+            return parsed = (Select<?>) select;
+
+        DSLContext dsl = configuration().dsl();
+        return dsl.parser().parseSelect(dsl.renderInlined(select));
     }
 
     @Override

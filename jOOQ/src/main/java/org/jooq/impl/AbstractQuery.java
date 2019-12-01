@@ -47,7 +47,6 @@ import static org.jooq.ExecuteType.DDL;
 // ...
 import static org.jooq.conf.ParamType.INDEXED;
 import static org.jooq.conf.ParamType.INLINED;
-import static org.jooq.conf.ParamType.NAMED;
 import static org.jooq.conf.SettingsTools.executePreparedStatements;
 import static org.jooq.conf.SettingsTools.getParamType;
 import static org.jooq.conf.ThrowExceptions.THROW_NONE;
@@ -71,7 +70,6 @@ import org.jooq.Configuration;
 import org.jooq.ExecuteContext;
 import org.jooq.ExecuteListener;
 import org.jooq.Param;
-// ...
 import org.jooq.Query;
 import org.jooq.RenderContext;
 import org.jooq.Select;
@@ -81,6 +79,7 @@ import org.jooq.conf.SettingsTools;
 import org.jooq.conf.StatementType;
 import org.jooq.exception.ControlFlowSignal;
 import org.jooq.exception.DetachedException;
+import org.jooq.tools.Ints;
 import org.jooq.tools.JooqLogger;
 
 /**
@@ -161,25 +160,23 @@ abstract class AbstractQuery extends AbstractQueryPart implements Query {
     @SuppressWarnings("deprecation")
     @Override
     public Query bind(String param, Object value) {
-        try {
-            int index = Integer.valueOf(param);
+        Integer index = Ints.tryParse(param);
+        if (index != null)
             return bind(index, value);
+
+        ParamCollector collector = new ParamCollector(configuration(), true);
+        collector.visit(this);
+        List<Param<?>> params = collector.result.get(param);
+
+        if (params == null || params.size() == 0)
+            throw new IllegalArgumentException("No such parameter : " + param);
+
+        for (Param<?> p : params) {
+            p.setConverted(value);
+            closeIfNecessary(p);
         }
-        catch (NumberFormatException e) {
-            ParamCollector collector = new ParamCollector(configuration(), true);
-            collector.visit(this);
-            List<Param<?>> params = collector.result.get(param);
 
-            if (params == null || params.size() == 0)
-                throw new IllegalArgumentException("No such parameter : " + param);
-
-            for (Param<?> p : params) {
-                p.setConverted(value);
-                closeIfNecessary(p);
-            }
-
-            return this;
-        }
+        return this;
     }
 
     /**
@@ -568,18 +565,11 @@ abstract class AbstractQuery extends AbstractQueryPart implements Query {
 
 
 
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public final String getSQL() {
         return getSQL(getParamType(Tools.settings(configuration())));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public final String getSQL(ParamType paramType) {
         switch (paramType) {
@@ -598,9 +588,6 @@ abstract class AbstractQuery extends AbstractQueryPart implements Query {
         throw new IllegalArgumentException("ParamType not supported: " + paramType);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Deprecated
     public final String getSQL(boolean inline) {

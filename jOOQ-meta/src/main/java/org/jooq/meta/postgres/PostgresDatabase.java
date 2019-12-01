@@ -49,14 +49,21 @@ import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.noCondition;
 import static org.jooq.impl.DSL.not;
+import static org.jooq.impl.DSL.nullif;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.partitionBy;
+import static org.jooq.impl.DSL.power;
 import static org.jooq.impl.DSL.row;
 import static org.jooq.impl.DSL.rowNumber;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.when;
+import static org.jooq.impl.SQLDataType.BIGINT;
+import static org.jooq.impl.SQLDataType.BOOLEAN;
+import static org.jooq.impl.SQLDataType.NUMERIC;
+import static org.jooq.impl.SQLDataType.VARCHAR;
 import static org.jooq.meta.postgres.information_schema.Tables.ATTRIBUTES;
 import static org.jooq.meta.postgres.information_schema.Tables.CHECK_CONSTRAINTS;
+import static org.jooq.meta.postgres.information_schema.Tables.COLUMNS;
 import static org.jooq.meta.postgres.information_schema.Tables.KEY_COLUMN_USAGE;
 import static org.jooq.meta.postgres.information_schema.Tables.PARAMETERS;
 import static org.jooq.meta.postgres.information_schema.Tables.ROUTINES;
@@ -82,9 +89,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
+// ...
 import org.jooq.Record;
 import org.jooq.Record2;
 import org.jooq.Record4;
@@ -94,6 +103,8 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.SortOrder;
+import org.jooq.Table;
+import org.jooq.TableField;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
@@ -153,7 +164,7 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<IndexDefinition> getIndexes0() throws SQLException {
-        List<IndexDefinition> result = new ArrayList<IndexDefinition>();
+        List<IndexDefinition> result = new ArrayList<>();
 
         PgIndex i = PG_INDEX.as("i");
         PgClass trel = PG_CLASS.as("trel");
@@ -201,7 +212,7 @@ public class PostgresDatabase extends AbstractDatabase {
                     continue indexLoop;
 
             result.add(new AbstractIndexDefinition(tableSchema, indexName, table, unique) {
-                List<IndexColumnDefinition> indexColumns = new ArrayList<IndexColumnDefinition>();
+                List<IndexColumnDefinition> indexColumns = new ArrayList<>();
 
                 {
                     for (int ordinal = 0; ordinal < columns.length; ordinal++) {
@@ -325,6 +336,10 @@ public class PostgresDatabase extends AbstractDatabase {
         TableConstraints tc = TABLE_CONSTRAINTS.as("tc");
         CheckConstraints cc = CHECK_CONSTRAINTS.as("cc");
 
+        PgNamespace pn = PG_NAMESPACE.as("pn");
+        PgClass pt = PG_CLASS.as("pt");
+        PgConstraint pc = PG_CONSTRAINT.as("pc");
+
         for (Record record : create()
                 .select(
                     tc.TABLE_SCHEMA,
@@ -336,8 +351,16 @@ public class PostgresDatabase extends AbstractDatabase {
                 .join(cc)
                 .using(tc.CONSTRAINT_CATALOG, tc.CONSTRAINT_SCHEMA, tc.CONSTRAINT_NAME)
                 .where(tc.TABLE_SCHEMA.in(getInputSchemata()))
-                .orderBy(tc.TABLE_SCHEMA, tc.TABLE_NAME, cc.CONSTRAINT_NAME)
-                .fetch()) {
+                .and(getIncludeSystemCheckConstraints()
+                    ? noCondition()
+                    : row(tc.TABLE_SCHEMA, tc.TABLE_NAME, cc.CONSTRAINT_NAME).in(
+                        select(pn.NSPNAME, pt.RELNAME, pc.CONNAME)
+                        .from(pc)
+                        .join(pt).on(pc.CONRELID.eq(oid(pt)))
+                        .join(pn).on(pc.CONNAMESPACE.eq(oid(pn)))
+                        .where(pc.CONTYPE.eq(inline("c")))
+                    ))
+                .orderBy(tc.TABLE_SCHEMA, tc.TABLE_NAME, cc.CONSTRAINT_NAME)) {
 
             SchemaDefinition schema = getSchema(record.get(tc.TABLE_SCHEMA));
             TableDefinition table = getTable(schema, record.get(tc.TABLE_NAME));
@@ -355,8 +378,8 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<TableDefinition> getTables0() throws SQLException {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
-        Map<Name, PostgresTableDefinition> map = new HashMap<Name, PostgresTableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
+        Map<Name, PostgresTableDefinition> map = new HashMap<>();
 
         Select<Record6<String, String, String, Boolean, Boolean, String>> empty =
             select(inline(""), inline(""), inline(""), inline(false), inline(false), inline(""))
@@ -399,11 +422,13 @@ public class PostgresDatabase extends AbstractDatabase {
 
                 // [#3254] Materialised views are reported only in PG_CLASS, not
                 //         in INFORMATION_SCHEMA.TABLES
+                // [#8478] CockroachDB cannot compare "sql_identifier" types (varchar)
+                //         from information_schema with "name" types from pg_catalog
                 .unionAll(
                     select(
-                        PG_NAMESPACE.NSPNAME,
-                        PG_CLASS.RELNAME,
-                        PG_CLASS.RELNAME,
+                        field("{0}::varchar", PG_NAMESPACE.NSPNAME.getDataType(), PG_NAMESPACE.NSPNAME),
+                        field("{0}::varchar", PG_CLASS.RELNAME.getDataType(), PG_CLASS.RELNAME),
+                        field("{0}::varchar", PG_CLASS.RELNAME.getDataType(), PG_CLASS.RELNAME),
                         inline(false).as("table_valued_function"),
                         inline(true).as("materialized_view"),
                         PG_DESCRIPTION.DESCRIPTION)
@@ -511,14 +536,14 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() throws SQLException {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
 
         // [#1409] Shouldn't select from INFORMATION_SCHEMA.SCHEMATA, as that
         // would only return schemata of which CURRENT_USER is the owner
@@ -536,7 +561,7 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<SequenceDefinition> getSequences0() throws SQLException {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
 
         for (Record record : create()
                 .select(
@@ -544,7 +569,13 @@ public class PostgresDatabase extends AbstractDatabase {
                     SEQUENCES.SEQUENCE_NAME,
                     SEQUENCES.DATA_TYPE,
                     SEQUENCES.NUMERIC_PRECISION,
-                    SEQUENCES.NUMERIC_SCALE)
+                    SEQUENCES.NUMERIC_SCALE,
+                    SEQUENCES.START_VALUE.cast(BIGINT).as(SEQUENCES.START_VALUE),
+                    SEQUENCES.INCREMENT.cast(BIGINT).as(SEQUENCES.INCREMENT),
+                    SEQUENCES.MINIMUM_VALUE.cast(BIGINT).as(SEQUENCES.MINIMUM_VALUE),
+                    nullif(SEQUENCES.MAXIMUM_VALUE.cast(NUMERIC),
+                        power(inline(2, NUMERIC), SEQUENCES.NUMERIC_PRECISION.minus(1)).minus(1)).as(SEQUENCES.MAXIMUM_VALUE),
+                    SEQUENCES.CYCLE_OPTION.cast(BOOLEAN).as(SEQUENCES.CYCLE_OPTION))
                 .from(SEQUENCES)
                 .where(SEQUENCES.SEQUENCE_SCHEMA.in(getInputSchemata()))
                 .orderBy(
@@ -564,7 +595,18 @@ public class PostgresDatabase extends AbstractDatabase {
                 (String) null
             );
 
-            result.add(new DefaultSequenceDefinition(schema, record.get(SEQUENCES.SEQUENCE_NAME), type));
+            result.add(new DefaultSequenceDefinition(
+                schema,
+                record.get(SEQUENCES.SEQUENCE_NAME),
+                type,
+                null,
+                record.get(SEQUENCES.START_VALUE, Long.class),
+                record.get(SEQUENCES.INCREMENT, Long.class),
+                record.get(SEQUENCES.MINIMUM_VALUE, Long.class),
+                record.get(SEQUENCES.MAXIMUM_VALUE, Long.class),
+                record.get(SEQUENCES.CYCLE_OPTION, Boolean.class),
+                null // [#9442] The CACHE flag is not available from SEQUENCES
+            ));
         }
 
         return result;
@@ -572,7 +614,7 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<EnumDefinition> getEnums0() throws SQLException {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
 
         // [#2736] This table is unavailable in Amazon Redshift
         if (exists(PG_ENUM)) {
@@ -615,10 +657,9 @@ public class PostgresDatabase extends AbstractDatabase {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
 
         if (existAll(PG_CONSTRAINT, PG_TYPE)) {
             PgNamespace n = PG_NAMESPACE.as("n");
@@ -627,6 +668,7 @@ public class PostgresDatabase extends AbstractDatabase {
             PgType b = PG_TYPE.as("b");
 
             Field<String[]> src = field(name("domains", "src"), String[].class);
+            Field<String> constraintDef = field("pg_get_constraintdef({0})", VARCHAR, oid(c));
 
             for (Record record : create()
                     .withRecursive("domains",
@@ -640,7 +682,7 @@ public class PostgresDatabase extends AbstractDatabase {
                              oid(d),
                              oid(d),
                              d.TYPBASETYPE,
-                             array(c.CONSRC)
+                             array(constraintDef)
                          )
                         .from(d)
                         .join(n)
@@ -655,8 +697,8 @@ public class PostgresDatabase extends AbstractDatabase {
                              oid(d),
                              d.TYPBASETYPE,
                              decode()
-                                 .when(c.CONSRC.isNull(), src)
-                                 .otherwise(arrayAppend(src, c.CONSRC))
+                                 .when(c.CONBIN.isNull(), src)
+                                 .otherwise(arrayAppend(src, constraintDef))
                          )
                         .from(name("domains"))
                         .join(d)
@@ -717,7 +759,7 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<UDTDefinition> getUDTs0() throws SQLException {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
 
         // [#2736] This table is unavailable in Amazon Redshift
         if (exists(ATTRIBUTES)) {
@@ -744,13 +786,13 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<ArrayDefinition> getArrays0() throws SQLException {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<RoutineDefinition> getRoutines0() throws SQLException {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
 
         if (!canUseRoutines())
             return result;
@@ -814,7 +856,7 @@ public class PostgresDatabase extends AbstractDatabase {
 
     @Override
     protected List<PackageDefinition> getPackages0() throws SQLException {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
         return result;
     }
 
@@ -843,48 +885,50 @@ public class PostgresDatabase extends AbstractDatabase {
     }
 
     boolean is94() {
-        if (is94 == null) {
 
-            // [#4254] INFORMATION_SCHEMA.PARAMETERS.PARAMETER_DEFAULT was added
-            // in PostgreSQL 9.4 only
-            try {
-                create(true)
-                    .select(PARAMETERS.PARAMETER_DEFAULT)
-                    .from(PARAMETERS)
-                    .where(falseCondition())
-                    .fetch();
-
-                is94 = true;
-            }
-            catch (DataAccessException e) {
-                is94 = false;
-            }
-        }
+        // [#4254] INFORMATION_SCHEMA.PARAMETERS.PARAMETER_DEFAULT was added
+        // in PostgreSQL 9.4 only
+        if (is94 == null)
+            is94 = exists(PARAMETERS.PARAMETER_DEFAULT);
 
         return is94;
     }
 
     boolean is11() {
-        if (is11 == null) {
 
-            // [#7785] pg_proc.prokind was added in PostgreSQL 11 only, and
-            //         pg_proc.proisagg was removed, incompatibly
-            try {
-                create(true)
-                    .select(PG_PROC.PROKIND)
-                    .from(PG_PROC)
-                    .where(falseCondition())
-                    .fetch();
-
-                is11 = true;
-            }
-            catch (DataAccessException e) {
-                is11 = false;
-            }
-        }
+        // [#7785] pg_proc.prokind was added in PostgreSQL 11 only, and
+        //         pg_proc.proisagg was removed, incompatibly
+        if (is11 == null)
+            is11 = exists(PG_PROC.PROKIND);
 
         return is11;
     }
+
+    @Override
+    protected boolean exists0(TableField<?, ?> field) {
+        return exists1(field, COLUMNS, COLUMNS.TABLE_SCHEMA, COLUMNS.TABLE_NAME, COLUMNS.COLUMN_NAME);
+    }
+
+    @Override
+    protected boolean exists0(Table<?> table) {
+        return exists1(table, TABLES, TABLES.TABLE_SCHEMA, TABLES.TABLE_NAME);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     boolean canCombineArrays() {
         if (canCombineArrays == null) {
@@ -923,18 +967,11 @@ public class PostgresDatabase extends AbstractDatabase {
     }
 
     boolean canUseRoutines() {
-        if (canUseRoutines == null) {
 
-            // [#7892] The information_schema.routines table is not available in all PostgreSQL
-            //         style databases, e.g. CockroachDB
-            try {
-                create(true).fetchExists(ROUTINES);
-                canUseRoutines = true;
-            }
-            catch (DataAccessException e) {
-                canUseRoutines = false;
-            }
-        }
+        // [#7892] The information_schema.routines table is not available in all PostgreSQL
+        //         style databases, e.g. CockroachDB
+        if (canUseRoutines == null)
+            canUseRoutines = exists(ROUTINES);
 
         return canUseRoutines;
     }

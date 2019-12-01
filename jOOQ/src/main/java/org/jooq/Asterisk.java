@@ -67,4 +67,34 @@ import org.jooq.impl.DSL;
  */
 public interface Asterisk extends SelectFieldOrAsterisk {
 
+    /**
+     * The asterisk (<code>* EXCEPT (fields)</code>) expression to be used in
+     * <code>SELECT</code> clauses.
+     * <p>
+     * This expression is a convenient way to select "all but some fields". Some
+     * dialects (e.g. {@link SQLDialect#H2}) implement this feature natively. In
+     * other dialects, jOOQ expands the asterisk if possible.
+     */
+    @Support
+    Asterisk except(String... fieldNames);
+
+    /**
+     * The asterisk (<code>*</code>) to be used in <code>SELECT</code> clauses.
+     * <p>
+     * This expression is a convenient way to select "all but some fields". Some
+     * dialects (e.g. {@link SQLDialect#H2}) implement this feature natively. In
+     * other dialects, jOOQ expands the asterisk if possible.
+     */
+    @Support
+    Asterisk except(Name... fieldNames);
+
+    /**
+     * The asterisk (<code>*</code>) to be used in <code>SELECT</code> clauses.
+     * <p>
+     * This expression is a convenient way to select "all but some fields". Some
+     * dialects (e.g. {@link SQLDialect#H2}) implement this feature natively. In
+     * other dialects, jOOQ expands the asterisk if possible.
+     */
+    @Support
+    Asterisk except(Field<?>... fields);
 }

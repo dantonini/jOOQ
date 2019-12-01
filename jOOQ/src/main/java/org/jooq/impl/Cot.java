@@ -37,17 +37,18 @@
  */
 package org.jooq.impl;
 
-import static org.jooq.impl.DSL.function;
+import static org.jooq.impl.Keywords.F_COT;
+import static org.jooq.impl.Names.N_COT;
 
 import java.math.BigDecimal;
 
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class Cot extends AbstractFunction<BigDecimal> {
+final class Cot extends AbstractField<BigDecimal> {
 
     /**
      * Generated UID
@@ -57,14 +58,15 @@ final class Cot extends AbstractFunction<BigDecimal> {
     private final Field<? extends Number> argument;
 
     Cot(Field<? extends Number> argument) {
-        super("cot", SQLDataType.NUMERIC, argument);
+        super(N_COT, SQLDataType.NUMERIC);
 
         this.argument = argument;
     }
 
     @Override
-    final Field<BigDecimal> getFunction0(Configuration configuration) {
-        switch (configuration.dialect().family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
@@ -75,7 +77,8 @@ final class Cot extends AbstractFunction<BigDecimal> {
 
 
             default:
-                return function("cot", SQLDataType.NUMERIC, argument);
+                ctx.visit(F_COT).sql('(').visit(argument).sql(')');
+                break;
         }
     }
 }

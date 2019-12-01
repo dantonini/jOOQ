@@ -38,6 +38,7 @@
 package org.jooq;
 
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -55,6 +56,7 @@ import static org.jooq.SQLDialect.POSTGRES;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 
 import org.jooq.exception.DataAccessException;
@@ -78,7 +80,7 @@ import org.jooq.util.xml.jaxb.InformationSchema;
  *
  * @author Lukas Eder
  */
-public interface Meta {
+public interface Meta extends Scope {
 
     /**
      * Get all catalog objects from the underlying meta data source.
@@ -202,4 +204,106 @@ public interface Meta {
      */
     @Support
     List<UniqueKey<?>> getPrimaryKeys() throws DataAccessException;
+
+    /**
+     * Generate a creation script for the entire meta data.
+     *
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Queries ddl() throws DataAccessException;
+
+    /**
+     * Generate a creation script for the entire meta data.
+     *
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Queries ddl(DDLExportConfiguration configuration) throws DataAccessException;
+
+    /**
+     * Apply a diff to this meta to produce a new {@link Meta}.
+     *
+     * @see Parser#parse(String)
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Meta apply(String diff) throws DataAccessException;
+
+    /**
+     * Apply a diff to this meta to produce a new {@link Meta}.
+     *
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Meta apply(Query... diff) throws DataAccessException;
+
+    /**
+     * Apply a diff to this meta to produce a new {@link Meta}.
+     *
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Meta apply(Collection<? extends Query> diff) throws DataAccessException;
+
+    /**
+     * Apply a diff to this meta to produce a new {@link Meta}.
+     *
+     * @throws DataAccessException If something went wrong fetching the meta
+     *             objects
+     */
+    Meta apply(Queries diff) throws DataAccessException;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Export to the {@link InformationSchema} format.
+     * <p>
+     * This allows for serialising schema meta information as XML using JAXB.
+     * See also {@link Constants#XSD_META} for details.
+     */
+    InformationSchema informationSchema() throws DataAccessException;
 }

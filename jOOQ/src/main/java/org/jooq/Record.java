@@ -84,7 +84,7 @@ import org.jooq.tools.Convert;
  * <h5>Records of well-defined degree</h5>
  * <p>
  * When projecting custom record types in SQL, new ad-hoc types of a certain
- * degree are formed on the fly. Records with degree &lt= 22 are reflected by
+ * degree are formed on the fly. Records with degree &lt;= 22 are reflected by
  * jOOQ through the {@link Record1}, {@link Record2}, ... {@link Record22}
  * classes, which cover the respective row value expressions {@link Row1},
  * {@link Row2}, ... {@link Row22}
@@ -725,7 +725,7 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      */
     Record into(Field<?>... fields);
 
-    // [jooq-tools] START [into-fields]
+
 
     /**
      * Copy this record into a new record holding only a subset of the previous
@@ -925,7 +925,7 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      */
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> into(Field<T1> field1, Field<T2> field2, Field<T3> field3, Field<T4> field4, Field<T5> field5, Field<T6> field6, Field<T7> field7, Field<T8> field8, Field<T9> field9, Field<T10> field10, Field<T11> field11, Field<T12> field12, Field<T13> field13, Field<T14> field14, Field<T15> field15, Field<T16> field16, Field<T17> field17, Field<T18> field18, Field<T19> field19, Field<T20> field20, Field<T21> field21, Field<T22> field22);
 
-// [jooq-tools] END [into-fields]
+
 
     /**
      * Map resulting records onto a custom type.
@@ -1045,6 +1045,12 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      * <p>
      * Loading of data is delegated to {@link #fromMap(Map)}
      * <p>
+     * <h5>If <code>source</code> is an {@link Iterable}</h5>
+     * <p>
+     * <p>
+     * Loading of data is equivalent to loading {@link #fromArray(Object...)},
+     * transforming the {@link Iterable} to an array, first.
+     * <p>
      * <h5>If any JPA {@link Column} annotations are found on the {@link Class}
      * of the provided <code>source</code>, only those are used. Matching
      * candidates are:</h5>
@@ -1063,7 +1069,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      * <li>{@link Column#name()} must match {@link Field#getName()}. All other
      * annotation attributes are ignored</li>
      * <li>Only the first match per field is used</li>
-     * <li>Matching methods have a higher priority than matching member fields</li>
+     * <li>Matching methods have a higher priority than matching member
+     * fields</li>
      * <li>Explicitly matching methods have a higher priority than implicitly
      * matching methods (implicitly matching getter = setter is annotated)</li>
      * <li>Static methods / member fields are ignored</li>
@@ -1401,7 +1408,7 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      * <li><code>X = Y</code> means <code>X.compareTo(Y) == 0</code></li>
      * <li><code>X &lt; Y</code> means <code>X.compareTo(Y) &lt; 0</code></li>
      * <li><code>X[i] = Y[i]</code> means
-     * <code>(X[i] == null && Y[i] == null) || X[i].compareTo(Y[i]) == 0</code>
+     * <code>(X[i] == null &amp;&amp; Y[i] == null) || X[i].compareTo(Y[i]) == 0</code>
      * </li>
      * <li><code>X[i] &lt; Y[i]</code> means
      * <code>Y[i] == null || X[i].compareTo(Y[i]) &lt; 0</code>. This
@@ -1420,10 +1427,10 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
      * OR (r1[0] = r2[0] AND ... AND r1[N-1] = r2[N-1] AND r1[N] = r2[N])</pre></code>
      * </li>
      * <li><strong><code>x = 1</code></strong>: if <code><pre>
-     *    (r1[0] > r2[0])
-     * OR (r1[0] = r2[0] AND r1[1] > r2[1])
+     *    (r1[0] &gt; r2[0])
+     * OR (r1[0] = r2[0] AND r1[1] &gt; r2[1])
      * OR  ...
-     * OR (r1[0] = r2[0] AND ... AND r1[N-1] = r2[N-1] AND r1[N] > r2[N])</pre></code>
+     * OR (r1[0] = r2[0] AND ... AND r1[N-1] = r2[N-1] AND r1[N] &gt; r2[N])</pre></code>
      * </li>
      * </ul>
      * <p>
@@ -1461,8 +1468,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a value from this Record, providing a field.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the {@link #getValue(Field)}
-     * method. It is recommended to use {@link #get(Field)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(Field)} instead.
      *
      * @see #get(Field)
      */
@@ -1486,9 +1493,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(Field, Class)} method. It is recommended to use
-     * {@link #get(Field, Class)} instead.
+     * [#2211] Future versions of jOOQ might remove tthis method. It is
+     * recommended to use {@link #get(Field, Class)} instead.
      *
      * @see #get(Field, Class)
      */
@@ -1517,9 +1523,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(Field, Converter)} method. It is recommended to use
-     * {@link #get(Field, Converter)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(Field, Converter)} instead.
      *
      * @see #get(Field, Converter)
      */
@@ -1550,8 +1555,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the {@link #getValue(String)}
-     * method. It is recommended to use {@link #get(String)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(String)} instead.
      *
      * @see #get(String)
      */
@@ -1574,9 +1579,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(String, Class)} method. It is recommended to use
-     * {@link #get(String, Class)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(String, Class)} instead.
      *
      * @see #get(String, Class)
      */
@@ -1605,9 +1609,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(String, Converter)} method. It is recommended to use
-     * {@link #get(String, Converter)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(String, Converter)} instead.
      *
      * @see #get(String, Converter)
      */
@@ -1636,8 +1639,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the {@link #getValue(Name)}
-     * method. It is recommended to use {@link #get(Name)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(Name)} instead.
      *
      * @see #get(Name)
      */
@@ -1646,9 +1649,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(Name, Class)} method. It is recommended to use
-     * {@link #get(Name, Class)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(Name, Class)} instead.
      *
      * @see #get(Name, Class)
      */
@@ -1657,9 +1659,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this Record, providing a field name.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(Name, Converter)} method. It is recommended to use
-     * {@link #get(Name, Converter)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(Name, Converter)} instead.
      *
      * @see #get(Name, Converter)
      */
@@ -1668,8 +1669,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a value from this record, providing a field index.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the {@link #getValue(int)}
-     * method. It is recommended to use {@link #get(int)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(int)} instead.
      *
      * @see #get(int)
      */
@@ -1692,9 +1693,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this record, providing a field index.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(int, Class)} method. It is recommended to use
-     * {@link #get(int, Class)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(int, Class)} instead.
      *
      * @see #get(int, Class)
      */
@@ -1723,9 +1723,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Get a converted value from this record, providing a field index.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #getValue(int, Converter)} method. It is recommended to use
-     * {@link #get(int, Converter)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #get(int, Converter)} instead.
      *
      * @see #get(int, Converter)
      */
@@ -1754,9 +1753,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Set a value into this record.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #set(Field, Object)} method. It is recommended to use
-     * {@link #set(Field, Object)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #set(Field, Object)} instead.
      *
      * @see #set(Field, Object)
      */
@@ -1765,9 +1763,8 @@ public interface Record extends Attachable, Comparable<Record>, Formattable {
     /**
      * Set a value into this record.
      * <p>
-     * [#2211] Future versions of jOOQ might remove the
-     * {@link #set(Field, Object, Converter)} method. It is recommended to use
-     * {@link #set(Field, Object, Converter)} instead.
+     * [#2211] Future versions of jOOQ might remove this method. It is
+     * recommended to use {@link #set(Field, Object, Converter)} instead.
      *
      * @see #set(Field, Object, Converter)
      */

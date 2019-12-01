@@ -57,18 +57,19 @@ public interface BatchBindStep extends Batch {
      * The argument array of <code>bindValues</code> will be set onto the
      * indexed bind values of the batch statement:
      * <ul>
-     * <li><code>:1</code> -> <code>bindValues[0]</code></li>
-     * <li><code>:2</code> -> <code>bindValues[1]</code></li>
+     * <li><code>:1</code> -&gt; <code>bindValues[0]</code></li>
+     * <li><code>:2</code> -&gt; <code>bindValues[1]</code></li>
      * <li>...</li>
-     * <li><code>:N</code> -> <code>bindValues[N - 1]</code></li>
+     * <li><code>:N</code> -&gt; <code>bindValues[N - 1]</code></li>
      * </ul>
      * <p>
      * "Unmatched" bind values will be left unmodified:
      * <ul>
-     * <li><code>:N+1</code> -> unmodified</li>
-     * <li><code>:N+2</code> -> unmodified</li>
+     * <li><code>:N+1</code> -&gt; unmodified</li>
+     * <li><code>:N+2</code> -&gt; unmodified</li>
      * </ul>
      */
+    @Support
     BatchBindStep bind(Object... bindValues);
 
     /**
@@ -76,6 +77,7 @@ public interface BatchBindStep extends Batch {
      * <p>
      * This is the same as calling {@link #bind(Object...)} several times.
      */
+    @Support
     BatchBindStep bind(Object[]... bindValues);
 
     /**
@@ -84,18 +86,19 @@ public interface BatchBindStep extends Batch {
      * The argument map of <code>namedBindValues</code> will be set onto the
      * named bind values of the batch statement:
      * <ul>
-     * <li><code>:name1</code> -> <code>bindValues.get("name1")</code></li>
-     * <li><code>:name2</code> -> <code>bindValues.get("name2")</code></li>
+     * <li><code>:name1</code> -&gt; <code>bindValues.get("name1")</code></li>
+     * <li><code>:name2</code> -&gt; <code>bindValues.get("name2")</code></li>
      * <li>...</li>
-     * <li><code>:nameN</code> -> <code>bindValues.get("nameN")</code></li>
+     * <li><code>:nameN</code> -&gt; <code>bindValues.get("nameN")</code></li>
      * </ul>
      * <p>
      * "Unmatched" bind values will be left unmodified:
      * <ul>
-     * <li><code>:nameN+1</code> -> unmodified</li>
-     * <li><code>:nameN+2</code> -> unmodified</li>
+     * <li><code>:nameN+1</code> -&gt; unmodified</li>
+     * <li><code>:nameN+2</code> -&gt; unmodified</li>
      * </ul>
      */
+    @Support
     BatchBindStep bind(Map<String, Object> namedBindValues);
 
     /**
@@ -103,5 +106,6 @@ public interface BatchBindStep extends Batch {
      * <p>
      * This is the same as calling {@link #bind(Map...)} several times.
      */
+    @Support
     BatchBindStep bind(Map<String, Object>... namedBindValues);
 }

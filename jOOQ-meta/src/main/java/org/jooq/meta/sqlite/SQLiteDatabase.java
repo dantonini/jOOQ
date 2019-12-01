@@ -90,7 +90,7 @@ public class SQLiteDatabase extends AbstractDatabase {
         schema.setInputSchema("");
         schema.setOutputSchema("");
 
-        List<SchemaMappingType> schemata = new ArrayList<SchemaMappingType>();
+        List<SchemaMappingType> schemata = new ArrayList<>();
         schemata.add(schema);
 
         setConfiguredSchemata(schemata);
@@ -103,7 +103,7 @@ public class SQLiteDatabase extends AbstractDatabase {
 
     @Override
     protected List<IndexDefinition> getIndexes0() throws SQLException {
-        final List<IndexDefinition> result = new ArrayList<IndexDefinition>();
+        final List<IndexDefinition> result = new ArrayList<>();
 
         final Field<String> fIndexName = field("il.name", String.class).as("index_name");
         final Field<Boolean> fUnique = field("il.\"unique\"", boolean.class).as("unique");
@@ -157,7 +157,7 @@ public class SQLiteDatabase extends AbstractDatabase {
                     continue indexLoop;
 
             result.add(new AbstractIndexDefinition(tableSchema, indexName, table, unique) {
-                List<IndexColumnDefinition> indexColumns = new ArrayList<IndexColumnDefinition>();
+                List<IndexColumnDefinition> indexColumns = new ArrayList<>();
 
                 {
                     for (Record column : columns) {
@@ -189,7 +189,7 @@ public class SQLiteDatabase extends AbstractDatabase {
                 .orderBy(SQLiteMaster.NAME)
                 .fetch(SQLiteMaster.NAME)) {
 
-            for (Record record : create().fetch("pragma table_info('" + tableName + "')")) {
+            for (Record record : create().fetch("pragma table_info({0})", inline(tableName))) {
                 if (record.get("pk", int.class) > 0) {
                     String columnName = record.get("name", String.class);
 
@@ -233,7 +233,7 @@ public class SQLiteDatabase extends AbstractDatabase {
     @Override
     protected void loadForeignKeys(DefaultRelations relations) throws SQLException {
         for (TableDefinition table : getTables(getSchemata().get(0))) {
-            Map<String, Integer> map = new HashMap<String, Integer>();
+            Map<String, Integer> map = new HashMap<>();
 
             for (Record record : create().fetch("pragma foreign_key_list(" + table.getName() + ")")) {
                 String foreignKeyPrefix =
@@ -266,7 +266,7 @@ public class SQLiteDatabase extends AbstractDatabase {
                 TableDefinition foreignKeyTable = getTable(getSchemata().get(0), foreignKeyTableName);
                 TableDefinition uniqueKeyTable = getTable(getSchemata().get(0), record.get("table", String.class), true);
 
-                if (uniqueKeyTable != null && uniqueKeyTable != null) {
+                if (uniqueKeyTable != null) {
                     String uniqueKey =
                         "pk_" + uniqueKeyTable.getName();
 
@@ -290,27 +290,27 @@ public class SQLiteDatabase extends AbstractDatabase {
 
     @Override
     protected List<CatalogDefinition> getCatalogs0() throws SQLException {
-        List<CatalogDefinition> result = new ArrayList<CatalogDefinition>();
+        List<CatalogDefinition> result = new ArrayList<>();
         result.add(new CatalogDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SchemaDefinition> getSchemata0() throws SQLException {
-        List<SchemaDefinition> result = new ArrayList<SchemaDefinition>();
+        List<SchemaDefinition> result = new ArrayList<>();
         result.add(new SchemaDefinition(this, "", ""));
         return result;
     }
 
     @Override
     protected List<SequenceDefinition> getSequences0() throws SQLException {
-        List<SequenceDefinition> result = new ArrayList<SequenceDefinition>();
+        List<SequenceDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<TableDefinition> getTables0() throws SQLException {
-        List<TableDefinition> result = new ArrayList<TableDefinition>();
+        List<TableDefinition> result = new ArrayList<>();
 
         for (String name : create().select(SQLiteMaster.NAME)
             .from(SQLITE_MASTER)
@@ -327,37 +327,37 @@ public class SQLiteDatabase extends AbstractDatabase {
 
     @Override
     protected List<RoutineDefinition> getRoutines0() throws SQLException {
-        List<RoutineDefinition> result = new ArrayList<RoutineDefinition>();
+        List<RoutineDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<PackageDefinition> getPackages0() throws SQLException {
-        List<PackageDefinition> result = new ArrayList<PackageDefinition>();
+        List<PackageDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<EnumDefinition> getEnums0() throws SQLException {
-        List<EnumDefinition> result = new ArrayList<EnumDefinition>();
+        List<EnumDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<DomainDefinition> getDomains0() throws SQLException {
-        List<DomainDefinition> result = new ArrayList<DomainDefinition>();
+        List<DomainDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<UDTDefinition> getUDTs0() throws SQLException {
-        List<UDTDefinition> result = new ArrayList<UDTDefinition>();
+        List<UDTDefinition> result = new ArrayList<>();
         return result;
     }
 
     @Override
     protected List<ArrayDefinition> getArrays0() throws SQLException {
-        List<ArrayDefinition> result = new ArrayList<ArrayDefinition>();
+        List<ArrayDefinition> result = new ArrayList<>();
         return result;
     }
 }

@@ -123,7 +123,7 @@ import org.jooq.UpdateWhereStep;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 final class UpdateImpl<R extends Record>
-    extends AbstractDelegatingQuery<UpdateQuery<R>>
+    extends AbstractDelegatingRowCountQuery<UpdateQuery<R>>
     implements
 
     // Cascading interface implementations for Update behaviour
@@ -139,7 +139,7 @@ final class UpdateImpl<R extends Record>
     private boolean           returningResult;
 
     UpdateImpl(Configuration configuration, WithImpl with, Table<R> table) {
-        super(new UpdateQueryImpl<R>(configuration, with, table));
+        super(new UpdateQueryImpl<>(configuration, with, table));
     }
 
     @Override
@@ -163,6 +163,11 @@ final class UpdateImpl<R extends Record>
     }
 
     @Override
+    public final <T> UpdateImpl<R> setNull(Field<T> field) {
+        return set(field, (T) null);
+    }
+
+    @Override
     public final UpdateImpl<R> set(Map<?, ?> map) {
         getDelegate().addValues(map);
         return this;
@@ -173,7 +178,7 @@ final class UpdateImpl<R extends Record>
         return set(Tools.mapOfChangedValues(record));
     }
 
-// [jooq-tools] START [set]
+
 
     @Override
     public final <T1> UpdateFromStep<R> set(Row1<T1> row, Row1<T1> value) {
@@ -451,7 +456,7 @@ final class UpdateImpl<R extends Record>
         return this;
     }
 
-// [jooq-tools] END [set]
+
 
     @Override
     public final UpdateWhereStep<R> from(TableLike<?> table) {
@@ -742,7 +747,7 @@ final class UpdateImpl<R extends Record>
         return this;
     }
 
-    // [jooq-tools] START [returning]
+
 
     @Override
     public final <T1> UpdateResultStep<Record1<T1>> returningResult(SelectField<T1> field1) {
@@ -854,7 +859,7 @@ final class UpdateImpl<R extends Record>
         return returningResult(new SelectField[] { field1, field2, field3, field4, field5, field6, field7, field8, field9, field10, field11, field12, field13, field14, field15, field16, field17, field18, field19, field20, field21, field22 });
     }
 
-// [jooq-tools] END [returning]
+
 
     @Override
     public final Result<R> fetch() {

@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 package org.jooq.meta.jaxb;
 
 import java.io.Serializable;
@@ -16,6 +9,8 @@ import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.jooq.util.jaxb.tools.StringAdapter;
+import org.jooq.util.jaxb.tools.XMLAppendable;
+import org.jooq.util.jaxb.tools.XMLBuilder;
 
 
 /**
@@ -31,7 +26,7 @@ import org.jooq.util.jaxb.tools.StringAdapter;
 @SuppressWarnings({
     "all"
 })
-public class Generate implements Serializable
+public class Generate implements Serializable, XMLAppendable
 {
 
     private final static long serialVersionUID = 31200L;
@@ -66,6 +61,8 @@ public class Generate implements Serializable
     protected Boolean keys = true;
     @XmlElement(defaultValue = "true")
     protected Boolean tables = true;
+    @XmlElement(defaultValue = "true")
+    protected Boolean embeddables = true;
     @XmlElement(defaultValue = "true")
     protected Boolean records = true;
     @XmlElement(defaultValue = "true")
@@ -150,8 +147,8 @@ public class Generate implements Serializable
     protected Boolean fluentSetters = false;
     @XmlElement(defaultValue = "false")
     protected Boolean javaBeansGettersAndSetters = false;
-    @XmlElement(defaultValue = "true")
-    protected Boolean varargSetters = true;
+    @XmlElement(defaultValue = "false")
+    protected Boolean varargSetters = false;
     @XmlElement(defaultValue = "")
     @XmlJavaTypeAdapter(StringAdapter.class)
     protected String fullyQualifiedTypes = "";
@@ -159,8 +156,8 @@ public class Generate implements Serializable
     protected Boolean emptyCatalogs = false;
     @XmlElement(defaultValue = "false")
     protected Boolean emptySchemas = false;
-    @XmlElement(defaultValue = "false")
-    protected Boolean javaTimeTypes = false;
+    @XmlElement(defaultValue = "true")
+    protected Boolean javaTimeTypes = true;
     @XmlElement(defaultValue = "false")
     protected Boolean primaryKeyTypes = false;
     @XmlElement(defaultValue = "\\n")
@@ -300,6 +297,7 @@ public class Generate implements Serializable
      *     {@link Boolean }
      *
      */
+    @Deprecated
     public Boolean isInstanceFields() {
         return instanceFields;
     }
@@ -312,6 +310,7 @@ public class Generate implements Serializable
      *     {@link Boolean }
      *
      */
+    @Deprecated
     public void setInstanceFields(Boolean value) {
         this.instanceFields = value;
     }
@@ -345,21 +344,14 @@ public class Generate implements Serializable
      * Generate the {@link javax.annotation.Generated} or {@link javax.annotation.processing.Generated} annotation to indicate
      * jOOQ version used for source code.
      *
-     * @return
-     *     possible object is
-     *     {@link GeneratedAnnotationType }
-     *
      */
     public GeneratedAnnotationType getGeneratedAnnotationType() {
         return generatedAnnotationType;
     }
 
     /**
-     * Sets the value of the generatedAnnotationType property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link GeneratedAnnotationType }
+     * Generate the {@link javax.annotation.Generated} or {@link javax.annotation.processing.Generated} annotation to indicate
+     * jOOQ version used for source code.
      *
      */
     public void setGeneratedAnnotationType(GeneratedAnnotationType value) {
@@ -532,6 +524,30 @@ public class Generate implements Serializable
      */
     public void setTables(Boolean value) {
         this.tables = value;
+    }
+
+    /**
+     * Generate embeddable classes.
+     *
+     * @return
+     *     possible object is
+     *     {@link Boolean }
+     *
+     */
+    public Boolean isEmbeddables() {
+        return embeddables;
+    }
+
+    /**
+     * Sets the value of the embeddables property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link Boolean }
+     *
+     */
+    public void setEmbeddables(Boolean value) {
+        this.embeddables = value;
     }
 
     /**
@@ -825,21 +841,13 @@ public class Generate implements Serializable
     /**
      * Version of JPA specification is to be used to generate version-specific annotations. If it is omitted, the latest version is used by default.
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getJpaVersion() {
         return jpaVersion;
     }
 
     /**
-     * Sets the value of the jpaVersion property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * Version of JPA specification is to be used to generate version-specific annotations. If it is omitted, the latest version is used by default.
      *
      */
     public void setJpaVersion(String value) {
@@ -1592,21 +1600,17 @@ public class Generate implements Serializable
      * class, and you want to avoid naming clashes with the java.lang package
      * by specifying <code>java\.lang\..*</code>
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getFullyQualifiedTypes() {
         return fullyQualifiedTypes;
     }
 
     /**
-     * Sets the value of the fullyQualifiedTypes property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * A regular expression matching all the types in generated code that should be fully qualified.
+     * <p>
+     * This can be useful if you have a database object that generates a String
+     * class, and you want to avoid naming clashes with the java.lang package
+     * by specifying <code>java\.lang\..*</code>
      *
      */
     public void setFullyQualifiedTypes(String value) {
@@ -1715,21 +1719,13 @@ public class Generate implements Serializable
     /**
      * The newline characters to be used in generated code. Whitespace characters can be used, e.g. \n, \r\n
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getNewline() {
         return newline;
     }
 
     /**
-     * Sets the value of the newline property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The newline characters to be used in generated code. Whitespace characters can be used, e.g. \n, \r\n
      *
      */
     public void setNewline(String value) {
@@ -1739,21 +1735,13 @@ public class Generate implements Serializable
     /**
      * The indentation characters to be used in generated code. If unspecified, an idiomatic default indentation of the language will be used (4 spaces in Java, 2 spaces in Scala). Whitespace characters can be used, e.g. \t
      *
-     * @return
-     *     possible object is
-     *     {@link String }
-     *
      */
     public String getIndentation() {
         return indentation;
     }
 
     /**
-     * Sets the value of the indentation property.
-     *
-     * @param value
-     *     allowed object is
-     *     {@link String }
+     * The indentation characters to be used in generated code. If unspecified, an idiomatic default indentation of the language will be used (4 spaces in Java, 2 spaces in Scala). Whitespace characters can be used, e.g. \t
      *
      */
     public void setIndentation(String value) {
@@ -1795,6 +1783,11 @@ public class Generate implements Serializable
         return this;
     }
 
+    /**
+     * Generate the {@link javax.annotation.Generated} or {@link javax.annotation.processing.Generated} annotation to indicate
+     * jOOQ version used for source code.
+     *
+     */
     public Generate withGeneratedAnnotationType(GeneratedAnnotationType value) {
         setGeneratedAnnotationType(value);
         return this;
@@ -1832,6 +1825,11 @@ public class Generate implements Serializable
 
     public Generate withTables(Boolean value) {
         setTables(value);
+        return this;
+    }
+
+    public Generate withEmbeddables(Boolean value) {
+        setEmbeddables(value);
         return this;
     }
 
@@ -1895,6 +1893,10 @@ public class Generate implements Serializable
         return this;
     }
 
+    /**
+     * Version of JPA specification is to be used to generate version-specific annotations. If it is omitted, the latest version is used by default.
+     *
+     */
     public Generate withJpaVersion(String value) {
         setJpaVersion(value);
         return this;
@@ -2050,6 +2052,14 @@ public class Generate implements Serializable
         return this;
     }
 
+    /**
+     * A regular expression matching all the types in generated code that should be fully qualified.
+     * <p>
+     * This can be useful if you have a database object that generates a String
+     * class, and you want to avoid naming clashes with the java.lang package
+     * by specifying <code>java\.lang\..*</code>
+     *
+     */
     public Generate withFullyQualifiedTypes(String value) {
         setFullyQualifiedTypes(value);
         return this;
@@ -2075,345 +2085,99 @@ public class Generate implements Serializable
         return this;
     }
 
+    /**
+     * The newline characters to be used in generated code. Whitespace characters can be used, e.g. \n, \r\n
+     *
+     */
     public Generate withNewline(String value) {
         setNewline(value);
         return this;
     }
 
+    /**
+     * The indentation characters to be used in generated code. If unspecified, an idiomatic default indentation of the language will be used (4 spaces in Java, 2 spaces in Scala). Whitespace characters can be used, e.g. \t
+     *
+     */
     public Generate withIndentation(String value) {
         setIndentation(value);
         return this;
     }
 
     @Override
+    public final void appendTo(XMLBuilder builder) {
+        builder.append("indexes", indexes);
+        builder.append("relations", relations);
+        builder.append("implicitJoinPathsToOne", implicitJoinPathsToOne);
+        builder.append("deprecated", deprecated);
+        builder.append("deprecationOnUnknownTypes", deprecationOnUnknownTypes);
+        builder.append("instanceFields", instanceFields);
+        builder.append("generatedAnnotation", generatedAnnotation);
+        builder.append("generatedAnnotationType", generatedAnnotationType);
+        builder.append("routines", routines);
+        builder.append("sequences", sequences);
+        builder.append("udts", udts);
+        builder.append("queues", queues);
+        builder.append("links", links);
+        builder.append("keys", keys);
+        builder.append("tables", tables);
+        builder.append("embeddables", embeddables);
+        builder.append("records", records);
+        builder.append("recordsImplementingRecordN", recordsImplementingRecordN);
+        builder.append("pojos", pojos);
+        builder.append("pojosEqualsAndHashCode", pojosEqualsAndHashCode);
+        builder.append("pojosToString", pojosToString);
+        builder.append("immutablePojos", immutablePojos);
+        builder.append("serializablePojos", serializablePojos);
+        builder.append("interfaces", interfaces);
+        builder.append("immutableInterfaces", immutableInterfaces);
+        builder.append("serializableInterfaces", serializableInterfaces);
+        builder.append("daos", daos);
+        builder.append("jpaAnnotations", jpaAnnotations);
+        builder.append("jpaVersion", jpaVersion);
+        builder.append("validationAnnotations", validationAnnotations);
+        builder.append("springAnnotations", springAnnotations);
+        builder.append("globalObjectReferences", globalObjectReferences);
+        builder.append("globalCatalogReferences", globalCatalogReferences);
+        builder.append("globalSchemaReferences", globalSchemaReferences);
+        builder.append("globalTableReferences", globalTableReferences);
+        builder.append("globalSequenceReferences", globalSequenceReferences);
+        builder.append("globalUDTReferences", globalUDTReferences);
+        builder.append("globalRoutineReferences", globalRoutineReferences);
+        builder.append("globalQueueReferences", globalQueueReferences);
+        builder.append("globalLinkReferences", globalLinkReferences);
+        builder.append("globalKeyReferences", globalKeyReferences);
+        builder.append("javadoc", javadoc);
+        builder.append("comments", comments);
+        builder.append("commentsOnCatalogs", commentsOnCatalogs);
+        builder.append("commentsOnSchemas", commentsOnSchemas);
+        builder.append("commentsOnTables", commentsOnTables);
+        builder.append("commentsOnColumns", commentsOnColumns);
+        builder.append("commentsOnUDTs", commentsOnUDTs);
+        builder.append("commentsOnAttributes", commentsOnAttributes);
+        builder.append("commentsOnPackages", commentsOnPackages);
+        builder.append("commentsOnRoutines", commentsOnRoutines);
+        builder.append("commentsOnParameters", commentsOnParameters);
+        builder.append("commentsOnSequences", commentsOnSequences);
+        builder.append("commentsOnLinks", commentsOnLinks);
+        builder.append("commentsOnQueues", commentsOnQueues);
+        builder.append("commentsOnKeys", commentsOnKeys);
+        builder.append("fluentSetters", fluentSetters);
+        builder.append("javaBeansGettersAndSetters", javaBeansGettersAndSetters);
+        builder.append("varargSetters", varargSetters);
+        builder.append("fullyQualifiedTypes", fullyQualifiedTypes);
+        builder.append("emptyCatalogs", emptyCatalogs);
+        builder.append("emptySchemas", emptySchemas);
+        builder.append("javaTimeTypes", javaTimeTypes);
+        builder.append("primaryKeyTypes", primaryKeyTypes);
+        builder.append("newline", newline);
+        builder.append("indentation", indentation);
+    }
+
+    @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (indexes!= null) {
-            sb.append("<indexes>");
-            sb.append(indexes);
-            sb.append("</indexes>");
-        }
-        if (relations!= null) {
-            sb.append("<relations>");
-            sb.append(relations);
-            sb.append("</relations>");
-        }
-        if (implicitJoinPathsToOne!= null) {
-            sb.append("<implicitJoinPathsToOne>");
-            sb.append(implicitJoinPathsToOne);
-            sb.append("</implicitJoinPathsToOne>");
-        }
-        if (deprecated!= null) {
-            sb.append("<deprecated>");
-            sb.append(deprecated);
-            sb.append("</deprecated>");
-        }
-        if (deprecationOnUnknownTypes!= null) {
-            sb.append("<deprecationOnUnknownTypes>");
-            sb.append(deprecationOnUnknownTypes);
-            sb.append("</deprecationOnUnknownTypes>");
-        }
-        if (instanceFields!= null) {
-            sb.append("<instanceFields>");
-            sb.append(instanceFields);
-            sb.append("</instanceFields>");
-        }
-        if (generatedAnnotation!= null) {
-            sb.append("<generatedAnnotation>");
-            sb.append(generatedAnnotation);
-            sb.append("</generatedAnnotation>");
-        }
-        if (generatedAnnotationType!= null) {
-            sb.append("<generatedAnnotationType>");
-            sb.append(generatedAnnotationType);
-            sb.append("</generatedAnnotationType>");
-        }
-        if (routines!= null) {
-            sb.append("<routines>");
-            sb.append(routines);
-            sb.append("</routines>");
-        }
-        if (sequences!= null) {
-            sb.append("<sequences>");
-            sb.append(sequences);
-            sb.append("</sequences>");
-        }
-        if (udts!= null) {
-            sb.append("<udts>");
-            sb.append(udts);
-            sb.append("</udts>");
-        }
-        if (queues!= null) {
-            sb.append("<queues>");
-            sb.append(queues);
-            sb.append("</queues>");
-        }
-        if (links!= null) {
-            sb.append("<links>");
-            sb.append(links);
-            sb.append("</links>");
-        }
-        if (keys!= null) {
-            sb.append("<keys>");
-            sb.append(keys);
-            sb.append("</keys>");
-        }
-        if (tables!= null) {
-            sb.append("<tables>");
-            sb.append(tables);
-            sb.append("</tables>");
-        }
-        if (records!= null) {
-            sb.append("<records>");
-            sb.append(records);
-            sb.append("</records>");
-        }
-        if (recordsImplementingRecordN!= null) {
-            sb.append("<recordsImplementingRecordN>");
-            sb.append(recordsImplementingRecordN);
-            sb.append("</recordsImplementingRecordN>");
-        }
-        if (pojos!= null) {
-            sb.append("<pojos>");
-            sb.append(pojos);
-            sb.append("</pojos>");
-        }
-        if (pojosEqualsAndHashCode!= null) {
-            sb.append("<pojosEqualsAndHashCode>");
-            sb.append(pojosEqualsAndHashCode);
-            sb.append("</pojosEqualsAndHashCode>");
-        }
-        if (pojosToString!= null) {
-            sb.append("<pojosToString>");
-            sb.append(pojosToString);
-            sb.append("</pojosToString>");
-        }
-        if (immutablePojos!= null) {
-            sb.append("<immutablePojos>");
-            sb.append(immutablePojos);
-            sb.append("</immutablePojos>");
-        }
-        if (serializablePojos!= null) {
-            sb.append("<serializablePojos>");
-            sb.append(serializablePojos);
-            sb.append("</serializablePojos>");
-        }
-        if (interfaces!= null) {
-            sb.append("<interfaces>");
-            sb.append(interfaces);
-            sb.append("</interfaces>");
-        }
-        if (immutableInterfaces!= null) {
-            sb.append("<immutableInterfaces>");
-            sb.append(immutableInterfaces);
-            sb.append("</immutableInterfaces>");
-        }
-        if (serializableInterfaces!= null) {
-            sb.append("<serializableInterfaces>");
-            sb.append(serializableInterfaces);
-            sb.append("</serializableInterfaces>");
-        }
-        if (daos!= null) {
-            sb.append("<daos>");
-            sb.append(daos);
-            sb.append("</daos>");
-        }
-        if (jpaAnnotations!= null) {
-            sb.append("<jpaAnnotations>");
-            sb.append(jpaAnnotations);
-            sb.append("</jpaAnnotations>");
-        }
-        if (jpaVersion!= null) {
-            sb.append("<jpaVersion>");
-            sb.append(jpaVersion);
-            sb.append("</jpaVersion>");
-        }
-        if (validationAnnotations!= null) {
-            sb.append("<validationAnnotations>");
-            sb.append(validationAnnotations);
-            sb.append("</validationAnnotations>");
-        }
-        if (springAnnotations!= null) {
-            sb.append("<springAnnotations>");
-            sb.append(springAnnotations);
-            sb.append("</springAnnotations>");
-        }
-        if (globalObjectReferences!= null) {
-            sb.append("<globalObjectReferences>");
-            sb.append(globalObjectReferences);
-            sb.append("</globalObjectReferences>");
-        }
-        if (globalCatalogReferences!= null) {
-            sb.append("<globalCatalogReferences>");
-            sb.append(globalCatalogReferences);
-            sb.append("</globalCatalogReferences>");
-        }
-        if (globalSchemaReferences!= null) {
-            sb.append("<globalSchemaReferences>");
-            sb.append(globalSchemaReferences);
-            sb.append("</globalSchemaReferences>");
-        }
-        if (globalTableReferences!= null) {
-            sb.append("<globalTableReferences>");
-            sb.append(globalTableReferences);
-            sb.append("</globalTableReferences>");
-        }
-        if (globalSequenceReferences!= null) {
-            sb.append("<globalSequenceReferences>");
-            sb.append(globalSequenceReferences);
-            sb.append("</globalSequenceReferences>");
-        }
-        if (globalUDTReferences!= null) {
-            sb.append("<globalUDTReferences>");
-            sb.append(globalUDTReferences);
-            sb.append("</globalUDTReferences>");
-        }
-        if (globalRoutineReferences!= null) {
-            sb.append("<globalRoutineReferences>");
-            sb.append(globalRoutineReferences);
-            sb.append("</globalRoutineReferences>");
-        }
-        if (globalQueueReferences!= null) {
-            sb.append("<globalQueueReferences>");
-            sb.append(globalQueueReferences);
-            sb.append("</globalQueueReferences>");
-        }
-        if (globalLinkReferences!= null) {
-            sb.append("<globalLinkReferences>");
-            sb.append(globalLinkReferences);
-            sb.append("</globalLinkReferences>");
-        }
-        if (globalKeyReferences!= null) {
-            sb.append("<globalKeyReferences>");
-            sb.append(globalKeyReferences);
-            sb.append("</globalKeyReferences>");
-        }
-        if (javadoc!= null) {
-            sb.append("<javadoc>");
-            sb.append(javadoc);
-            sb.append("</javadoc>");
-        }
-        if (comments!= null) {
-            sb.append("<comments>");
-            sb.append(comments);
-            sb.append("</comments>");
-        }
-        if (commentsOnCatalogs!= null) {
-            sb.append("<commentsOnCatalogs>");
-            sb.append(commentsOnCatalogs);
-            sb.append("</commentsOnCatalogs>");
-        }
-        if (commentsOnSchemas!= null) {
-            sb.append("<commentsOnSchemas>");
-            sb.append(commentsOnSchemas);
-            sb.append("</commentsOnSchemas>");
-        }
-        if (commentsOnTables!= null) {
-            sb.append("<commentsOnTables>");
-            sb.append(commentsOnTables);
-            sb.append("</commentsOnTables>");
-        }
-        if (commentsOnColumns!= null) {
-            sb.append("<commentsOnColumns>");
-            sb.append(commentsOnColumns);
-            sb.append("</commentsOnColumns>");
-        }
-        if (commentsOnUDTs!= null) {
-            sb.append("<commentsOnUDTs>");
-            sb.append(commentsOnUDTs);
-            sb.append("</commentsOnUDTs>");
-        }
-        if (commentsOnAttributes!= null) {
-            sb.append("<commentsOnAttributes>");
-            sb.append(commentsOnAttributes);
-            sb.append("</commentsOnAttributes>");
-        }
-        if (commentsOnPackages!= null) {
-            sb.append("<commentsOnPackages>");
-            sb.append(commentsOnPackages);
-            sb.append("</commentsOnPackages>");
-        }
-        if (commentsOnRoutines!= null) {
-            sb.append("<commentsOnRoutines>");
-            sb.append(commentsOnRoutines);
-            sb.append("</commentsOnRoutines>");
-        }
-        if (commentsOnParameters!= null) {
-            sb.append("<commentsOnParameters>");
-            sb.append(commentsOnParameters);
-            sb.append("</commentsOnParameters>");
-        }
-        if (commentsOnSequences!= null) {
-            sb.append("<commentsOnSequences>");
-            sb.append(commentsOnSequences);
-            sb.append("</commentsOnSequences>");
-        }
-        if (commentsOnLinks!= null) {
-            sb.append("<commentsOnLinks>");
-            sb.append(commentsOnLinks);
-            sb.append("</commentsOnLinks>");
-        }
-        if (commentsOnQueues!= null) {
-            sb.append("<commentsOnQueues>");
-            sb.append(commentsOnQueues);
-            sb.append("</commentsOnQueues>");
-        }
-        if (commentsOnKeys!= null) {
-            sb.append("<commentsOnKeys>");
-            sb.append(commentsOnKeys);
-            sb.append("</commentsOnKeys>");
-        }
-        if (fluentSetters!= null) {
-            sb.append("<fluentSetters>");
-            sb.append(fluentSetters);
-            sb.append("</fluentSetters>");
-        }
-        if (javaBeansGettersAndSetters!= null) {
-            sb.append("<javaBeansGettersAndSetters>");
-            sb.append(javaBeansGettersAndSetters);
-            sb.append("</javaBeansGettersAndSetters>");
-        }
-        if (varargSetters!= null) {
-            sb.append("<varargSetters>");
-            sb.append(varargSetters);
-            sb.append("</varargSetters>");
-        }
-        if (fullyQualifiedTypes!= null) {
-            sb.append("<fullyQualifiedTypes>");
-            sb.append(fullyQualifiedTypes);
-            sb.append("</fullyQualifiedTypes>");
-        }
-        if (emptyCatalogs!= null) {
-            sb.append("<emptyCatalogs>");
-            sb.append(emptyCatalogs);
-            sb.append("</emptyCatalogs>");
-        }
-        if (emptySchemas!= null) {
-            sb.append("<emptySchemas>");
-            sb.append(emptySchemas);
-            sb.append("</emptySchemas>");
-        }
-        if (javaTimeTypes!= null) {
-            sb.append("<javaTimeTypes>");
-            sb.append(javaTimeTypes);
-            sb.append("</javaTimeTypes>");
-        }
-        if (primaryKeyTypes!= null) {
-            sb.append("<primaryKeyTypes>");
-            sb.append(primaryKeyTypes);
-            sb.append("</primaryKeyTypes>");
-        }
-        if (newline!= null) {
-            sb.append("<newline>");
-            sb.append(newline);
-            sb.append("</newline>");
-        }
-        if (indentation!= null) {
-            sb.append("<indentation>");
-            sb.append(indentation);
-            sb.append("</indentation>");
-        }
-        return sb.toString();
+        XMLBuilder builder = XMLBuilder.nonFormatting();
+        appendTo(builder);
+        return builder.toString();
     }
 
     @Override
@@ -2560,6 +2324,15 @@ public class Generate implements Serializable
             }
         } else {
             if (!tables.equals(other.tables)) {
+                return false;
+            }
+        }
+        if (embeddables == null) {
+            if (other.embeddables!= null) {
+                return false;
+            }
+        } else {
+            if (!embeddables.equals(other.embeddables)) {
                 return false;
             }
         }
@@ -3035,6 +2808,7 @@ public class Generate implements Serializable
         result = ((prime*result)+((links == null)? 0 :links.hashCode()));
         result = ((prime*result)+((keys == null)? 0 :keys.hashCode()));
         result = ((prime*result)+((tables == null)? 0 :tables.hashCode()));
+        result = ((prime*result)+((embeddables == null)? 0 :embeddables.hashCode()));
         result = ((prime*result)+((records == null)? 0 :records.hashCode()));
         result = ((prime*result)+((recordsImplementingRecordN == null)? 0 :recordsImplementingRecordN.hashCode()));
         result = ((prime*result)+((pojos == null)? 0 :pojos.hashCode()));

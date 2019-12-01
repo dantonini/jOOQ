@@ -48,7 +48,7 @@ import org.jooq.Context;
 /**
  * @author Lukas Eder
  */
-final class SetCatalog extends AbstractQuery {
+final class SetCatalog extends AbstractRowCountQuery {
 
     private static final long serialVersionUID = -3996953205762741746L;
     private final Catalog     catalog;
@@ -66,9 +66,23 @@ final class SetCatalog extends AbstractQuery {
 
 
 
+
+
+
+
+
+
+
+
+
+
+            case DERBY:
+            case H2:
+            case HSQLDB:
             case MARIADB:
             case MYSQL:
-                ctx.visit(K_USE).sql(' ').visit(catalog);
+            case POSTGRES:
+                ctx.visit(DSL.setSchema(catalog.getName()));
                 break;
 
             default:

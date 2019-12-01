@@ -37,19 +37,21 @@
  */
 package org.jooq.impl;
 
-import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.two;
+import static org.jooq.impl.Keywords.F_TANH;
+import static org.jooq.impl.Names.N_TANH;
+import static org.jooq.impl.SQLDataType.NUMERIC;
 
 import java.math.BigDecimal;
 
-import org.jooq.Configuration;
+import org.jooq.Context;
 import org.jooq.Field;
 
 /**
  * @author Lukas Eder
  */
-final class Tanh extends AbstractFunction<BigDecimal> {
+final class Tanh extends AbstractField<BigDecimal> {
 
     /**
      * Generated UID
@@ -59,14 +61,16 @@ final class Tanh extends AbstractFunction<BigDecimal> {
     private final Field<? extends Number> argument;
 
     Tanh(Field<? extends Number> argument) {
-        super("tanh", SQLDataType.NUMERIC, argument);
+        super(N_TANH, NUMERIC);
 
         this.argument = argument;
     }
 
     @Override
-    final Field<BigDecimal> getFunction0(Configuration configuration) {
-        switch (configuration.family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
+
 
 
 
@@ -84,10 +88,12 @@ final class Tanh extends AbstractFunction<BigDecimal> {
             case MARIADB:
             case MYSQL:
             case POSTGRES:
-                return DSL.exp(argument.mul(two())).sub(one()).div(DSL.exp(argument.mul(two())).add(one()));
+                ctx.visit(DSL.exp(argument.mul(two())).sub(one()).div(DSL.exp(argument.mul(two())).add(one())));
+                break;
 
             default:
-                return function("tanh", SQLDataType.NUMERIC, argument);
+                ctx.visit(F_TANH).sql('(').visit(argument).sql(')');
+                break;
         }
     }
 }

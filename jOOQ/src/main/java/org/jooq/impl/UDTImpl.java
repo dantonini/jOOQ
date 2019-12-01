@@ -62,6 +62,7 @@ import org.jooq.UDTRecord;
  *
  * @author Lukas Eder
  */
+@org.jooq.Internal
 public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UDT<R> {
 
     private static final long     serialVersionUID = -2208672099190913126L;
@@ -86,7 +87,7 @@ public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UD
     public UDTImpl(String name, Schema schema, Package pkg, boolean synthetic) {
         super(qualify(pkg != null ? pkg : schema, DSL.name(name)), CommentImpl.NO_COMMENT);
 
-        this.fields = new Fields<R>();
+        this.fields = new Fields<>();
         this.schema = schema;
 
 
@@ -102,6 +103,12 @@ public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UD
     @Override
     public /* non-final */ Schema getSchema() {
         return schema;
+    }
+
+    @Override
+    public /* non-final */ Name getQualifiedName() {
+        Schema s = getSchema();
+        return s == null ? super.getQualifiedName() : s.getQualifiedName().append(getUnqualifiedName());
     }
 
 
@@ -200,7 +207,7 @@ public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UD
 
     @Override
     public final boolean isSQLUsable() {
-        return true                                        ;
+        return true;
     }
 
     @Override
@@ -215,9 +222,8 @@ public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UD
 
     @Override
     public final DataType<R> getDataType() {
-        if (type == null) {
-            type = new UDTDataType<R>(this);
-        }
+        if (type == null)
+            type = new UDTDataType<>(this);
 
         return type;
     }
@@ -371,7 +377,7 @@ public class UDTImpl<R extends UDTRecord<R>> extends AbstractNamed implements UD
             : type.asConvertedDataType(actualBinding);
 
         // [#5999] TODO: Allow for user-defined Names
-        final UDTFieldImpl<R, U> udtField = new UDTFieldImpl<R, U>(name, actualType, udt, DSL.comment(comment), actualBinding);
+        final UDTFieldImpl<R, U> udtField = new UDTFieldImpl<>(name, actualType, udt, DSL.comment(comment), actualBinding);
 
         return udtField;
     }

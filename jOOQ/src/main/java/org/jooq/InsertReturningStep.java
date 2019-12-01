@@ -45,7 +45,7 @@ import java.util.Collection;
  * Example: <code><pre>
  * DSLContext create = DSL.using(configuration);
  *
- * TableRecord&lt;?> record =
+ * TableRecord&lt;?&gt; record =
  * create.insertInto(table, field1, field2)
  *       .values(value1, value2)
  *       .returning(field1)
@@ -96,6 +96,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return all fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -105,6 +108,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      * <p>
      * [#5070] Due to an early API design flaw, this method historically returns
      * the type <code>R</code>, not a more generic type <code>Record</code>.
@@ -122,6 +128,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
      * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
+     * <p>
      * [#5070] Due to an early API design flaw, this method historically returns
      * the type <code>R</code>, not a more generic type <code>Record</code>.
      * This means that only actual columns in <code>R</code> can be returned.
@@ -137,6 +146,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @param fields Fields to be returned
      * @see InsertResultStep
@@ -147,6 +159,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @param fields Fields to be returned
      * @see InsertResultStep
@@ -154,11 +169,14 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     @Support
     InsertResultStep<Record> returningResult(Collection<? extends SelectFieldOrAsterisk> fields);
 
-    // [jooq-tools] START [returning]
+
 
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -168,6 +186,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -177,6 +198,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -186,6 +210,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -195,6 +222,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -204,6 +234,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -213,6 +246,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -222,6 +258,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -231,6 +270,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -240,6 +282,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -249,6 +294,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -258,6 +306,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -267,6 +318,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -276,6 +330,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -285,6 +342,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -294,6 +354,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -303,6 +366,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -312,6 +378,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -321,6 +390,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -330,6 +402,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -339,6 +414,9 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
@@ -348,11 +426,15 @@ public interface InsertReturningStep<R extends Record> extends InsertFinalStep<R
     /**
      * Configure the <code>INSERT</code> statement to return a list of fields in
      * <code>R</code>.
+     * <p>
+     * This will return the data <em>after</em> insertion and generation of
+     * default values and generation of any values produced by triggers.
      *
      * @see InsertResultStep
      */
     @Support
     <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22> InsertResultStep<Record22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>> returningResult(SelectField<T1> field1, SelectField<T2> field2, SelectField<T3> field3, SelectField<T4> field4, SelectField<T5> field5, SelectField<T6> field6, SelectField<T7> field7, SelectField<T8> field8, SelectField<T9> field9, SelectField<T10> field10, SelectField<T11> field11, SelectField<T12> field12, SelectField<T13> field13, SelectField<T14> field14, SelectField<T15> field15, SelectField<T16> field16, SelectField<T17> field17, SelectField<T18> field18, SelectField<T19> field19, SelectField<T20> field20, SelectField<T21> field21, SelectField<T22> field22);
 
-// [jooq-tools] END [returning]
+
+
 }

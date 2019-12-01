@@ -44,24 +44,23 @@ import static org.jooq.impl.Keywords.K_SWITCH;
 import static org.jooq.impl.Keywords.K_THEN;
 import static org.jooq.impl.Keywords.K_TRUE;
 import static org.jooq.impl.Keywords.K_WHEN;
+import static org.jooq.impl.Names.N_CASE;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.jooq.CaseConditionStep;
 import org.jooq.Condition;
-import org.jooq.Configuration;
 import org.jooq.Context;
 import org.jooq.Field;
 // ...
-import org.jooq.QueryPart;
 import org.jooq.Record1;
 import org.jooq.Select;
 
 /**
  * @author Lukas Eder
  */
-final class CaseConditionStepImpl<T> extends AbstractFunction<T> implements CaseConditionStep<T> {
+final class CaseConditionStepImpl<T> extends AbstractField<T> implements CaseConditionStep<T> {
 
     /**
      * Generated UID
@@ -73,10 +72,10 @@ final class CaseConditionStepImpl<T> extends AbstractFunction<T> implements Case
     private Field<T>              else_;
 
     CaseConditionStepImpl(Condition condition, Field<T> result) {
-        super("case", result.getDataType());
+        super(N_CASE, result.getDataType());
 
-        this.conditions = new ArrayList<Condition>();
-        this.results = new ArrayList<Field<T>>();
+        this.conditions = new ArrayList<>();
+        this.results = new ArrayList<>();
 
         when(condition, result);
     }
@@ -132,15 +131,17 @@ final class CaseConditionStepImpl<T> extends AbstractFunction<T> implements Case
     }
 
     @Override
-    final QueryPart getFunction0(Configuration configuration) {
-        switch (configuration.dialect().family()) {
+    public final void accept(Context<?> ctx) {
+        switch (ctx.family()) {
+
 
 
 
 
 
             default:
-                return new Native();
+                ctx.visit(new Native());
+                break;
         }
     }
 

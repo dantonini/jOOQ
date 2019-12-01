@@ -72,6 +72,18 @@ public class DefaultStatement extends JDBC41Statement implements Statement {
     }
 
     // ------------------------------------------------------------------------
+    // XXX Auxiliary methods
+    // ------------------------------------------------------------------------
+
+    protected ResultSet wrap(ResultSet wrapped) {
+
+        // [#8993] Some JDBC drivers produce null ResultSets where they shouldn't.
+        //         This method allows for passing along this null result value
+        //         rather than wrapping it, leading to unrelated NPEs later.
+        return wrapped == null ? null : new DefaultResultSet(wrapped, this);
+    }
+
+    // ------------------------------------------------------------------------
     // XXX Executing the statement
     // ------------------------------------------------------------------------
 
@@ -102,7 +114,7 @@ public class DefaultStatement extends JDBC41Statement implements Statement {
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
-        return new DefaultResultSet(getDelegateStatement().executeQuery(sql), this);
+        return wrap(getDelegateStatement().executeQuery(sql));
     }
 
     @Override
@@ -201,7 +213,7 @@ public class DefaultStatement extends JDBC41Statement implements Statement {
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        return new DefaultResultSet(getDelegateStatement().getResultSet(), this);
+        return wrap(getDelegateStatement().getResultSet());
     }
 
     @Override
@@ -266,7 +278,7 @@ public class DefaultStatement extends JDBC41Statement implements Statement {
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
-        return new DefaultResultSet(getDelegateStatement().getGeneratedKeys(), this);
+        return wrap(getDelegateStatement().getGeneratedKeys());
     }
 
     @Override
@@ -351,32 +363,32 @@ public class DefaultStatement extends JDBC41Statement implements Statement {
 
 
 
-    /* [java-9] */
 
-    // ------------------------------------------------------------------------
-    // JDBC 4.3
-    // ------------------------------------------------------------------------
 
-    @Override
-    public String enquoteLiteral(String val) throws SQLException {
-        return getDelegate().enquoteLiteral(val);
-    }
 
-    @Override
-    public String enquoteIdentifier(String identifier, boolean alwaysQuote) throws SQLException {
-        return getDelegate().enquoteIdentifier(identifier, alwaysQuote);
-    }
 
-    @Override
-    public boolean isSimpleIdentifier(String identifier) throws SQLException {
-        return getDelegate().isSimpleIdentifier(identifier);
-    }
 
-    @Override
-    public String enquoteNCharLiteral(String val) throws SQLException {
-        return getDelegate().enquoteNCharLiteral(val);
-    }
 
-    /* [/java-9] */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

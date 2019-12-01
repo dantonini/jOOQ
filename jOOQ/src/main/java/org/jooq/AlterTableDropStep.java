@@ -37,10 +37,17 @@
  */
 package org.jooq;
 
+// ...
+// ...
+import static org.jooq.SQLDialect.DERBY;
+import static org.jooq.SQLDialect.H2;
+import static org.jooq.SQLDialect.HSQLDB;
+// ...
+import static org.jooq.SQLDialect.POSTGRES;
 
 /**
  * The step in the <code>ALTER TABLE</code> DSL used to <code>DROP</code>
- * columns.
+ * columns or constraints.
  * <p>
  * <h3>Referencing <code>XYZ*Step</code> types directly from client code</h3>
  * <p>
@@ -66,15 +73,15 @@ public interface AlterTableDropStep extends AlterTableFinalStep {
 
     /**
      * Add a <code>CASCADE</code> clause to the
-     * <code>ALTER TABLE .. DROP COLUMN</code> statement.
+     * <code>ALTER TABLE .. DROP</code> statement.
      */
-    @Support
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     AlterTableFinalStep cascade();
 
     /**
      * Add a <code>RESTRICT</code> clause to the
-     * <code>ALTER TABLE .. DROP COLUMN</code> statement.
+     * <code>ALTER TABLE .. DROP</code> statement.
      */
-    @Support
+    @Support({ DERBY, HSQLDB, POSTGRES })
     AlterTableFinalStep restrict();
 }

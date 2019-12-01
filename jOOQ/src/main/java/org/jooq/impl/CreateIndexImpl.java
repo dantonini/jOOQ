@@ -1,19 +1,4 @@
-/**
- * This work is dual-licensed
- * - under the Apache Software License 2.0 (the "ASL")
- * - under the jOOQ License and Maintenance Agreement (the "jOOQ License")
- * =============================================================================
- * You may choose which license applies to you:
- *
- * - If you're using this work with Open Source databases, you may choose
- *   either ASL or jOOQ License.
- * - If you're using this work with at least one commercial database, you must
- *   choose jOOQ License
- *
- * For more information, please visit http://www.jooq.org/licenses
- *
- * Apache Software License 2.0:
- * -----------------------------------------------------------------------------
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,14 +11,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * jOOQ License and Maintenance Agreement:
+ * Other licenses:
  * -----------------------------------------------------------------------------
- * Data Geekery grants the Customer the non-exclusive, timely limited and
- * non-transferable license to install and use the Software under the terms of
- * the jOOQ License and Maintenance Agreement.
+ * Commercial licenses for this work are available. These replace the above
+ * ASL 2.0 and offer limited warranties, support, maintenance, and commercial
+ * database integrations.
  *
- * This library is distributed with a LIMITED WARRANTY. See the jOOQ License
- * and Maintenance Agreement for more details: http://www.jooq.org/licensing
+ * For more information, please visit: http://www.jooq.org/licenses
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  */
 package org.jooq.impl;
 
@@ -43,12 +43,14 @@ import static org.jooq.Clause.CREATE_INDEX;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.DERBY;
 import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_11;
+// ...
 // ...
 // ...
 // ...
@@ -59,6 +61,7 @@ import static org.jooq.impl.Keywords.K_IF_NOT_EXISTS;
 import static org.jooq.impl.Keywords.K_INCLUDE;
 import static org.jooq.impl.Keywords.K_INDEX;
 import static org.jooq.impl.Keywords.K_ON;
+import static org.jooq.impl.Keywords.K_STORING;
 import static org.jooq.impl.Keywords.K_UNIQUE;
 import static org.jooq.impl.Keywords.K_WHERE;
 import static org.jooq.impl.Tools.EMPTY_FIELD;
@@ -68,7 +71,7 @@ import static org.jooq.impl.Tools.EMPTY_SORTFIELD;
 import static org.jooq.impl.Tools.EMPTY_STRING;
 
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Set;
 
 import org.jooq.Clause;
 import org.jooq.Condition;
@@ -78,6 +81,7 @@ import org.jooq.CreateIndexIncludeStep;
 import org.jooq.CreateIndexStep;
 import org.jooq.Field;
 import org.jooq.Index;
+import org.jooq.Keyword;
 import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.QueryPart;
@@ -89,7 +93,7 @@ import org.jooq.Table;
 /**
  * @author Lukas Eder
  */
-final class CreateIndexImpl extends AbstractQuery implements
+final class CreateIndexImpl extends AbstractRowCountQuery implements
 
     // Cascading interface implementations for CREATE INDEX behaviour
     CreateIndexStep,
@@ -100,16 +104,16 @@ final class CreateIndexImpl extends AbstractQuery implements
      */
     private static final long                serialVersionUID         = 8904572826501186329L;
     private static final Clause[]            CLAUSES                  = { CREATE_INDEX };
-    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_NOT_EXISTS = EnumSet.of(DERBY, FIREBIRD);
-    private static final EnumSet<SQLDialect> SUPPORT_UNNAMED_INDEX    = EnumSet.of(POSTGRES);
+    private static final Set<SQLDialect>     NO_SUPPORT_IF_NOT_EXISTS = SQLDialect.supportedBy(DERBY, FIREBIRD);
+    private static final Set<SQLDialect>     SUPPORT_UNNAMED_INDEX    = SQLDialect.supportedBy(POSTGRES);
+    private static final Set<SQLDialect>     SUPPORT_INCLUDE          = SQLDialect.supportedBy(POSTGRES);
 
     private final Index                      index;
     private final boolean                    unique;
     private final boolean                    ifNotExists;
     private Table<?>                         table;
-    private Field<?>[]                       fields;
-    private Field<?>[]                       include;
     private SortField<?>[]                   sortFields;
+    private Field<?>[]                       include;
     private Condition                        where;
 
     CreateIndexImpl(Configuration configuration, Index index, boolean unique, boolean ifNotExists) {
@@ -125,6 +129,13 @@ final class CreateIndexImpl extends AbstractQuery implements
             this.where = index.getWhere();
         }
     }
+
+    final Index          $index()       { return index; }
+    final boolean        $unique()      { return unique; }
+    final boolean        $ifNotExists() { return ifNotExists; }
+    final Table<?>       $table()       { return table; }
+    final SortField<?>[] $sortFields()  { return sortFields; }
+    final Field<?>[]     $include()     { return include; }
 
     // ------------------------------------------------------------------------
     // XXX: DSL API
@@ -269,14 +280,11 @@ final class CreateIndexImpl extends AbstractQuery implements
             ctx.visit(generatedName())
                .sql(' ');
 
-        boolean supportsInclude = POSTGRES_11.precedes(ctx.family())                                                      ;
-        boolean supportsFieldsBeforeTable = false                                                     ;
+        boolean supportsInclude = SUPPORT_INCLUDE.contains(ctx.dialect());
+        boolean supportsFieldsBeforeTable = false;
 
-        QueryPartList<QueryPart> list = new QueryPartList<QueryPart>();
-        if (fields != null)
-            list.addAll(asList(fields));
-        else
-            list.addAll(asList(sortFields));
+        QueryPartList<QueryPart> list = new QueryPartList<>();
+        list.addAll(asList(sortFields));
 
         if (!supportsInclude && include != null)
             list.addAll(asList(include));
@@ -303,16 +311,24 @@ final class CreateIndexImpl extends AbstractQuery implements
                .qualify(true)
                .sql(')');
 
-        if (supportsInclude && include != null)
+        if (supportsInclude && include != null) {
+            Keyword keyword = K_INCLUDE;
+
+
+
+
+
+
             ctx.formatSeparator()
-               .visit(K_INCLUDE)
+               .visit(keyword)
                .sql(" (")
                .qualify(false)
-               .visit(new QueryPartList<QueryPart>(include))
+               .visit(new QueryPartList<>(include))
                .qualify(true)
                .sql(')');
+        }
 
-        if (where != null && ctx.configuration().data("org.jooq.meta.extensions.ddl.ignore-storage-clauses") == null)
+        if (where != null && ctx.configuration().data("org.jooq.ddl.ignore-storage-clauses") == null)
             ctx.formatSeparator()
                .visit(K_WHERE)
                .sql(' ')

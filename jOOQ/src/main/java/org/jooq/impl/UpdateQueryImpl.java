@@ -48,6 +48,7 @@ import static org.jooq.Clause.UPDATE_WHERE;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.DERBY;
@@ -58,8 +59,9 @@ import static org.jooq.SQLDialect.HSQLDB;
 // ...
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.POSTGRES_10;
+// ...
 // ...
 // ...
 import static org.jooq.SQLDialect.SQLITE;
@@ -80,8 +82,8 @@ import static org.jooq.impl.Keywords.K_WHERE;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.jooq.Clause;
 import org.jooq.Condition;
@@ -142,9 +144,7 @@ import org.jooq.RowN;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.Table;
-import org.jooq.TableField;
 import org.jooq.TableLike;
-import org.jooq.UniqueKey;
 import org.jooq.UpdateQuery;
 
 /**
@@ -152,23 +152,24 @@ import org.jooq.UpdateQuery;
  */
 final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements UpdateQuery<R> {
 
-    private static final long                serialVersionUID       = -660460731970074719L;
-    private static final Clause[]            CLAUSES                = { UPDATE };
+    private static final long            serialVersionUID       = -660460731970074719L;
+    private static final Clause[]        CLAUSES                = { UPDATE };
 
 
 
 
-    private static final EnumSet<SQLDialect> SUPPORT_RVE_SET        = EnumSet.of(H2, HSQLDB, POSTGRES);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_LIMIT       = EnumSet.of(CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES, SQLITE);
+    private static final Set<SQLDialect> SUPPORT_RVE_SET        = SQLDialect.supportedBy(H2, HSQLDB, POSTGRES);
+    private static final Set<SQLDialect> NO_SUPPORT_LIMIT       = SQLDialect.supportedBy(CUBRID, DERBY, FIREBIRD, H2, HSQLDB, POSTGRES, SQLITE);
+    private static final Set<SQLDialect> REQUIRE_RVE_ROW_CLAUSE = SQLDialect.supportedBy(POSTGRES);
 
-    private final FieldMapForUpdate          updateMap;
-    private final TableList                  from;
-    private final ConditionProviderImpl      condition;
-    private Row                              multiRow;
-    private Row                              multiValue;
-    private Select<?>                        multiSelect;
-    private final SortFieldList              orderBy;
-    private Param<? extends Number>          limit;
+    private final FieldMapForUpdate      updateMap;
+    private final TableList              from;
+    private final ConditionProviderImpl  condition;
+    private Row                          multiRow;
+    private Row                          multiValue;
+    private Select<?>                    multiSelect;
+    private final SortFieldList          orderBy;
+    private Param<? extends Number>      limit;
 
     UpdateQueryImpl(Configuration configuration, WithImpl with, Table<R> table) {
         super(configuration, with, table);
@@ -184,7 +185,7 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         return updateMap;
     }
 
-// [jooq-tools] START [addValues]
+
 
     @Override
     public final <T1> void addValues(Row1<T1> row, Row1<T1> value) {
@@ -416,7 +417,7 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         addValues0(row, select);
     }
 
-// [jooq-tools] END [addValues]
+
 
     private final void addValues0(Row row, Row value) {
         multiRow = row;
@@ -507,6 +508,7 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         return condition.hasWhere();
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     final void accept0(Context<?> ctx) {
         boolean declareTables = ctx.declareTables();
@@ -585,7 +587,7 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
                     // [#6763] Incompatible change in PostgreSQL 10 requires ROW() constructor for
                     //         single-degree rows. Let's just always render it, here.
-                    if (POSTGRES_10.precedes(ctx.dialect()))
+                    if (REQUIRE_RVE_ROW_CLAUSE.contains(ctx.dialect()))
                         ctx.visit(K_ROW).sql(" ");
 
                     ctx.visit(multiValue);
@@ -622,6 +624,10 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
 
         ctx.end(UPDATE_SET);
 
+
+
+
+
         switch (ctx.family()) {
 
 
@@ -645,18 +651,21 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
                 break;
         }
 
-        if (limit != null && NO_SUPPORT_LIMIT.contains(ctx.family()) && !table().getKeys().isEmpty()) {
-            UniqueKey<?> key = table().getPrimaryKey() != null ? table().getPrimaryKey() : table().getKeys().get(0);
-
-            @SuppressWarnings("unchecked")
-            TableField<?, Object>[] keyFields = (TableField<?, Object>[]) key.getFieldsArray();
+        // [#2059] MemSQL does not support UPDATE ... ORDER BY
+        if (limit != null && NO_SUPPORT_LIMIT.contains(ctx.family())) {
+            Field<?>[] keyFields =
+                table().getKeys().isEmpty()
+              ? new Field[] { table().rowid() }
+              : (table().getPrimaryKey() != null
+                  ? table().getPrimaryKey()
+                  : table().getKeys().get(0)).getFieldsArray();
 
             ctx.start(UPDATE_WHERE)
                .formatSeparator()
                .visit(K_WHERE).sql(' ');
 
             if (keyFields.length == 1)
-                ctx.visit(keyFields[0].in(select(keyFields[0]).from(table()).where(getWhere()).orderBy(orderBy).limit(limit)));
+                ctx.visit(keyFields[0].in(select((Field) keyFields[0]).from(table()).where(getWhere()).orderBy(orderBy).limit(limit)));
             else
                 ctx.visit(row(keyFields).in(select(keyFields).from(table()).where(getWhere()).orderBy(orderBy).limit(limit)));
 
@@ -703,8 +712,13 @@ final class UpdateQueryImpl<R extends Record> extends AbstractStoreQuery<R> impl
         return updateMap.size() > 0 || multiRow != null;
     }
 
-    @Override
-    final int estimatedRowCount() {
-        return Integer.MAX_VALUE;
-    }
+
+
+
+
+
+
+
+
+
 }

@@ -60,6 +60,7 @@ import org.jooq.ExecuteContext;
 import org.jooq.ExecuteListener;
 import org.jooq.Param;
 import org.jooq.Query;
+import org.jooq.conf.SettingsTools;
 import org.jooq.exception.ControlFlowSignal;
 import org.jooq.tools.JooqLogger;
 
@@ -90,15 +91,15 @@ final class BatchSingle implements BatchBindStep {
         this.create = DSL.using(configuration);
         this.configuration = configuration;
         this.query = query;
-        this.allBindValues = new ArrayList<Object[]>();
-        this.nameToIndexMapping = new LinkedHashMap<String, List<Integer>>();
+        this.allBindValues = new ArrayList<>();
+        this.nameToIndexMapping = new LinkedHashMap<>();
         this.expectedBindValues = collector.resultList.size();
 
         for (Entry<String, Param<?>> entry : collector.resultList) {
             List<Integer> list = nameToIndexMapping.get(entry.getKey());
 
             if (list == null) {
-                list = new ArrayList<Integer>();
+                list = new ArrayList<>();
                 nameToIndexMapping.put(entry.getKey(), list);
             }
 
@@ -213,6 +214,11 @@ final class BatchSingle implements BatchBindStep {
             ctx.statement(connection.prepareStatement(ctx.sql()));
             listener.prepareEnd(ctx);
 
+            // [#9295] use query timeout from settings
+            int t = SettingsTools.getQueryTimeout(0, ctx.settings());
+            if (t != 0)
+                ctx.statement().setQueryTimeout(t);
+
             for (Object[] bindValues : allBindValues) {
                 listener.bindStart(ctx);
 
@@ -260,7 +266,7 @@ final class BatchSingle implements BatchBindStep {
     }
 
     private final int[] executeStatic() {
-        List<Query> queries = new ArrayList<Query>(allBindValues.size());
+        List<Query> queries = new ArrayList<>(allBindValues.size());
 
         for (Object[] bindValues : allBindValues) {
             for (int i = 0; i < bindValues.length; i++)
